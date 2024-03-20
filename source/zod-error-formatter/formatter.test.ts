@@ -17,11 +17,11 @@ test('formatZodError() takes a zod error and formats all issues', () => {
         formattedError.message,
         stripIndents`Validation failed with 2 issues:
             - at foo: expected string, but got number
-            - Unrecognized key(s) in object: 'bar'`
+            - unexpected additional property: "bar"`
     );
     assert.deepStrictEqual(formattedError.issues, [
         'at foo: expected string, but got number',
-        "Unrecognized key(s) in object: 'bar'"
+        'unexpected additional property: "bar"'
     ]);
 });
 
@@ -34,11 +34,11 @@ test('parse() parses a given value with a given schema and throws the formatted 
             (error as Error).message,
             stripIndents`Validation failed with 2 issues:
             - at foo: expected string, but got number
-            - Unrecognized key(s) in object: 'bar'`
+            - unexpected additional property: "bar"`
         );
         assert.deepStrictEqual((error as FormattedZodError).issues, [
             'at foo: expected string, but got number',
-            "Unrecognized key(s) in object: 'bar'"
+            'unexpected additional property: "bar"'
         ]);
     }
 });
@@ -56,11 +56,11 @@ test('safeParse() parses a given value with a given schema and returns a failure
         result.error.message,
         stripIndents`Validation failed with 2 issues:
             - at foo: expected string, but got number
-            - Unrecognized key(s) in object: 'bar'`
+            - unexpected additional property: "bar"`
     );
     assert.deepStrictEqual(result.error.issues, [
         'at foo: expected string, but got number',
-        "Unrecognized key(s) in object: 'bar'"
+        'unexpected additional property: "bar"'
     ]);
 });
 
