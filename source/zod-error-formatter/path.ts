@@ -1,10 +1,10 @@
+import { isNonEmptyArray, type NonEmptyArray } from './non-empty-array.js';
+
 type PathItem = number | string;
 
-type Path = readonly [PathItem, ...readonly PathItem[]];
+type Path = NonEmptyArray<PathItem>;
 
-export function isNonEmptyPath(path: readonly PathItem[]): path is Path {
-    return path.length > 0;
-}
+export const isNonEmptyPath = isNonEmptyArray<PathItem>;
 
 export function formatPath(path: Path): string {
     return path.reduce<string>((currentFormattedPath, item, index) => {
