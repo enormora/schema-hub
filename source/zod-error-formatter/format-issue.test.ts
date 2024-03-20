@@ -22,3 +22,14 @@ test('returns the formatted issue when an invalid_type issue is given', () => {
     });
     assert.strictEqual(formattedIssue, 'at foo: expected nan, but got float');
 });
+
+test('returns the formatted issue when an invalid_literal issue is given', () => {
+    const formattedIssue = formatIssue({
+        code: 'invalid_literal',
+        message: '',
+        expected: 'foo',
+        received: 'bar',
+        path: ['foo']
+    });
+    assert.strictEqual(formattedIssue, 'at foo: invalid literal: expected "foo", but got string');
+});
