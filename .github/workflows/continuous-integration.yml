@@ -1,0 +1,73 @@
+name: Continuous Integration Workflow
+
+on:
+    push:
+        branches: ['main']
+    pull_request:
+        branches: ['main']
+
+jobs:
+    install:
+        name: Install Dependencies
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout git repository
+              uses: actions/checkout@v4
+            - uses: ./.github/actions/setup
+
+    compile:
+        name: Typescript compilation
+        runs-on: ubuntu-latest
+        needs: ['install']
+        steps:
+            - name: Checkout git repository
+              uses: actions/checkout@v4
+            - uses: ./.github/actions/setup
+            - name: Compile
+              run: 'npm run compile'
+            - name: Archive artifacts
+              uses: actions/upload-artifact@v4
+              with:
+                  name: build-artifacts
+                  path: target/build/**/*
+
+    static-code-analysis:
+        name: Static Code Analysis
+        runs-on: ubuntu-latest
+        needs: ['install']
+        steps:
+            - name: Checkout git repository
+              uses: actions/checkout@v4
+            - uses: ./.github/actions/setup
+            - name: Run linters
+              run: 'npm run lint'
+
+    unit-tests:
+        name: Unit Tests
+        runs-on: ubuntu-latest
+        needs: ['compile', 'static-code-analysis']
+        steps:
+            - name: Checkout git repository
+              uses: actions/checkout@v4
+            - uses: ./.github/actions/setup
+            - uses: actions/download-artifact@v4
+              with:
+                  name: build-artifacts
+                  path: target/build
+            - name: Run unit tests
+              run: 'unshare --map-root-user -n npm run test:unit:with-coverage'
+
+    integration-tests:
+        name: Integration Tests
+        runs-on: ubuntu-latest
+        needs: ['compile', 'static-code-analysis']
+        steps:
+            - name: Checkout git repository
+              uses: actions/checkout@v4
+            - uses: ./.github/actions/setup
+            - uses: actions/download-artifact@v4
+              with:
+                  name: build-artifacts
+                  path: target/build
+            - name: Run integration tests
+              run: 'npm run test:integration'
