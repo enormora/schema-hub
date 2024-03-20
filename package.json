@@ -11,9 +11,11 @@
         "eslint:fix": "npm run eslint -- --fix",
         "lint": "npm run eslint && npm run format:check",
         "lint:fix": "npm run eslint:fix && npm run format:fix",
-        "test": "c8 npm run test:unit",
+        "test": "c8 npm run test:unit && npm run test:integration",
         "pretest:unit": "tsc -b source/tsconfig.unit-tests.json",
-        "test:unit": "mt target/build/source"
+        "test:unit": "mt target/build/source",
+        "pretest:integration": "tsc -b integration-tests/tsconfig.json",
+        "test:integration": "mt target/build/integration-tests"
     },
     "author": "Mathias Schreck <schreck.mathias@gmail.com>",
     "license": "MIT",
