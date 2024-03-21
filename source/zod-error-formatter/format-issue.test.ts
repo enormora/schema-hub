@@ -55,3 +55,15 @@ test('returns the formatted issue when an too_big issue is given', () => {
     });
     assert.strictEqual(formattedIssue, 'at foo: string must contain less than 2 characters');
 });
+
+test('returns the formatted issue when an too_small issue is given', () => {
+    const formattedIssue = formatIssue({
+        code: 'too_small',
+        message: '',
+        path: ['foo'],
+        inclusive: false,
+        type: 'string',
+        minimum: 2
+    });
+    assert.strictEqual(formattedIssue, 'at foo: string must contain more than 2 characters');
+});
