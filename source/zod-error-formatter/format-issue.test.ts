@@ -33,3 +33,13 @@ test('returns the formatted issue when an invalid_literal issue is given', () =>
     });
     assert.strictEqual(formattedIssue, 'at foo: invalid literal: expected "foo", but got string');
 });
+
+test('returns the formatted issue when an unrecognized_keys issue is given', () => {
+    const formattedIssue = formatIssue({
+        code: 'unrecognized_keys',
+        message: '',
+        keys: ['bar'],
+        path: ['foo']
+    });
+    assert.strictEqual(formattedIssue, 'at foo: unexpected additional property: "bar"');
+});
