@@ -1,6 +1,7 @@
 import type { ZodIssue, ZodIssueCode } from 'zod';
 import { formatInvalidLiteralIssueMessage } from './issue-specific/invalid-literal.js';
 import { formatInvalidTypeIssueMessage } from './issue-specific/invalid-type.js';
+import { formatNotMultipleOfIssueMessage } from './issue-specific/not-multiple-of.js';
 import { formatTooBigIssueMessage } from './issue-specific/too-big.js';
 import { formatTooSmallIssueMessage } from './issue-specific/too-small.js';
 import { formatUnrecognizedKeysIssueMessage } from './issue-specific/unrecognized-keys.js';
@@ -17,7 +18,8 @@ const issueCodeToFormatterMap: FormatterMap = {
     invalid_literal: formatInvalidLiteralIssueMessage,
     unrecognized_keys: formatUnrecognizedKeysIssueMessage,
     too_big: formatTooBigIssueMessage,
-    too_small: formatTooSmallIssueMessage
+    too_small: formatTooSmallIssueMessage,
+    not_multiple_of: formatNotMultipleOfIssueMessage
 };
 
 export function formatIssue(issue: ZodIssue): string {

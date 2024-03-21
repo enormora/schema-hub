@@ -67,3 +67,13 @@ test('returns the formatted issue when an too_small issue is given', () => {
     });
     assert.strictEqual(formattedIssue, 'at foo: string must contain more than 2 characters');
 });
+
+test('returns the formatted issue when an not_multiple_of issue is given', () => {
+    const formattedIssue = formatIssue({
+        code: 'not_multiple_of',
+        path: ['foo'],
+        message: '',
+        multipleOf: 42
+    });
+    assert.strictEqual(formattedIssue, 'at foo: number must be multiple of 42');
+});
