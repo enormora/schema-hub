@@ -43,3 +43,15 @@ test('returns the formatted issue when an unrecognized_keys issue is given', () 
     });
     assert.strictEqual(formattedIssue, 'at foo: unexpected additional property: "bar"');
 });
+
+test('returns the formatted issue when an too_big issue is given', () => {
+    const formattedIssue = formatIssue({
+        code: 'too_big',
+        message: '',
+        path: ['foo'],
+        inclusive: false,
+        type: 'string',
+        maximum: 2
+    });
+    assert.strictEqual(formattedIssue, 'at foo: string must contain less than 2 characters');
+});
