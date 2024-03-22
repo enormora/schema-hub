@@ -98,3 +98,13 @@ test('returns the formatted issue when an invalid_string issue is given', () => 
     });
     assert.strictEqual(formattedIssue, 'at foo: invalid ip');
 });
+
+test('returns the formatted issue when an invalid_union_discriminator issue is given', () => {
+    const formattedIssue = formatIssue({
+        code: 'invalid_union_discriminator',
+        path: ['foo'],
+        message: '',
+        options: ['a']
+    });
+    assert.strictEqual(formattedIssue, 'at foo: invalid discriminator value, expected "a"');
+});
