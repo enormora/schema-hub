@@ -1,15 +1,16 @@
 import { test } from '@sondr3/minitest';
 import assert from 'node:assert';
+import { ZodError } from 'zod';
 import { formatIssue } from './format-issue.js';
 
-test('returns the original message when the issue code doesn’t have a specific formatter and the path is empty', () => {
+test('returns just the message when the path is empty', () => {
     const formattedIssue = formatIssue({ code: 'custom', message: 'foo', path: [] });
-    assert.strictEqual(formattedIssue, 'foo');
+    assert.strictEqual(formattedIssue, 'invalid input');
 });
 
-test('returns the original message with path when the issue code doesn’t have a specific formatter', () => {
+test('returns the message with path when the path is not empty', () => {
     const formattedIssue = formatIssue({ code: 'custom', message: 'bar', path: ['foo'] });
-    assert.strictEqual(formattedIssue, 'at foo: bar');
+    assert.strictEqual(formattedIssue, 'at foo: invalid input');
 });
 
 test('returns the formatted issue when an invalid_type issue is given', () => {
@@ -117,4 +118,60 @@ test('returns the formatted issue when an invalid_union issue is given', () => {
         unionErrors: []
     });
     assert.strictEqual(formattedIssue, 'at foo: invalid value doesn’t match expected union');
+});
+
+test('returns the formatted issue when an invalid_arguments issue is given', () => {
+    const formattedIssue = formatIssue({
+        code: 'invalid_arguments',
+        path: ['foo'],
+        message: '',
+        argumentsError: new ZodError([])
+    });
+    assert.strictEqual(formattedIssue, 'at foo: invalid function arguments');
+});
+
+test('returns the formatted issue when an invalid_return_type issue is given', () => {
+    const formattedIssue = formatIssue({
+        code: 'invalid_return_type',
+        path: ['foo'],
+        message: '',
+        returnTypeError: new ZodError([])
+    });
+    assert.strictEqual(formattedIssue, 'at foo: invalid function return type');
+});
+
+test('returns the formatted issue when an invalid_date issue is given', () => {
+    const formattedIssue = formatIssue({
+        code: 'invalid_date',
+        path: ['foo'],
+        message: ''
+    });
+    assert.strictEqual(formattedIssue, 'at foo: invalid date');
+});
+
+test('returns the formatted issue when a custom issue is given', () => {
+    const formattedIssue = formatIssue({
+        code: 'custom',
+        path: ['foo'],
+        message: ''
+    });
+    assert.strictEqual(formattedIssue, 'at foo: invalid input');
+});
+
+test('returns the formatted issue when an invalid_intersection_types issue is given', () => {
+    const formattedIssue = formatIssue({
+        code: 'invalid_intersection_types',
+        path: ['foo'],
+        message: ''
+    });
+    assert.strictEqual(formattedIssue, 'at foo: intersection results could not be merged');
+});
+
+test('returns the formatted issue when an not_finite issue is given', () => {
+    const formattedIssue = formatIssue({
+        code: 'not_finite',
+        path: ['foo'],
+        message: ''
+    });
+    assert.strictEqual(formattedIssue, 'at foo: number must be finite');
 });

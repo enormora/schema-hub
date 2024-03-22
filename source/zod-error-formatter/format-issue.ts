@@ -15,8 +15,14 @@ import { formatPath, isNonEmptyPath } from './path.js';
 type FormatterForCode<Code extends ZodIssueCode> = (issue: Extract<ZodIssue, { code: Code; }>) => string;
 
 type FormatterMap = {
-    readonly [Key in ZodIssueCode]?: FormatterForCode<Key>;
+    readonly [Key in ZodIssueCode]: FormatterForCode<Key>;
 };
+
+function formatSimpleMessage(message: string): (issue: ZodIssue) => string {
+    return () => {
+        return message;
+    };
+}
 
 const issueCodeToFormatterMap: FormatterMap = {
     invalid_type: formatInvalidTypeIssueMessage,
@@ -28,15 +34,20 @@ const issueCodeToFormatterMap: FormatterMap = {
     invalid_enum_value: formatInvalidEnumValueIssueMessage,
     invalid_string: formatInvalidStringIssueMessage,
     invalid_union_discriminator: formatInvalidUnionDiscriminatorIssueMessage,
-    invalid_union: formatInvalidUnionIssueMessage
+    invalid_union: formatInvalidUnionIssueMessage,
+    invalid_arguments: formatSimpleMessage('invalid function arguments'),
+    invalid_return_type: formatSimpleMessage('invalid function return type'),
+    invalid_date: formatSimpleMessage('invalid date'),
+    custom: formatSimpleMessage('invalid input'),
+    invalid_intersection_types: formatSimpleMessage('intersection results could not be merged'),
+    not_finite: formatSimpleMessage('number must be finite')
 };
 
 export function formatIssue(issue: ZodIssue): string {
-    const { path, code, message: fallbackMessage } = issue;
+    const { path, code } = issue;
 
-    const formatter = issueCodeToFormatterMap[code];
-    // @ts-expect-error
-    const message = formatter === undefined ? fallbackMessage : formatter(issue);
+    const formatter = issueCodeToFormatterMap[code] as (issue: ZodIssue) => string;
+    const message = formatter(issue);
 
     if (isNonEmptyPath(path)) {
         const formattedPath = formatPath(path);
