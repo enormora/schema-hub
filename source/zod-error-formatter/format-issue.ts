@@ -1,8 +1,10 @@
+/* eslint-disable import/max-dependencies -- since there are a lot of issue types, and we don’t want to have everything in a single file, we need to have a big import list here to wire everything together */
 import type { ZodIssue, ZodIssueCode } from 'zod';
 import { formatInvalidEnumValueIssueMessage } from './issue-specific/invalid-enum-value.js';
 import { formatInvalidLiteralIssueMessage } from './issue-specific/invalid-literal.js';
 import { formatInvalidStringIssueMessage } from './issue-specific/invalid-string.js';
 import { formatInvalidTypeIssueMessage } from './issue-specific/invalid-type.js';
+import { formatInvalidUnionDiscriminatorIssueMessage } from './issue-specific/invalid-union-discriminator.js';
 import { formatNotMultipleOfIssueMessage } from './issue-specific/not-multiple-of.js';
 import { formatTooBigIssueMessage } from './issue-specific/too-big.js';
 import { formatTooSmallIssueMessage } from './issue-specific/too-small.js';
@@ -23,7 +25,8 @@ const issueCodeToFormatterMap: FormatterMap = {
     too_small: formatTooSmallIssueMessage,
     not_multiple_of: formatNotMultipleOfIssueMessage,
     invalid_enum_value: formatInvalidEnumValueIssueMessage,
-    invalid_string: formatInvalidStringIssueMessage
+    invalid_string: formatInvalidStringIssueMessage,
+    invalid_union_discriminator: formatInvalidUnionDiscriminatorIssueMessage
 };
 
 export function formatIssue(issue: ZodIssue): string {
