@@ -88,3 +88,13 @@ test('returns the formatted issue when an invalid_enum_value issue is given', ()
     });
     assert.strictEqual(formattedIssue, 'at foo: invalid enum value: expected one of "a" or "b", but got number');
 });
+
+test('returns the formatted issue when an invalid_string issue is given', () => {
+    const formattedIssue = formatIssue({
+        code: 'invalid_string',
+        path: ['foo'],
+        message: '',
+        validation: 'ip'
+    });
+    assert.strictEqual(formattedIssue, 'at foo: invalid ip');
+});
