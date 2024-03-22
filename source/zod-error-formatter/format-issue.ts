@@ -1,4 +1,5 @@
 import type { ZodIssue, ZodIssueCode } from 'zod';
+import { formatInvalidEnumValueIssueMessage } from './issue-specific/invalid-enum-value.js';
 import { formatInvalidLiteralIssueMessage } from './issue-specific/invalid-literal.js';
 import { formatInvalidTypeIssueMessage } from './issue-specific/invalid-type.js';
 import { formatNotMultipleOfIssueMessage } from './issue-specific/not-multiple-of.js';
@@ -19,7 +20,8 @@ const issueCodeToFormatterMap: FormatterMap = {
     unrecognized_keys: formatUnrecognizedKeysIssueMessage,
     too_big: formatTooBigIssueMessage,
     too_small: formatTooSmallIssueMessage,
-    not_multiple_of: formatNotMultipleOfIssueMessage
+    not_multiple_of: formatNotMultipleOfIssueMessage,
+    invalid_enum_value: formatInvalidEnumValueIssueMessage
 };
 
 export function formatIssue(issue: ZodIssue): string {

@@ -77,3 +77,14 @@ test('returns the formatted issue when an not_multiple_of issue is given', () =>
     });
     assert.strictEqual(formattedIssue, 'at foo: number must be multiple of 42');
 });
+
+test('returns the formatted issue when an invalid_enum_value issue is given', () => {
+    const formattedIssue = formatIssue({
+        code: 'invalid_enum_value',
+        path: ['foo'],
+        message: '',
+        options: ['a', 'b'],
+        received: 1
+    });
+    assert.strictEqual(formattedIssue, 'at foo: invalid enum value: expected one of "a" or "b", but got number');
+});
