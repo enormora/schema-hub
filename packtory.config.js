@@ -36,6 +36,22 @@ export async function buildConfig() {
                 engines: packageJson.engines
             }
         },
-        packages: []
+        packages: [{
+            name: '@schema-tools/zod-error-formatter',
+            entryPoints: [
+                {
+                    js: 'zod-error-formatter/formatter.js',
+                    declarationFile: 'zod-error-formatter/formatter.d.ts'
+                }
+            ],
+            additionalPackageJsonAttributes: {
+                description: 'Simple and easy-to-understand zod error messages',
+                keywords: ['zod', 'zod-error', 'zod-format', 'formatter', 'error-formatter']
+            },
+            additionalFiles: [{
+                sourceFilePath: path.join(projectFolder, 'source/zod-error-formatter/readme.md'),
+                targetFilePath: 'readme.md'
+            }]
+        }]
     };
 }
