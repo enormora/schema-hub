@@ -108,3 +108,13 @@ test('returns the formatted issue when an invalid_union_discriminator issue is g
     });
     assert.strictEqual(formattedIssue, 'at foo: invalid discriminator value, expected "a"');
 });
+
+test('returns the formatted issue when an invalid_union issue is given', () => {
+    const formattedIssue = formatIssue({
+        code: 'invalid_union',
+        path: ['foo'],
+        message: '',
+        unionErrors: []
+    });
+    assert.strictEqual(formattedIssue, 'at foo: invalid value doesn’t match expected union');
+});

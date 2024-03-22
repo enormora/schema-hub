@@ -5,6 +5,7 @@ import { formatInvalidLiteralIssueMessage } from './issue-specific/invalid-liter
 import { formatInvalidStringIssueMessage } from './issue-specific/invalid-string.js';
 import { formatInvalidTypeIssueMessage } from './issue-specific/invalid-type.js';
 import { formatInvalidUnionDiscriminatorIssueMessage } from './issue-specific/invalid-union-discriminator.js';
+import { formatInvalidUnionIssueMessage } from './issue-specific/invalid-union.js';
 import { formatNotMultipleOfIssueMessage } from './issue-specific/not-multiple-of.js';
 import { formatTooBigIssueMessage } from './issue-specific/too-big.js';
 import { formatTooSmallIssueMessage } from './issue-specific/too-small.js';
@@ -26,7 +27,8 @@ const issueCodeToFormatterMap: FormatterMap = {
     not_multiple_of: formatNotMultipleOfIssueMessage,
     invalid_enum_value: formatInvalidEnumValueIssueMessage,
     invalid_string: formatInvalidStringIssueMessage,
-    invalid_union_discriminator: formatInvalidUnionDiscriminatorIssueMessage
+    invalid_union_discriminator: formatInvalidUnionDiscriminatorIssueMessage,
+    invalid_union: formatInvalidUnionIssueMessage
 };
 
 export function formatIssue(issue: ZodIssue): string {
