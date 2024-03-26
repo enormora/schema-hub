@@ -32,7 +32,6 @@ export async function buildConfig() {
                 repository: packageJson.repository,
                 license: packageJson.license,
                 author: packageJson.author,
-                contributors: packageJson.contributors,
                 engines: packageJson.engines
             }
         },
