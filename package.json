@@ -1,7 +1,6 @@
 {
-    "name": "schema-tools",
+    "name": "schema-hub",
     "version": "0.0.0-dev",
-    "description": "Effortless code bundling and publishing for npm packages",
     "type": "module",
     "scripts": {
         "compile": "tsc --build",
@@ -22,7 +21,7 @@
     "license": "MIT",
     "repository": {
         "type": "git",
-        "url": "git+ssh://git@github.com/enormora/schema-tools.git"
+        "url": "git+ssh://git@github.com/enormora/schema-hub.git"
     },
     "dependencies": {
         "tslib": "2.6.2"
