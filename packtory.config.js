@@ -37,7 +37,7 @@ export async function buildConfig() {
             }
         },
         packages: [{
-            name: '@schema-tools/zod-error-formatter',
+            name: '@schema-hub/zod-error-formatter',
             entryPoints: [
                 {
                     js: 'zod-error-formatter/formatter.js',

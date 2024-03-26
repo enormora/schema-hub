@@ -17,7 +17,7 @@ The error message deliberately excludes the actual input passed to the schema pa
 Input:
 
 ```typescript
-import { safeParse } from '@schema-tools/zod-error-formatter';
+import { safeParse } from '@schema-hub/zod-error-formatter';
 
 const schema = z.union([z.string(), z.number()]);
 const result = safeParse(schema, true);
@@ -32,7 +32,7 @@ Validation failed: invalid value: expected one of string or number, but got bool
 ## Installation
 
 ```bash
-npm install @schema-tools/zod-error-formatter
+npm install @schema-hub/zod-error-formatter
 ```
 
 ## Usage
