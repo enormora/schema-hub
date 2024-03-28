@@ -9,7 +9,7 @@ test('formats the invalid union issue correctly when there are no union errors',
         path: [],
         message: '',
         unionErrors: []
-    });
+    }, '');
     assert.strictEqual(message, 'invalid value doesn’t match expected union');
 });
 
@@ -19,7 +19,7 @@ test('formats the invalid union issue correctly when there are only union errors
         path: [],
         message: '',
         unionErrors: [new ZodError([]), new ZodError([])]
-    });
+    }, '');
     assert.strictEqual(message, 'invalid value doesn’t match expected union');
 });
 
@@ -31,7 +31,7 @@ test('formats the invalid union issue correctly when there is only one union err
         unionErrors: [
             new ZodError([{ code: 'invalid_type', path: [], message: '', expected: 'string', received: 'null' }])
         ]
-    });
+    }, '');
     assert.strictEqual(message, 'invalid value: expected string, but got null');
 });
 
@@ -44,7 +44,7 @@ test('formats the invalid union issue correctly when there are only invalid type
             new ZodError([{ code: 'invalid_type', path: [], message: '', expected: 'string', received: 'null' }]),
             new ZodError([{ code: 'invalid_type', path: [], message: '', expected: 'number', received: 'null' }])
         ]
-    });
+    }, '');
     assert.strictEqual(message, 'invalid value: expected one of string or number, but got null');
 });
 
@@ -91,7 +91,7 @@ test('formats the invalid union issue correctly given only invalid type issues i
                 ]
             }])
         ]
-    });
+    }, '');
     assert.strictEqual(message, 'invalid value: expected one of string, number or boolean, but got null');
 });
 
@@ -104,7 +104,7 @@ test('formats the issue correctly when there are only invalid type issues but al
             new ZodError([{ code: 'invalid_type', path: [], message: '', expected: 'string', received: 'null' }]),
             new ZodError([{ code: 'invalid_type', path: [], message: '', expected: 'string', received: 'null' }])
         ]
-    });
+    }, '');
     assert.strictEqual(message, 'invalid value: expected string, but got null');
 });
 
@@ -117,7 +117,7 @@ test('formats the invalid union issue correctly when there are only invalid lite
             new ZodError([{ code: 'invalid_literal', path: [], message: '', expected: 'foo', received: 'bar' }]),
             new ZodError([{ code: 'invalid_literal', path: [], message: '', expected: 'baz', received: 'bar' }])
         ]
-    });
+    }, '');
     assert.strictEqual(message, 'invalid value: expected one of "foo" or "baz", but got string');
 });
 
@@ -129,7 +129,7 @@ test('formats the invalid union issue correctly when there is a invalid literal 
         unionErrors: [
             new ZodError([{ code: 'invalid_literal', path: [], message: '', expected: null, received: 'bar' }])
         ]
-    });
+    }, '');
     assert.strictEqual(message, 'invalid value: expected null, but got string');
 });
 
@@ -141,7 +141,7 @@ test('formats the invalid union issue correctly when there is a invalid literal 
         unionErrors: [
             new ZodError([{ code: 'invalid_literal', path: [], message: '', expected: {}, received: 'bar' }])
         ]
-    });
+    }, '');
     assert.strictEqual(message, 'invalid value: expected "{}", but got string');
 });
 
@@ -154,7 +154,7 @@ test('formats the invalid union issue correctly when there are only invalid lite
             new ZodError([{ code: 'invalid_type', path: [], message: '', expected: 'number', received: 'boolean' }]),
             new ZodError([{ code: 'invalid_literal', path: [], message: '', expected: 'foo', received: true }])
         ]
-    });
+    }, '');
     assert.strictEqual(message, 'invalid value: expected one of number or "foo", but got boolean');
 });
 
@@ -167,7 +167,7 @@ test('formats the issue correctly when there are multiple issues but not all are
             new ZodError([{ code: 'invalid_type', path: [], message: '', expected: 'string', received: 'null' }]),
             new ZodError([{ code: 'custom', path: [], message: '' }])
         ]
-    });
+    }, '');
     assert.strictEqual(message, 'invalid value doesn’t match expected union');
 });
 
@@ -186,6 +186,26 @@ test('formats the issue correctly given multiple invalid type issues but some of
                 received: 'null'
             }])
         ]
-    });
+    }, { foo: {} });
     assert.strictEqual(message, 'invalid value doesn’t match expected union');
+});
+
+test('formats a missing property message when the path doesn’t exist in the given object', () => {
+    const message = formatInvalidUnionIssueMessage({
+        code: 'invalid_union',
+        path: ['foo'],
+        message: '',
+        unionErrors: []
+    }, {});
+    assert.strictEqual(message, 'missing property');
+});
+
+test('formats a missing property message when the path doesn’t exist in the given array', () => {
+    const message = formatInvalidUnionIssueMessage({
+        code: 'invalid_union',
+        path: [0],
+        message: '',
+        unionErrors: []
+    }, []);
+    assert.strictEqual(message, 'missing key');
 });

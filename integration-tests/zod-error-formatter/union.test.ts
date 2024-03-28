@@ -52,3 +52,13 @@ test('formats messages for invalid union schemas with only objects correctly', (
         'invalid value doesn’t match expected union'
     ]);
 });
+
+test('formats messages missing properties of union schemas within object correctly', () => {
+    const schema = z.object({ foo: z.union([z.literal('a'), z.literal('b')]) });
+    const result = safeParse(schema, {});
+
+    assert.strictEqual(result.success, false);
+    assert.deepStrictEqual(result.error.issues, [
+        'at foo: missing property'
+    ]);
+});

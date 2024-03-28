@@ -116,7 +116,7 @@ test('returns the formatted issue when an invalid_union issue is given', () => {
         path: ['foo'],
         message: '',
         unionErrors: []
-    }, '');
+    }, { foo: undefined });
     assert.strictEqual(formattedIssue, 'at foo: invalid value doesn’t match expected union');
 });
 

@@ -8,6 +8,7 @@ import {
     type ZodIssue
 } from 'zod';
 import { formatOneOfList, isParsedType, type ListValue } from '../list.js';
+import { findValueByPath } from '../path.js';
 
 function flattenAllIssues(errors: readonly ZodError[]): readonly ZodIssue[] {
     return errors.flatMap((error) => {
@@ -95,20 +96,26 @@ function removeDuplicateListValues(values: readonly ListValue[]): readonly ListV
     return uniqueValues;
 }
 
-export function formatInvalidUnionIssueMessage(issue: ZodInvalidUnionIssue): string {
-    const memberIssues = flattenAllIssues(issue.unionErrors);
-    const supportedIssues = filterSupportedIssuesWithSamePath(memberIssues, issue.path);
+// eslint-disable-next-line max-statements -- no idea how to refactor right now
+export function formatInvalidUnionIssueMessage(issue: ZodInvalidUnionIssue, input: unknown): string {
+    const result = findValueByPath(input, issue.path);
 
-    if (memberIssues.length === supportedIssues.length) {
-        const [firstIssue] = supportedIssues;
+    if (result.found) {
+        const memberIssues = flattenAllIssues(issue.unionErrors);
+        const supportedIssues = filterSupportedIssuesWithSamePath(memberIssues, issue.path);
+        if (memberIssues.length === supportedIssues.length) {
+            const [firstIssue] = supportedIssues;
 
-        if (firstIssue !== undefined) {
-            const expectedValues = removeDuplicateListValues(supportedIssues.map(determineExpectedValue));
-            const receivedValue = determineReceivedValue(firstIssue);
+            if (firstIssue !== undefined) {
+                const expectedValues = removeDuplicateListValues(supportedIssues.map(determineExpectedValue));
+                const receivedValue = determineReceivedValue(firstIssue);
 
-            return `invalid value: expected ${formatOneOfList(expectedValues)}, but got ${receivedValue}`;
+                return `invalid value: expected ${formatOneOfList(expectedValues)}, but got ${receivedValue}`;
+            }
         }
+
+        return 'invalid value doesn’t match expected union';
     }
 
-    return 'invalid value doesn’t match expected union';
+    return `missing ${result.pathItemKind}`;
 }
