@@ -37,7 +37,7 @@ npm install @schema-hub/zod-error-formatter
 
 ## Usage
 
-### `formatZodError(zodError)`
+### `formatZodError(zodError, inputData)`
 
 Formats an instance of `ZodError` into a new `Error` instance with aggregated and formatted messages, along with an `issues` array containing all individual formatted issues.
 
