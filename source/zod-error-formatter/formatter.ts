@@ -2,8 +2,10 @@ import type { TypeOf, ZodError, ZodSchema } from 'zod';
 import { formatIssue } from './format-issue.js';
 import { createFormattedZodError, type FormattedZodError } from './formatted-error.js';
 
-export function formatZodError(error: ZodError): FormattedZodError {
-    const formattedIssues = error.issues.map(formatIssue);
+export function formatZodError(error: ZodError, input: unknown): FormattedZodError {
+    const formattedIssues = error.issues.map((issue) => {
+        return formatIssue(issue, input);
+    });
     return createFormattedZodError(formattedIssues);
 }
 
@@ -14,7 +16,7 @@ export function parse<Schema extends ZodSchema<unknown>>(schema: Schema, value: 
         return result.data;
     }
 
-    throw formatZodError(result.error);
+    throw formatZodError(result.error, value);
 }
 
 type SafeParseSuccessResult<Output> = {
@@ -39,5 +41,5 @@ export function safeParse<Schema extends ZodSchema<unknown>>(
         return { success: true, data: result.data };
     }
 
-    return { success: false, error: formatZodError(result.error) };
+    return { success: false, error: formatZodError(result.error, value) };
 }

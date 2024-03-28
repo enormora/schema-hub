@@ -11,7 +11,7 @@ test('formatZodError() takes a zod error and formats all issues', () => {
     const result = exampleSchema.safeParse({ foo: 42, bar: '' });
 
     assert.strictEqual(result.success, false);
-    const formattedError = formatZodError(result.error);
+    const formattedError = formatZodError(result.error, '');
 
     assert.strictEqual(
         formattedError.message,

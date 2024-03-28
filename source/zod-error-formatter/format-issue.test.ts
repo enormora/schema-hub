@@ -4,12 +4,12 @@ import { ZodError } from 'zod';
 import { formatIssue } from './format-issue.js';
 
 test('returns just the message when the path is empty', () => {
-    const formattedIssue = formatIssue({ code: 'custom', message: 'foo', path: [] });
+    const formattedIssue = formatIssue({ code: 'custom', message: 'foo', path: [] }, '');
     assert.strictEqual(formattedIssue, 'invalid input');
 });
 
 test('returns the message with path when the path is not empty', () => {
-    const formattedIssue = formatIssue({ code: 'custom', message: 'bar', path: ['foo'] });
+    const formattedIssue = formatIssue({ code: 'custom', message: 'bar', path: ['foo'] }, '');
     assert.strictEqual(formattedIssue, 'at foo: invalid input');
 });
 
@@ -20,7 +20,7 @@ test('returns the formatted issue when an invalid_type issue is given', () => {
         expected: 'nan',
         received: 'float',
         path: ['foo']
-    });
+    }, '');
     assert.strictEqual(formattedIssue, 'at foo: expected nan, but got float');
 });
 
@@ -31,7 +31,7 @@ test('returns the formatted issue when an invalid_literal issue is given', () =>
         expected: 'foo',
         received: 'bar',
         path: ['foo']
-    });
+    }, '');
     assert.strictEqual(formattedIssue, 'at foo: invalid literal: expected "foo", but got string');
 });
 
@@ -41,7 +41,7 @@ test('returns the formatted issue when an unrecognized_keys issue is given', () 
         message: '',
         keys: ['bar'],
         path: ['foo']
-    });
+    }, '');
     assert.strictEqual(formattedIssue, 'at foo: unexpected additional property: "bar"');
 });
 
@@ -53,7 +53,7 @@ test('returns the formatted issue when an too_big issue is given', () => {
         inclusive: false,
         type: 'string',
         maximum: 2
-    });
+    }, '');
     assert.strictEqual(formattedIssue, 'at foo: string must contain less than 2 characters');
 });
 
@@ -65,7 +65,7 @@ test('returns the formatted issue when an too_small issue is given', () => {
         inclusive: false,
         type: 'string',
         minimum: 2
-    });
+    }, '');
     assert.strictEqual(formattedIssue, 'at foo: string must contain more than 2 characters');
 });
 
@@ -75,7 +75,7 @@ test('returns the formatted issue when an not_multiple_of issue is given', () =>
         path: ['foo'],
         message: '',
         multipleOf: 42
-    });
+    }, '');
     assert.strictEqual(formattedIssue, 'at foo: number must be multiple of 42');
 });
 
@@ -86,7 +86,7 @@ test('returns the formatted issue when an invalid_enum_value issue is given', ()
         message: '',
         options: ['a', 'b'],
         received: 1
-    });
+    }, '');
     assert.strictEqual(formattedIssue, 'at foo: invalid enum value: expected one of "a" or "b", but got number');
 });
 
@@ -96,7 +96,7 @@ test('returns the formatted issue when an invalid_string issue is given', () => 
         path: ['foo'],
         message: '',
         validation: 'ip'
-    });
+    }, '');
     assert.strictEqual(formattedIssue, 'at foo: invalid ip');
 });
 
@@ -106,8 +106,8 @@ test('returns the formatted issue when an invalid_union_discriminator issue is g
         path: ['foo'],
         message: '',
         options: ['a']
-    });
-    assert.strictEqual(formattedIssue, 'at foo: invalid discriminator value, expected "a"');
+    }, { foo: undefined });
+    assert.strictEqual(formattedIssue, 'at foo: invalid discriminator: expected "a", but got undefined');
 });
 
 test('returns the formatted issue when an invalid_union issue is given', () => {
@@ -116,7 +116,7 @@ test('returns the formatted issue when an invalid_union issue is given', () => {
         path: ['foo'],
         message: '',
         unionErrors: []
-    });
+    }, '');
     assert.strictEqual(formattedIssue, 'at foo: invalid value doesn’t match expected union');
 });
 
@@ -126,7 +126,7 @@ test('returns the formatted issue when an invalid_arguments issue is given', () 
         path: ['foo'],
         message: '',
         argumentsError: new ZodError([])
-    });
+    }, '');
     assert.strictEqual(formattedIssue, 'at foo: invalid function arguments');
 });
 
@@ -136,7 +136,7 @@ test('returns the formatted issue when an invalid_return_type issue is given', (
         path: ['foo'],
         message: '',
         returnTypeError: new ZodError([])
-    });
+    }, '');
     assert.strictEqual(formattedIssue, 'at foo: invalid function return type');
 });
 
@@ -145,7 +145,7 @@ test('returns the formatted issue when an invalid_date issue is given', () => {
         code: 'invalid_date',
         path: ['foo'],
         message: ''
-    });
+    }, '');
     assert.strictEqual(formattedIssue, 'at foo: invalid date');
 });
 
@@ -154,7 +154,7 @@ test('returns the formatted issue when a custom issue is given', () => {
         code: 'custom',
         path: ['foo'],
         message: ''
-    });
+    }, '');
     assert.strictEqual(formattedIssue, 'at foo: invalid input');
 });
 
@@ -163,7 +163,7 @@ test('returns the formatted issue when an invalid_intersection_types issue is gi
         code: 'invalid_intersection_types',
         path: ['foo'],
         message: ''
-    });
+    }, '');
     assert.strictEqual(formattedIssue, 'at foo: intersection results could not be merged');
 });
 
@@ -172,6 +172,6 @@ test('returns the formatted issue when an not_finite issue is given', () => {
         code: 'not_finite',
         path: ['foo'],
         message: ''
-    });
+    }, '');
     assert.strictEqual(formattedIssue, 'at foo: number must be finite');
 });

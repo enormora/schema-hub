@@ -12,7 +12,10 @@ import { formatTooSmallIssueMessage } from './issue-specific/too-small.js';
 import { formatUnrecognizedKeysIssueMessage } from './issue-specific/unrecognized-keys.js';
 import { formatPath, isNonEmptyPath } from './path.js';
 
-type FormatterForCode<Code extends ZodIssueCode> = (issue: Extract<ZodIssue, { code: Code; }>) => string;
+type FormatterForCode<Code extends ZodIssueCode> = (
+    issue: Extract<ZodIssue, { code: Code; }>,
+    input: unknown
+) => string;
 
 type FormatterMap = {
     readonly [Key in ZodIssueCode]: FormatterForCode<Key>;
@@ -43,11 +46,11 @@ const issueCodeToFormatterMap: FormatterMap = {
     not_finite: formatSimpleMessage('number must be finite')
 };
 
-export function formatIssue(issue: ZodIssue): string {
+export function formatIssue(issue: ZodIssue, input: unknown): string {
     const { path, code } = issue;
 
-    const formatter = issueCodeToFormatterMap[code] as (issue: ZodIssue) => string;
-    const message = formatter(issue);
+    const formatter = issueCodeToFormatterMap[code] as (issue: ZodIssue, input: unknown) => string;
+    const message = formatter(issue, input);
 
     if (isNonEmptyPath(path)) {
         const formattedPath = formatPath(path);
