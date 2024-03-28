@@ -42,3 +42,13 @@ test('formats messages for invalid object schemas correctly', () => {
         'expected object, but got date'
     ]);
 });
+
+test('formats messages for missing object properties correctly', () => {
+    const schema = z.object({ foo: z.string() });
+    const result = safeParse(schema, {});
+
+    assert.strictEqual(result.success, false);
+    assert.deepStrictEqual(result.error.issues, [
+        'at foo: missing property'
+    ]);
+});

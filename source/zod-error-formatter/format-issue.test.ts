@@ -20,7 +20,7 @@ test('returns the formatted issue when an invalid_type issue is given', () => {
         expected: 'nan',
         received: 'float',
         path: ['foo']
-    }, '');
+    }, { foo: '' });
     assert.strictEqual(formattedIssue, 'at foo: expected nan, but got float');
 });
 
@@ -31,7 +31,7 @@ test('returns the formatted issue when an invalid_literal issue is given', () =>
         expected: 'foo',
         received: 'bar',
         path: ['foo']
-    }, '');
+    }, { foo: '' });
     assert.strictEqual(formattedIssue, 'at foo: invalid literal: expected "foo", but got string');
 });
 

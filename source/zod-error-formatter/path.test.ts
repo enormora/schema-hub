@@ -49,12 +49,17 @@ test('findValueByPath() returns the given value when the path is empty', () => {
 
 test('findValueByPath() returns a not-found result when a primitive value is given with a non-empty path', () => {
     const value = findValueByPath('foo', ['bar']);
-    assert.deepStrictEqual(value, { found: false });
+    assert.deepStrictEqual(value, { found: false, pathItemKind: 'property' });
 });
 
 test('findValueByPath() returns a not-found result when the path exists only on the prototype chain', () => {
     const value = findValueByPath({ foo: 'bar' }, ['toString']);
-    assert.deepStrictEqual(value, { found: false });
+    assert.deepStrictEqual(value, { found: false, pathItemKind: 'property' });
+});
+
+test('findValueByPath() returns a not-found result when the path exist in the given array', () => {
+    const value = findValueByPath(['a'], [1]);
+    assert.deepStrictEqual(value, { found: false, pathItemKind: 'key' });
 });
 
 test('findValueByPath() returns the value when the path exists on the prototype chain and on the object', () => {
@@ -74,7 +79,7 @@ test('findValueByPath() returns the value of a nested object path', () => {
 
 test('findValueByPath() returns not-found result when a path couldn’t be resolved', () => {
     const value = findValueByPath({ foo: { notBar: 'baz' } }, ['foo', 'bar']);
-    assert.deepStrictEqual(value, { found: false });
+    assert.deepStrictEqual(value, { found: false, pathItemKind: 'property' });
 });
 
 test('findValueByPath() returns the value when it is explicit undefined for a deep path', () => {
@@ -85,4 +90,34 @@ test('findValueByPath() returns the value when it is explicit undefined for a de
 test('findValueByPath() returns the value of a nested mixed object/array path', () => {
     const value = findValueByPath({ foo: { bar: ['a', { baz: ['b'] }, 'c', 'd'] } }, ['foo', 'bar', 1, 'baz', 0]);
     assert.deepStrictEqual(value, { found: true, value: 'b' });
+});
+
+test('findValueByPath() returns the value of a nested a object path inside a map value', () => {
+    const value = findValueByPath(new Map([['a', { foo: 'bar' }]]), [0, 'value', 'foo']);
+    assert.deepStrictEqual(value, { found: true, value: 'bar' });
+});
+
+test('findValueByPath() returns the value of a nested a array path inside a map key', () => {
+    const value = findValueByPath(new Map([[['a', 'b'], { foo: 'bar' }]]), [0, 'key', 1]);
+    assert.deepStrictEqual(value, { found: true, value: 'b' });
+});
+
+test('findValueByPath() returns not-found result of a nested a object path inside a map value', () => {
+    const value = findValueByPath(new Map([['a', { foo: 'bar' }]]), [0, 'value', 'bar']);
+    assert.deepStrictEqual(value, { found: false, pathItemKind: 'property' });
+});
+
+test('findValueByPath() returns not-found result of a nested a array path inside a map key', () => {
+    const value = findValueByPath(new Map([[['a'], { foo: 'bar' }]]), [0, 'key', 1]);
+    assert.deepStrictEqual(value, { found: false, pathItemKind: 'key' });
+});
+
+test('findValueByPath() returns not-found result for a map when the path is incorrect', () => {
+    const value = findValueByPath(new Map([[['a'], { foo: 'bar' }]]), [0, 'bar', 1]);
+    assert.deepStrictEqual(value, { found: false, pathItemKind: 'key' });
+});
+
+test('findValueByPath() returns the value directly when it is a map with empty path', () => {
+    const value = findValueByPath(new Map([['a', 'b']]), []);
+    assert.deepStrictEqual(value, { found: true, value: new Map([['a', 'b']]) });
 });
