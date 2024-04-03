@@ -40,5 +40,17 @@ export default [
             // re-enable once https://github.com/eslint-functional/eslint-plugin-functional/issues/733 is fixed
             'functional/type-declaration-immutability': 'off'
         }
+    },
+    {
+        files: ['source/zod-graphql-query-builder/builder.ts'],
+        // those rules crash for some reason, we should re-enable them as soon as they are not crashing anymore
+        rules: {
+            '@typescript-eslint/no-unnecessary-type-assertion': 'off',
+            '@typescript-eslint/no-unsafe-argument': 'off',
+            '@typescript-eslint/no-confusing-void-expression': 'off',
+            '@typescript-eslint/promise-function-async': 'off',
+            '@typescript-eslint/no-misused-promises': 'off',
+            '@typescript-eslint/no-unsafe-return': 'off'
+        }
     }
 ];
