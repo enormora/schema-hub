@@ -43,3 +43,5 @@ export function safeParse<Schema extends ZodSchema<unknown>>(
 
     return { success: false, error: formatZodError(result.error, value) };
 }
+
+export { FormattedZodError } from './formatted-error.js';
