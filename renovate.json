@@ -1,0 +1,24 @@
+{
+    "extends": ["config:base"],
+    "commitMessagePrefix": "⬆️ ",
+    "labels": ["renovate"],
+    "dependencyDashboard": false,
+    "rebaseStalePrs": true,
+    "lockFileMaintenance": {
+        "enabled": true,
+        "automerge": true
+    },
+    "packageRules": [
+        {
+            "matchPackagePatterns": ["^@enormora/eslint-config"],
+            "groupName": "@enormora/eslint-config",
+            "groupSlug": "enormora-eslint-config"
+        },
+        {
+            "matchDepTypes": ["dependencies", "devDependencies"],
+            "matchUpdateTypes": ["minor", "patch"],
+            "automerge": true,
+            "automergeType": "branch"
+        }
+    ]
+}
