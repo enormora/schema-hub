@@ -35,22 +35,41 @@ export async function buildConfig() {
                 engines: packageJson.engines
             }
         },
-        packages: [{
-            name: '@schema-hub/zod-error-formatter',
-            entryPoints: [
-                {
-                    js: 'zod-error-formatter/formatter.js',
-                    declarationFile: 'zod-error-formatter/formatter.d.ts'
-                }
-            ],
-            additionalPackageJsonAttributes: {
-                description: 'Simple and easy-to-understand zod error messages',
-                keywords: ['zod', 'zod-error', 'zod-format', 'formatter', 'error-formatter']
+        packages: [
+            {
+                name: '@schema-hub/zod-error-formatter',
+                entryPoints: [
+                    {
+                        js: 'zod-error-formatter/formatter.js',
+                        declarationFile: 'zod-error-formatter/formatter.d.ts'
+                    }
+                ],
+                additionalPackageJsonAttributes: {
+                    description: 'Simple and easy-to-understand zod error messages',
+                    keywords: ['zod', 'zod-error', 'zod-format', 'formatter', 'error-formatter']
+                },
+                additionalFiles: [{
+                    sourceFilePath: path.join(projectFolder, 'source/zod-error-formatter/readme.md'),
+                    targetFilePath: 'readme.md'
+                }]
             },
-            additionalFiles: [{
-                sourceFilePath: path.join(projectFolder, 'source/zod-error-formatter/readme.md'),
-                targetFilePath: 'readme.md'
-            }]
-        }]
+            {
+                name: '@schema-hub/zod-graphql-query-builder',
+                entryPoints: [
+                    {
+                        js: 'zod-graphql-query-builder/entry-point.js',
+                        declarationFile: 'zod-graphql-query-builder/entry-point.d.ts'
+                    }
+                ],
+                additionalPackageJsonAttributes: {
+                    description: 'Transforms Zod schemas into GraphQL queries',
+                    keywords: ['zod', 'zod-graphql', 'graphql', 'graphql-query', 'query-builder', 'graphql-builder']
+                },
+                additionalFiles: [{
+                    sourceFilePath: path.join(projectFolder, 'source/zod-graphql-query-builder/readme.md'),
+                    targetFilePath: 'readme.md'
+                }]
+            }
+        ]
     };
 }
