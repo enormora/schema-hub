@@ -33,8 +33,8 @@ type GraphqlFieldOptions = {
 };
 
 export type QueryOptions = {
-    queryName?: string;
-    variableDefinitions?: VariableDefinitions;
+    queryName?: string | undefined;
+    variableDefinitions?: VariableDefinitions | undefined;
 };
 
 export type QueryBuilder = {
