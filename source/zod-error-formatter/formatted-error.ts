@@ -1,8 +1,6 @@
-function formatCombinedMessage(issues: readonly string[]): string {
-    if (issues.length === 0) {
-        return 'Validation failed, but there are no issues';
-    }
+import type { NonEmptyArray } from '../tuple/non-empty-array.js';
 
+function formatCombinedMessage(issues: NonEmptyArray<string>): string {
     if (issues.length === 1) {
         return `Validation failed: ${issues[0]}`;
     }
@@ -11,9 +9,9 @@ function formatCombinedMessage(issues: readonly string[]): string {
 }
 
 export class FormattedZodError extends Error {
-    public issues: readonly string[];
+    public issues: NonEmptyArray<string>;
 
-    constructor(issues: readonly string[]) {
+    constructor(issues: NonEmptyArray<string>) {
         const fullMessage = formatCombinedMessage(issues);
         super(fullMessage);
         // eslint-disable-next-line functional/no-this-expressions -- sub-classing errors is one of the few exceptions where classes are useful
@@ -21,6 +19,6 @@ export class FormattedZodError extends Error {
     }
 }
 
-export function createFormattedZodError(issues: readonly string[]): FormattedZodError {
+export function createFormattedZodError(issues: NonEmptyArray<string>): FormattedZodError {
     return new FormattedZodError(issues);
 }

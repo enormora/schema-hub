@@ -1,4 +1,5 @@
 import type { TypeOf, ZodError, ZodSchema } from 'zod';
+import type { NonEmptyArray } from '../tuple/non-empty-array.js';
 import { formatIssue } from './format-issue.js';
 import { createFormattedZodError, type FormattedZodError } from './formatted-error.js';
 
@@ -6,7 +7,7 @@ export function formatZodError(error: ZodError, input: unknown): FormattedZodErr
     const formattedIssues = error.issues.map((issue) => {
         return formatIssue(issue, input);
     });
-    return createFormattedZodError(formattedIssues);
+    return createFormattedZodError(formattedIssues as unknown as NonEmptyArray<string>);
 }
 
 export function parse<Schema extends ZodSchema<unknown>>(schema: Schema, value: unknown): TypeOf<Schema> {
