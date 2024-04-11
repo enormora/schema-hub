@@ -1,0 +1,171 @@
+# zod-graphql-client
+
+A lightweight and type-safe GraphQL client. It utilizes [`zod`](https://github.com/colinhacks/zod) schemas to define GraphQL queries, providing developers with a single source of truth for their queries and enabling strict runtime validation.
+
+## Key Benefits
+
+- **Type Safety**: Define GraphQL queries using `zod` schemas, ensuring type safety and preventing hard-to-debug errors.
+- **Single Source of Truth**: Keep your schema and queries in sync by using `zod` schemas for both runtime validation and query definition.
+- **Ease of Use**: Simplify the process of sending GraphQL queries with a clean and intuitive API.
+- **Error Handling**: Handle network errors, server errors, and response validation errors gracefully, providing detailed error messages for easy debugging.
+
+## Example
+
+```typescript
+import { createGraphqlClient } from '@schema-hub/zod-graphql-client';
+import { z } from 'zod';
+
+// Create a GraphQL client
+const client = createGraphqlClient({ endpoint: 'https://example.com/graphql' });
+
+// Define a Zod schema for the GraphQL query
+const querySchema = z
+    .object({
+        foo: z.string()
+    })
+    .strict();
+
+// Send a GraphQL query using the client
+const result = await client.query(querySchema);
+
+// Output the result
+console.log(result);
+```
+
+## Installation
+
+```bash
+npm install @schema-hub/zod-graphql-client
+```
+
+## Usage
+
+### Creating a Client
+
+```typescript
+import { createGraphqlClient } from '@schema-hub/zod-graphql-client';
+
+const client = createGraphqlClient({
+    endpoint: 'https://example.com/graphql'
+});
+```
+
+#### Options
+
+- `endpoint` (required): The full URL of the GraphQL API endpoint. This is where the client will send its GraphQL requests.
+
+You can further customize the client by providing additional options:
+
+- `headers` (optional): A key-value map of additional headers that should be sent with every request. This can be useful for passing authentication tokens or other metadata to the server.
+- `timeout` (optional): The request timeout in milliseconds. This determines how long the client will wait for a response before considering the request failed. If not specified, a default timeout of 10 seconds (10,000 milliseconds) will be used.
+- `fetch` (optional): Allows you to inject a custom `fetch` function instead of using the global `fetch`. This can be useful in environments where the global `fetch` function is not available, or if you need to customize the behavior of the HTTP requests.
+
+### Sending a Query
+
+```typescript
+import { createGraphqlClient, graphqlFieldOptions, variablePlaceholder } from '@schema-hub/zod-graphql-client';
+import { z } from 'zod';
+
+// Define your query schema using Zod
+const schema = z
+    .object({
+        // Provide graphql-specific metadata to your zod schema
+        foo: graphqlFieldOptions(z.string(), {
+            parameters: {
+                bar: variablePlaceholder('$bar')
+            }
+        })
+    })
+    .strict();
+
+// Send the query using the client
+const client = createGraphqlClient({ endpoint: 'https://example.com/graphql' });
+const result = await client.query(schema, {
+    queryName: 'YourQueryName', // Optional query name
+    variables: {
+        bar: {
+            type: 'String!',
+            value: 'the-actual-value-for-bar'
+        }
+    }
+});
+
+console.log(result);
+```
+
+#### Options
+
+- `queryName` (optional): The name of the query. This is useful for debugging and introspection purposes.
+- `variables` (optional): A record of all variable values and types that should be included in the query. This allows you to parameterize your queries and provide dynamic values at runtime.
+- `headers` (optional): A key-value map of additional headers that should be sent with the request. These headers will be merged with any headers specified when creating the client.
+- `timeout` (optional): The request timeout in milliseconds. This determines how long the client will wait for a response before considering the request failed. If not specified, the default timeout specified when creating the client will be used.
+
+Adjust these options according to your specific requirements and the needs of your GraphQL API.
+
+Adding a section to elaborate on the return value of the `query()` method would be beneficial under the "Sending a Query" section. This would provide users with a clear understanding of what to expect when making a query and how to handle the response.
+
+Here's a suggestion for the content of this section:
+
+### Query Result
+
+When you send a query using the `query()` method of the GraphQL client, you receive a `QueryResult` object representing the outcome of the query. This object contains information about whether the query was successful and, if so, the data returned by the GraphQL server.
+
+The `QueryResult` object has the following structure:
+
+```typescript
+type FailureQueryResult = {
+    success: false;
+    errorDetails: QueryErrorDetails;
+};
+
+type SuccessQueryResult<Schema extends QuerySchema> = {
+    success: true;
+    data: z.infer<Schema>;
+};
+
+type QueryResult<Schema extends QuerySchema> = FailureQueryResult | SuccessQueryResult<Schema>;
+```
+
+- If the query was successful, the `success` property will be `true`, and the `data` property will contain the response data, inferred based on the provided Zod schema.
+
+- If the query failed, the `success` property will be `false`, and the `errorDetails` property will contain information about the error encountered during the query. This includes details such as the error type, status code (if applicable), and error message.
+
+Here's how you can handle the query result:
+
+```typescript
+const result = await client.query(schema, options);
+
+if (result.success) {
+    // Query was successful, handle the response data
+    console.log(result.data);
+} else {
+    // Query failed, handle the error
+    console.error('Query failed:', result.errorDetails);
+}
+```
+
+Certainly! Here's the updated explanation along with the modifications to the error types section:
+
+#### Error Types
+
+Errors distinguishable based on the `type` property within the `errorDetails` object. The possible error types are:
+
+- **`network`**: Occurs when there are issues with the network connection, such as timeouts or unexpected network problems.
+- **`server`**: Indicates an error response from the server, typically due to unexpected status codes like `500`.
+- **`graphql`**: Indicates errors in the GraphQL response, such as invalid query syntax or execution errors on the server.
+- **`validation`**: Occurs when the data in the query response does not match the given `zod` schema, indicating a validation failure.
+- **`unknown`**: Represents any other unexpected errors that do not fall into the above categories.
+
+#### `queryOrThrow()`
+
+The `queryOrThrow()` function behaves similarly to `query()`, but with one key difference in its return type. If the query execution is successful, the function returns the query result data directly. However, if an error occurs during the query execution, it throws an instance of `GraphqlQueryError`. This custom error contains detailed information about the encountered error in its `details` property, which aligns with the `errorDetails` structure returned by the `query()` function.
+
+### Re-exported Functions
+
+Some functions from `@schema-hub/zod-graphql-query-builder` are re-exported for convenience:
+
+- `graphqlFieldOptions()`
+- `enumValue()`
+- `variablePlaceholder()`
+
+For more details, see the [`@schema-hub/zod-graphql-query-builder` documentation](../zod-graphql-query-builder/readme.md)

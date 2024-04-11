@@ -13,6 +13,7 @@
     "tempDirectory": "./target/c8_output",
     "exclude": [
         "target/build/source/**/*.test.js",
-        "target/build/source/**/entry-point.js"
+        "target/build/source/**/entry-point.js",
+        "target/build/source/zod-graphql-client/query-result.js"
     ]
 }

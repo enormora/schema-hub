@@ -25,6 +25,7 @@
     },
     "dependencies": {
         "graphql": "16.8.1",
+        "ky": "1.2.3",
         "tslib": "2.6.2"
     },
     "devDependencies": {
@@ -40,11 +41,13 @@
         "@sondr3/minitest": "0.1.2",
         "@types/common-tags": "1.8.4",
         "@types/node": "20.12.7",
+        "@types/sinon": "17.0.3",
         "c8": "9.1.0",
         "common-tags": "1.8.2",
         "dprint": "0.45.1",
         "eslint": "8.57.0",
-        "typescript": "5.4.5"
+        "typescript": "5.4.5",
+        "sinon": "17.0.1"
     },
     "engines": {
         "node": "^20"
