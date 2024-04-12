@@ -69,6 +69,24 @@ export async function buildConfig() {
                     sourceFilePath: path.join(projectFolder, 'source/zod-graphql-query-builder/readme.md'),
                     targetFilePath: 'readme.md'
                 }]
+            },
+            {
+                name: '@schema-hub/zod-graphql-client',
+                entryPoints: [
+                    {
+                        js: 'zod-graphql-client/entry-point.js',
+                        declarationFile: 'zod-graphql-client/entry-point.d.ts'
+                    }
+                ],
+                additionalPackageJsonAttributes: {
+                    description: 'A lightweight and type-safe zod-based GraphQL client',
+                    keywords: ['zod', 'zod-graphql', 'graphql', 'graphql-query', 'graphql-client', 'graphql-builder']
+                },
+                additionalFiles: [{
+                    sourceFilePath: path.join(projectFolder, 'source/zod-graphql-client/readme.md'),
+                    targetFilePath: 'readme.md'
+                }],
+                bundleDependencies: ['@schema-hub/zod-graphql-query-builder', '@schema-hub/zod-error-formatter']
             }
         ]
     };

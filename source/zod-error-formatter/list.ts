@@ -1,5 +1,5 @@
 import type { Primitive, ZodParsedType } from 'zod';
-import { isNonEmptyArray, type NonEmptyArray } from './non-empty-array.js';
+import { isNonEmptyArray, type NonEmptyArray } from '../tuple/non-empty-array.js';
 
 function joinList(values: NonEmptyArray<string>, separator: string, lastItemSeparator: string): string {
     const initialList = Array.from(values);

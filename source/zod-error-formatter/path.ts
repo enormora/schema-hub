@@ -1,4 +1,4 @@
-import { isNonEmptyArray, type NonEmptyArray } from './non-empty-array.js';
+import { isNonEmptyArray, type NonEmptyArray } from '../tuple/non-empty-array.js';
 
 type PathItem = number | string;
 

@@ -3,18 +3,13 @@ import assert from 'node:assert';
 import { createFormattedZodError } from './formatted-error.js';
 
 test('creates an instance of error', () => {
-    const error = createFormattedZodError([]);
+    const error = createFormattedZodError(['']);
     assert.strictEqual(error instanceof Error, true, 'expected and instance of Error');
 });
 
 test('exposes the given issues', () => {
     const error = createFormattedZodError(['first', 'second']);
     assert.deepStrictEqual(error.issues, ['first', 'second']);
-});
-
-test('exposes a special message when there are no issues', () => {
-    const error = createFormattedZodError([]);
-    assert.strictEqual(error.message, 'Validation failed, but there are no issues');
 });
 
 test('exposes a simple message when there is only one issue', () => {

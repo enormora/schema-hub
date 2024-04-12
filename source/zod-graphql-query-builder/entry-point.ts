@@ -7,3 +7,5 @@ export const buildGraphqlQuery = builder.buildQuery;
 
 export { enumValue } from './values/enum.js';
 export { variablePlaceholder } from './values/variable-placeholder.js';
+
+export type { QuerySchema } from './query-schema.js';
