@@ -56,8 +56,8 @@
         "importDeclaration.sortNamedImports": "caseInsensitive",
         "exportDeclaration.forceSingleLine": false,
         "importDeclaration.forceSingleLine": false,
-        "exportDeclaration.forceMultiLine": false,
-        "importDeclaration.forceMultiLine": false
+        "exportDeclaration.forceMultiLine": "never",
+        "importDeclaration.forceMultiLine": "never"
     },
     "json": {
         "preferSingleLine": false,
