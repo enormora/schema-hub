@@ -87,6 +87,25 @@ export async function buildConfig() {
                     targetFilePath: 'readme.md'
                 }],
                 bundleDependencies: ['@schema-hub/zod-graphql-query-builder', '@schema-hub/zod-error-formatter']
+            },
+            {
+                name: '@schema-hub/zod-graphql-fake-client',
+                entryPoints: [
+                    {
+                        js: 'zod-graphql-fake-client/fake-client.js',
+                        declarationFile: 'zod-graphql-fake-client/fake-client.d.ts'
+                    }
+                ],
+                additionalPackageJsonAttributes: {
+                    description: 'Fake GraphQL client for testing @schema-hub/zod-graphql-client',
+                    keywords: ['fake-graphql-client', 'testing-client']
+                },
+                additionalFiles: [{
+                    sourceFilePath: path.join(projectFolder, 'source/zod-graphql-fake-client/readme.md'),
+                    targetFilePath: 'readme.md'
+                }],
+                bundlePeerDependencies: ['@schema-hub/zod-graphql-client'],
+                bundleDependencies: ['@schema-hub/zod-graphql-query-builder']
             }
         ]
     };

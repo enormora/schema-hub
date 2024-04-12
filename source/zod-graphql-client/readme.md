@@ -168,4 +168,19 @@ Some functions from `@schema-hub/zod-graphql-query-builder` are re-exported for 
 - `enumValue()`
 - `variablePlaceholder()`
 
-For more details, see the [`@schema-hub/zod-graphql-query-builder` documentation](../zod-graphql-query-builder/readme.md)
+For more details, see the [`@schema-hub/zod-graphql-query-builder` documentation](../zod-graphql-query-builder/readme.md).
+
+### Testing
+
+If you're writing tests for your code, consider using the `@schema-hub/zod-graphql-fake-client` package for testing. It provides a fake GraphQL client that can be used in place of the real client. This allows you to control the behavior of the client and inspect the queries sent without making actual network requests.
+
+Here's a quick example of how you can use it:
+
+```typescript
+import { createFakeGraphqlClient } from '@schema-hub/zod-graphql-fake-client';
+
+// Create a fake GraphQL client for testing
+const client = createFakeGraphqlClient();
+```
+
+Replace the real client with the fake client in your test environment to isolate your tests and ensure predictable behavior.
