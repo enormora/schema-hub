@@ -30,10 +30,10 @@
     },
     "devDependencies": {
         "@ava/typescript": "4.1.0",
-        "@ben_12/eslint-plugin-dprint": "0.10.2",
+        "@ben_12/eslint-plugin-dprint": "0.11.0",
         "@dprint/json": "0.19.2",
         "@dprint/markdown": "0.16.4",
-        "@dprint/typescript": "0.89.3",
+        "@dprint/typescript": "0.90.1",
         "@enormora/eslint-config-base": "0.0.12",
         "@enormora/eslint-config-node": "0.0.11",
         "@enormora/eslint-config-typescript": "0.0.12",
