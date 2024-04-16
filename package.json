@@ -33,7 +33,7 @@
         "@ben_12/eslint-plugin-dprint": "0.11.1",
         "@dprint/json": "0.19.2",
         "@dprint/markdown": "0.16.4",
-        "@dprint/typescript": "0.90.1",
+        "@dprint/typescript": "0.90.2",
         "@enormora/eslint-config-base": "0.0.12",
         "@enormora/eslint-config-node": "0.0.11",
         "@enormora/eslint-config-typescript": "0.0.12",
