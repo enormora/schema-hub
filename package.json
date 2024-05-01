@@ -40,7 +40,7 @@
         "@packtory/cli": "0.0.4",
         "@sondr3/minitest": "0.1.2",
         "@types/common-tags": "1.8.4",
-        "@types/node": "20.12.7",
+        "@types/node": "20.12.8",
         "@types/sinon": "17.0.3",
         "c8": "9.1.0",
         "common-tags": "1.8.2",
