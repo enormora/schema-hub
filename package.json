@@ -24,7 +24,7 @@
         "url": "git+ssh://git@github.com/enormora/schema-hub.git"
     },
     "dependencies": {
-        "graphql": "16.8.1",
+        "graphql": "16.8.2",
         "ky": "1.3.0",
         "tslib": "2.6.3"
     },
