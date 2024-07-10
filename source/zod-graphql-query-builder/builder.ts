@@ -197,6 +197,33 @@ export function createQueryBuilder(): QueryBuilder {
         return fieldSelector;
     }
 
+    function buildDocument<Schema extends QuerySchema>(
+        documentType: 'mutation' | 'query',
+        schema: Schema,
+        options: QueryOptions
+    ): string {
+        let referencedVariables = new Set<string>();
+        const { variableDefinitions = {}, queryName = '' } = options;
+        const bodyEntries: string[] = [];
+
+        for (const [fieldName, fieldSchema] of Object.entries(schema.shape)) {
+            const serializedField = serializeFieldSchema(fieldName, fieldSchema);
+
+            bodyEntries.push(serializedField.serializedValue);
+            referencedVariables = new Set([
+                ...referencedVariables,
+                ...serializedField.referencedVariables
+            ]);
+        }
+
+        ensureValidVariableCorrelations(variableDefinitions, referencedVariables);
+        const queryNameAndParams = withTrailingSpace(
+            `${queryName}${serializeVariableDefinitions(variableDefinitions)}`
+        );
+
+        return `${documentType} ${queryNameAndParams}{ ${bodyEntries.join(', ')} }`;
+    }
+
     return {
         registerFieldOptions<Schema extends FieldSchema>(
             schema: Schema,
@@ -211,26 +238,7 @@ export function createQueryBuilder(): QueryBuilder {
         },
 
         buildQuery(schema, options = {}) {
-            let referencedVariables = new Set<string>();
-            const { variableDefinitions = {}, queryName = '' } = options;
-            const bodyEntries: string[] = [];
-
-            for (const [fieldName, fieldSchema] of Object.entries(schema.shape)) {
-                const serializedField = serializeFieldSchema(fieldName, fieldSchema);
-
-                bodyEntries.push(serializedField.serializedValue);
-                referencedVariables = new Set([
-                    ...referencedVariables,
-                    ...serializedField.referencedVariables
-                ]);
-            }
-
-            ensureValidVariableCorrelations(variableDefinitions, referencedVariables);
-            const queryNameAndParams = withTrailingSpace(
-                `${queryName}${serializeVariableDefinitions(variableDefinitions)}`
-            );
-
-            return `query ${queryNameAndParams}{ ${bodyEntries.join(', ')} }`;
+            return buildDocument('query', schema, options);
         }
     };
 }
