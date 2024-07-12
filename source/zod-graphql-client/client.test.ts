@@ -10,7 +10,7 @@ import {
     createClientFactory,
     type GraphqlClient
 } from './client.js';
-import { GraphqlQueryError } from './query-error.js';
+import { GraphqlOperationError } from './operation-error.js';
 
 type KyOverrides = {
     responseStatus?: number;
@@ -370,12 +370,12 @@ test('queryOrThrow() rejects an error when there is a failure', async () => {
         await client.queryOrThrow(simpleQuerySchema);
         assert.fail('Expected queryOrThrow() to fail but it did not');
     } catch (error: unknown) {
-        assert.strictEqual(error instanceof GraphqlQueryError, true);
+        assert.strictEqual(error instanceof GraphqlOperationError, true);
         assert.strictEqual(
-            (error as GraphqlQueryError).message,
+            (error as GraphqlOperationError).message,
             'GraphQL response data doesn’t match the expected schema'
         );
-        assert.deepStrictEqual((error as GraphqlQueryError).details, {
+        assert.deepStrictEqual((error as GraphqlOperationError).details, {
             type: 'validation',
             issues: ['at foo: missing property']
         });

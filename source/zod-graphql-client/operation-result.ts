@@ -1,11 +1,11 @@
 import type { TypeOf } from 'zod';
 import type { QuerySchema } from '../zod-graphql-query-builder/entry-point.js';
-import type { QueryErrorDetails } from './query-error.js';
+import type { OperationErrorDetails } from './operation-error.js';
 
 export type OperationFailureResult = {
     data?: undefined;
     success: false;
-    errorDetails: QueryErrorDetails;
+    errorDetails: OperationErrorDetails;
 };
 
 type OperationSuccessResult<Data> = {

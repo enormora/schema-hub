@@ -115,7 +115,7 @@ The `QueryResult` object has the following structure:
 ```typescript
 type FailureQueryResult = {
     success: false;
-    errorDetails: QueryErrorDetails;
+    errorDetails: OperationErrorDetails;
 };
 
 type SuccessQueryResult<Schema extends QuerySchema> = {
@@ -158,7 +158,7 @@ Errors distinguishable based on the `type` property within the `errorDetails` ob
 
 #### `queryOrThrow()`
 
-The `queryOrThrow()` function behaves similarly to `query()`, but with one key difference in its return type. If the query execution is successful, the function returns the query result data directly. However, if an error occurs during the query execution, it throws an instance of `GraphqlQueryError`. This custom error contains detailed information about the encountered error in its `details` property, which aligns with the `errorDetails` structure returned by the `query()` function.
+The `queryOrThrow()` function behaves similarly to `query()`, but with one key difference in its return type. If the query execution is successful, the function returns the query result data directly. However, if an error occurs during the query execution, it throws an instance of `GraphqlOperationError`. This custom error contains detailed information about the encountered error in its `details` property, which aligns with the `errorDetails` structure returned by the `query()` function.
 
 ### Re-exported Functions
 

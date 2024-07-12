@@ -3,8 +3,8 @@ import type { TypeOf } from 'zod';
 import { safeParse } from '../zod-error-formatter/formatter.js';
 import { buildGraphqlQuery, type QuerySchema } from '../zod-graphql-query-builder/entry-point.js';
 import { parseGraphqlResponse } from './graphql-response.js';
+import { GraphqlOperationError } from './operation-error.js';
 import type { OperationFailureResult, OperationResult, OperationResultForType } from './operation-result.js';
-import { GraphqlQueryError } from './query-error.js';
 import { extractVariableDefinitions, extractVariableValues, type Variables } from './variables.js';
 
 export type OperationOptions = {
@@ -200,7 +200,7 @@ export function createClientFactory(dependencies: CreateClientDependencies): Cre
                     return result.data;
                 }
 
-                throw new GraphqlQueryError(result.errorDetails);
+                throw new GraphqlOperationError(result.errorDetails);
             }
         };
     };

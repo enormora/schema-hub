@@ -27,14 +27,13 @@ type UnknownError = BaseError & {
     type: 'unknown';
 };
 
-export type QueryErrorDetails = GraphqlResponseError | NetworkError | ServerError | UnknownError | ValidationError;
-export type QueryErrorType = QueryErrorDetails['type'];
+export type OperationErrorDetails = GraphqlResponseError | NetworkError | ServerError | UnknownError | ValidationError;
 
-export class GraphqlQueryError extends Error {
+export class GraphqlOperationError extends Error {
     // eslint-disable-next-line @typescript-eslint/ban-types -- no type-fest installed
-    public readonly details: Omit<QueryErrorDetails, 'message'>;
+    public readonly details: Omit<OperationErrorDetails, 'message'>;
 
-    constructor(details: QueryErrorDetails) {
+    constructor(details: OperationErrorDetails) {
         const { message, ...remainingDetails } = details;
         super(message);
         // eslint-disable-next-line functional/no-this-expressions -- sub-classing errors is ok

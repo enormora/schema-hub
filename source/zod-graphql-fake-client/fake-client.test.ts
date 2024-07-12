@@ -1,7 +1,7 @@
 import { test } from '@sondr3/minitest';
 import assert from 'node:assert';
 import { z } from 'zod';
-import type { GraphqlQueryError } from '../zod-graphql-client/query-error.js';
+import type { GraphqlOperationError } from '../zod-graphql-client/operation-error.js';
 import { createFakeGraphqlClient } from './fake-client.js';
 
 const simpleQuery = z.object({ foo: z.string() }).strict();
@@ -60,8 +60,8 @@ test('queryOrThrow() throws the configured error', async () => {
         await client.queryOrThrow(simpleQuery);
         assert.fail('Expected queryOrThrow() to throw but it did not');
     } catch (error: unknown) {
-        assert.strictEqual((error as GraphqlQueryError).message, 'foo');
-        assert.deepStrictEqual((error as GraphqlQueryError).details, { type: 'unknown' });
+        assert.strictEqual((error as GraphqlOperationError).message, 'foo');
+        assert.deepStrictEqual((error as GraphqlOperationError).details, { type: 'unknown' });
     }
 });
 

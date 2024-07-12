@@ -2,9 +2,9 @@ import type { TypeOf } from 'zod';
 import type { OperationOptions } from '../zod-graphql-client/client.js';
 import {
     type GraphqlClient,
-    GraphqlQueryError,
+    GraphqlOperationError,
+    type OperationErrorDetails,
     type OperationResult,
-    type QueryErrorDetails,
     type QuerySchema
 } from '../zod-graphql-client/entry-point.js';
 import { extractVariableDefinitions, extractVariableValues } from '../zod-graphql-client/variables.js';
@@ -28,7 +28,7 @@ type FakeSuccessData = {
 
 type FakeFailureResult = {
     data?: undefined;
-    error: QueryErrorDetails;
+    error: OperationErrorDetails;
 };
 
 export type FakeResult = FakeFailureResult | FakeSuccessData;
@@ -82,7 +82,7 @@ export function createFakeGraphqlClient(clientOptions: FakeClientOptions = {}): 
                 return result.data;
             }
 
-            throw new GraphqlQueryError(result.errorDetails);
+            throw new GraphqlOperationError(result.errorDetails);
         },
 
         inspectQueryPayload,
