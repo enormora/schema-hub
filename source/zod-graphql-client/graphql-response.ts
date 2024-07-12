@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { isNonEmptyArray } from '../tuple/non-empty-array.js';
 import { safeParse } from '../zod-error-formatter/formatter.js';
 import { formatAllErrors, graphqlErrorSchema } from './graphql-error.js';
-import type { QueryResultForType } from './query-result.js';
+import type { OperationResultForType } from './operation-result.js';
 
 const graphqlResponseSchema = z
     .object({
@@ -11,7 +11,7 @@ const graphqlResponseSchema = z
     })
     .strip();
 
-export function parseGraphqlResponse(responseBody: unknown): QueryResultForType<unknown> {
+export function parseGraphqlResponse(responseBody: unknown): OperationResultForType<unknown> {
     const graphqlResponseParseResult = safeParse(graphqlResponseSchema, responseBody);
 
     if (graphqlResponseParseResult.success) {

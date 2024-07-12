@@ -1,14 +1,16 @@
 import { type KyInstance, type Options as KyRequestOptions, TimeoutError } from 'ky';
 import type { TypeOf } from 'zod';
 import { safeParse } from '../zod-error-formatter/formatter.js';
-import { buildGraphqlQuery, type QuerySchema } from '../zod-graphql-query-builder/entry-point.js';
+import { buildGraphqlMutation, buildGraphqlQuery, type QuerySchema } from '../zod-graphql-query-builder/entry-point.js';
 import { parseGraphqlResponse } from './graphql-response.js';
-import { GraphqlQueryError } from './query-error.js';
-import type { FailureQueryResult, QueryResult, QueryResultForType } from './query-result.js';
+import { GraphqlOperationError } from './operation-error.js';
+import type { OperationFailureResult, OperationResult, OperationResultForType } from './operation-result.js';
 import { extractVariableDefinitions, extractVariableValues, type Variables } from './variables.js';
 
-export type QueryOptions = {
-    queryName?: string;
+type OperationType = 'mutation' | 'query';
+
+export type OperationOptions = {
+    operationName?: string;
     timeout?: number;
     headers?: Record<string, string | undefined>;
     variables?: Variables;
@@ -23,11 +25,19 @@ export type ClientOptions = {
 export type GraphqlClient = {
     readonly query: <Schema extends QuerySchema>(
         schema: Schema,
-        options?: QueryOptions
-    ) => Promise<QueryResult<Schema>>;
+        options?: OperationOptions
+    ) => Promise<OperationResult<Schema>>;
     readonly queryOrThrow: <Schema extends QuerySchema>(
         schema: Schema,
-        options?: QueryOptions
+        options?: OperationOptions
+    ) => Promise<TypeOf<Schema>>;
+    readonly mutate: <Schema extends QuerySchema>(
+        schema: Schema,
+        options?: OperationOptions
+    ) => Promise<OperationResult<Schema>>;
+    readonly mutateOrThrow: <Schema extends QuerySchema>(
+        schema: Schema,
+        options?: OperationOptions
     ) => Promise<TypeOf<Schema>>;
 };
 
@@ -40,7 +50,7 @@ export type CreateClientDependencies = {
 const defaultRequestTimeout = 10_000;
 const successResponseStatusCode = 200;
 
-function mapUnknownNetworkErrorToFailureResult(error: unknown, timeout: number): FailureQueryResult {
+function mapUnknownNetworkErrorToFailureResult(error: unknown, timeout: number): OperationFailureResult {
     if (error instanceof TimeoutError) {
         return {
             success: false,
@@ -68,16 +78,22 @@ function mapUnknownNetworkErrorToFailureResult(error: unknown, timeout: number):
     };
 }
 
+export type GraphqlOverHttpOperationRequestPayload = {
+    query: string;
+    variables: Record<string, unknown>;
+    operationName?: string | undefined;
+};
+
 export function createClientFactory(dependencies: CreateClientDependencies): CreateClientFn {
     const { ky } = dependencies;
 
     return function createClient(clientOptions) {
-        function buildBaseRequestOptions(queryOptions: QueryOptions): KyRequestOptions & { timeout: number; } {
-            const timeout = queryOptions.timeout ?? clientOptions.timeout ?? defaultRequestTimeout;
+        function buildBaseRequestOptions(operationOptions: OperationOptions): KyRequestOptions & { timeout: number; } {
+            const timeout = operationOptions.timeout ?? clientOptions.timeout ?? defaultRequestTimeout;
             return {
                 headers: {
                     ...clientOptions.headers,
-                    ...queryOptions.headers
+                    ...operationOptions.headers
                 },
                 timeout,
                 throwHttpErrors: false,
@@ -85,24 +101,33 @@ export function createClientFactory(dependencies: CreateClientDependencies): Cre
             };
         }
 
-        function prepareRequestPayload<Schema extends QuerySchema>(schema: Schema, options: QueryOptions): unknown {
+        function prepareRequestPayload<Schema extends QuerySchema>(
+            schema: Schema,
+            operationType: OperationType,
+            options: OperationOptions
+        ): GraphqlOverHttpOperationRequestPayload {
             const { variables = {} } = options;
             const variableDefinitions = extractVariableDefinitions(variables);
             const variableValues = extractVariableValues(variables);
 
-            const serializedQuery = buildGraphqlQuery(schema, {
-                queryName: options.queryName,
-                variableDefinitions
-            });
+            const serializedQuery = operationType === 'query'
+                ? buildGraphqlQuery(schema, {
+                    operationName: options.operationName,
+                    variableDefinitions
+                })
+                : buildGraphqlMutation(schema, {
+                    operationName: options.operationName,
+                    variableDefinitions
+                });
 
             return {
                 query: serializedQuery,
                 variables: variableValues,
-                operationName: options.queryName
+                operationName: options.operationName
             };
         }
 
-        async function parseServerResponse(response: Response): Promise<QueryResultForType<unknown>> {
+        async function parseServerResponse(response: Response): Promise<OperationResultForType<unknown>> {
             try {
                 const responseBody = await response.json() as unknown;
                 return {
@@ -123,7 +148,7 @@ export function createClientFactory(dependencies: CreateClientDependencies): Cre
             }
         }
 
-        function parseResponseData<Schema extends QuerySchema>(schema: Schema, data: unknown): QueryResult<Schema> {
+        function parseResponseData<Schema extends QuerySchema>(schema: Schema, data: unknown): OperationResult<Schema> {
             const dataParseResult = safeParse(schema, data);
 
             if (dataParseResult.success) {
@@ -144,9 +169,9 @@ export function createClientFactory(dependencies: CreateClientDependencies): Cre
         }
 
         async function fetchGraphqlEndpoint(
-            options: QueryOptions,
+            options: OperationOptions,
             payload: unknown
-        ): Promise<QueryResultForType<unknown>> {
+        ): Promise<OperationResultForType<unknown>> {
             const baseRequestOptions = buildBaseRequestOptions(options);
             try {
                 const response = await ky.post(clientOptions.endpoint, {
@@ -171,11 +196,12 @@ export function createClientFactory(dependencies: CreateClientDependencies): Cre
             }
         }
 
-        async function query<Schema extends QuerySchema>(
+        async function performOperation<Schema extends QuerySchema>(
             schema: Schema,
-            options: QueryOptions = {}
-        ): Promise<QueryResult<Schema>> {
-            const payload = prepareRequestPayload(schema, options);
+            operationType: 'mutation' | 'query',
+            options: OperationOptions = {}
+        ): Promise<OperationResult<Schema>> {
+            const payload = prepareRequestPayload(schema, operationType, options);
 
             const serverResponseParseResult = await fetchGraphqlEndpoint(options, payload);
 
@@ -191,6 +217,20 @@ export function createClientFactory(dependencies: CreateClientDependencies): Cre
             return serverResponseParseResult;
         }
 
+        async function query<Schema extends QuerySchema>(
+            schema: Schema,
+            options: OperationOptions = {}
+        ): Promise<OperationResult<Schema>> {
+            return performOperation(schema, 'query', options);
+        }
+
+        async function mutate<Schema extends QuerySchema>(
+            schema: Schema,
+            options: OperationOptions = {}
+        ): Promise<OperationResult<Schema>> {
+            return performOperation(schema, 'mutation', options);
+        }
+
         return {
             query,
 
@@ -200,7 +240,18 @@ export function createClientFactory(dependencies: CreateClientDependencies): Cre
                     return result.data;
                 }
 
-                throw new GraphqlQueryError(result.errorDetails);
+                throw new GraphqlOperationError(result.errorDetails);
+            },
+
+            mutate,
+
+            async mutateOrThrow(schema, options) {
+                const result = await mutate(schema, options);
+                if (result.success) {
+                    return result.data;
+                }
+
+                throw new GraphqlOperationError(result.errorDetails);
             }
         };
     };

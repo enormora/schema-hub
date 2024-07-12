@@ -14,6 +14,6 @@
     "exclude": [
         "target/build/source/**/*.test.js",
         "target/build/source/**/entry-point.js",
-        "target/build/source/zod-graphql-client/query-result.js"
+        "target/build/source/zod-graphql-client/operation-result.js"
     ]
 }

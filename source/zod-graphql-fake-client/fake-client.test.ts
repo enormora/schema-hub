@@ -1,7 +1,7 @@
 import { test } from '@sondr3/minitest';
 import assert from 'node:assert';
 import { z } from 'zod';
-import type { GraphqlQueryError } from '../zod-graphql-client/query-error.js';
+import type { GraphqlOperationError } from '../zod-graphql-client/operation-error.js';
 import { createFakeGraphqlClient } from './fake-client.js';
 
 const simpleQuery = z.object({ foo: z.string() }).strict();
@@ -10,7 +10,7 @@ test('throws when inspecting a query that doesn’t exist', () => {
     const client = createFakeGraphqlClient();
 
     try {
-        client.inspectFirstQueryPayload();
+        client.inspectFirstOperationPayload();
         assert.fail('Expected inspectFirstQueryPayload() to throw but it did not');
     } catch (error: unknown) {
         assert.strictEqual((error as Error).message, 'No query payload at index 0 recorded');
@@ -21,6 +21,13 @@ test('query() returns the default result when no result is configured', async ()
     const client = createFakeGraphqlClient();
 
     const result = await client.query(simpleQuery);
+    assert.deepStrictEqual(result, { success: true, data: {} });
+});
+
+test('mutate() returns the default result when no result is configured', async () => {
+    const client = createFakeGraphqlClient();
+
+    const result = await client.mutate(simpleQuery);
     assert.deepStrictEqual(result, { success: true, data: {} });
 });
 
@@ -53,6 +60,13 @@ test('queryOrThrow() returns the configured success data', async () => {
     assert.strictEqual(result, 'foo');
 });
 
+test('mutateOrThrow() returns the configured success data', async () => {
+    const client = createFakeGraphqlClient({ results: [{ data: 'foo' }] });
+
+    const result = await client.mutateOrThrow(simpleQuery);
+    assert.strictEqual(result, 'foo');
+});
+
 test('queryOrThrow() throws the configured error', async () => {
     const client = createFakeGraphqlClient({ results: [{ error: { type: 'unknown', message: 'foo' } }] });
 
@@ -60,16 +74,37 @@ test('queryOrThrow() throws the configured error', async () => {
         await client.queryOrThrow(simpleQuery);
         assert.fail('Expected queryOrThrow() to throw but it did not');
     } catch (error: unknown) {
-        assert.strictEqual((error as GraphqlQueryError).message, 'foo');
-        assert.deepStrictEqual((error as GraphqlQueryError).details, { type: 'unknown' });
+        assert.strictEqual((error as GraphqlOperationError).message, 'foo');
+        assert.deepStrictEqual((error as GraphqlOperationError).details, { type: 'unknown' });
     }
 });
 
-test('inspectFirstQueryPayload() returns the query payload of the first query', async () => {
+test('mutateOrThrow() throws the configured error', async () => {
+    const client = createFakeGraphqlClient({ results: [{ error: { type: 'unknown', message: 'foo' } }] });
+
+    try {
+        await client.mutateOrThrow(simpleQuery);
+        assert.fail('Expected mutateOrThrow() to throw but it did not');
+    } catch (error: unknown) {
+        assert.strictEqual((error as GraphqlOperationError).message, 'foo');
+        assert.deepStrictEqual((error as GraphqlOperationError).details, { type: 'unknown' });
+    }
+});
+
+test('inspectFirstOperationPayload() returns the query payload of the first query', async () => {
     const client = createFakeGraphqlClient();
 
-    await client.queryOrThrow(simpleQuery, { queryName: 'foo' });
-    const payload = client.inspectFirstQueryPayload();
+    await client.queryOrThrow(simpleQuery, { operationName: 'foo' });
+    const payload = client.inspectFirstOperationPayload();
 
     assert.deepStrictEqual(payload, { operationName: 'foo', query: 'query foo { foo }', variables: {} });
+});
+
+test('inspectFirstOperationPayload() returns the mutation payload of the first mutation', async () => {
+    const client = createFakeGraphqlClient();
+
+    await client.mutateOrThrow(simpleQuery, { operationName: 'foo' });
+    const payload = client.inspectFirstOperationPayload();
+
+    assert.deepStrictEqual(payload, { operationName: 'foo', query: 'mutation foo { foo }', variables: {} });
 });

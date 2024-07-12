@@ -32,8 +32,8 @@ type GraphqlFieldOptions = {
     parameters?: Record<string, GraphqlValue>;
 };
 
-export type QueryOptions = {
-    queryName?: string | undefined;
+export type OperationOptions = {
+    operationName?: string | undefined;
     variableDefinitions?: VariableDefinitions | undefined;
 };
 
@@ -42,7 +42,8 @@ export type QueryBuilder = {
         schema: Schema,
         options: GraphqlFieldOptions
     ) => ZodLazy<Schema>;
-    buildQuery: <Schema extends QuerySchema>(schema: Schema, options?: QueryOptions) => string;
+    buildQuery: <Schema extends QuerySchema>(schema: Schema, options?: OperationOptions) => string;
+    buildMutation: <Schema extends QuerySchema>(schema: Schema, options?: OperationOptions) => string;
 };
 
 function unwrapFromArraySchema<SchemaType extends FieldSchema>(
@@ -197,6 +198,33 @@ export function createQueryBuilder(): QueryBuilder {
         return fieldSelector;
     }
 
+    function buildDocument<Schema extends QuerySchema>(
+        documentType: 'mutation' | 'query',
+        schema: Schema,
+        options: OperationOptions
+    ): string {
+        let referencedVariables = new Set<string>();
+        const { variableDefinitions = {}, operationName = '' } = options;
+        const bodyEntries: string[] = [];
+
+        for (const [fieldName, fieldSchema] of Object.entries(schema.shape)) {
+            const serializedField = serializeFieldSchema(fieldName, fieldSchema);
+
+            bodyEntries.push(serializedField.serializedValue);
+            referencedVariables = new Set([
+                ...referencedVariables,
+                ...serializedField.referencedVariables
+            ]);
+        }
+
+        ensureValidVariableCorrelations(variableDefinitions, referencedVariables);
+        const operationNameAndParams = withTrailingSpace(
+            `${operationName}${serializeVariableDefinitions(variableDefinitions)}`
+        );
+
+        return `${documentType} ${operationNameAndParams}{ ${bodyEntries.join(', ')} }`;
+    }
+
     return {
         registerFieldOptions<Schema extends FieldSchema>(
             schema: Schema,
@@ -211,26 +239,11 @@ export function createQueryBuilder(): QueryBuilder {
         },
 
         buildQuery(schema, options = {}) {
-            let referencedVariables = new Set<string>();
-            const { variableDefinitions = {}, queryName = '' } = options;
-            const bodyEntries: string[] = [];
+            return buildDocument('query', schema, options);
+        },
 
-            for (const [fieldName, fieldSchema] of Object.entries(schema.shape)) {
-                const serializedField = serializeFieldSchema(fieldName, fieldSchema);
-
-                bodyEntries.push(serializedField.serializedValue);
-                referencedVariables = new Set([
-                    ...referencedVariables,
-                    ...serializedField.referencedVariables
-                ]);
-            }
-
-            ensureValidVariableCorrelations(variableDefinitions, referencedVariables);
-            const queryNameAndParams = withTrailingSpace(
-                `${queryName}${serializeVariableDefinitions(variableDefinitions)}`
-            );
-
-            return `query ${queryNameAndParams}{ ${bodyEntries.join(', ')} }`;
+        buildMutation(schema, options = {}) {
+            return buildDocument('mutation', schema, options);
         }
     };
 }

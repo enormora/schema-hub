@@ -1,24 +1,18 @@
 import type { TypeOf } from 'zod';
-import type { QueryOptions } from '../zod-graphql-client/client.js';
+import type { GraphqlOverHttpOperationRequestPayload, OperationOptions } from '../zod-graphql-client/client.js';
 import {
     type GraphqlClient,
-    GraphqlQueryError,
-    type QueryErrorDetails,
-    type QueryResult,
+    GraphqlOperationError,
+    type OperationErrorDetails,
+    type OperationResult,
     type QuerySchema
 } from '../zod-graphql-client/entry-point.js';
 import { extractVariableDefinitions, extractVariableValues } from '../zod-graphql-client/variables.js';
-import { buildGraphqlQuery } from '../zod-graphql-query-builder/entry-point.js';
-
-export type QueryPayload = {
-    operationName?: string | undefined;
-    variables: Record<string, unknown>;
-    query: string;
-};
+import { buildGraphqlMutation, buildGraphqlQuery } from '../zod-graphql-query-builder/entry-point.js';
 
 export type FakeGraphqlClient = GraphqlClient & {
-    readonly inspectQueryPayload: (index: number) => QueryPayload;
-    readonly inspectFirstQueryPayload: () => QueryPayload;
+    readonly inspectOperationPayload: (index: number) => GraphqlOverHttpOperationRequestPayload;
+    readonly inspectFirstOperationPayload: () => GraphqlOverHttpOperationRequestPayload;
 };
 
 type FakeSuccessData = {
@@ -28,7 +22,7 @@ type FakeSuccessData = {
 
 type FakeFailureResult = {
     data?: undefined;
-    error: QueryErrorDetails;
+    error: OperationErrorDetails;
 };
 
 export type FakeResult = FakeFailureResult | FakeSuccessData;
@@ -38,25 +32,35 @@ type FakeClientOptions = {
 };
 export function createFakeGraphqlClient(clientOptions: FakeClientOptions = {}): FakeGraphqlClient {
     const { results = [] } = clientOptions;
-    const queryPayloads: QueryPayload[] = [];
+    const operationPayloads: GraphqlOverHttpOperationRequestPayload[] = [];
     const defaultResult: FakeResult = { data: {} };
 
-    async function query<Schema extends QuerySchema>(
+    async function collectOperation<Schema extends QuerySchema>(
         schema: Schema,
-        options: QueryOptions = {}
-    ): Promise<QueryResult<Schema>> {
+        type: 'mutation' | 'query',
+        options: OperationOptions = {}
+    ): Promise<OperationResult<Schema>> {
         const { variables = {} } = options;
         const variableDefinitions = extractVariableDefinitions(variables);
         const variableValues = extractVariableValues(variables);
 
-        const serializedQuery = buildGraphqlQuery(schema, {
-            queryName: options.queryName,
-            variableDefinitions
+        const serializedQuery = type === 'query'
+            ? buildGraphqlQuery(schema, {
+                operationName: options.operationName,
+                variableDefinitions
+            })
+            : buildGraphqlMutation(schema, {
+                operationName: options.operationName,
+                variableDefinitions
+            });
+
+        const result = results[operationPayloads.length] ?? defaultResult;
+
+        operationPayloads.push({
+            operationName: options.operationName,
+            query: serializedQuery,
+            variables: variableValues
         });
-
-        const result = results[queryPayloads.length] ?? defaultResult;
-
-        queryPayloads.push({ operationName: options.queryName, query: serializedQuery, variables: variableValues });
 
         if (result.error !== undefined) {
             return { success: false, errorDetails: result.error };
@@ -64,8 +68,22 @@ export function createFakeGraphqlClient(clientOptions: FakeClientOptions = {}): 
         return { success: true, data: result.data as TypeOf<Schema> };
     }
 
-    function inspectQueryPayload(index: number): QueryPayload {
-        const payload = queryPayloads[index];
+    async function query<Schema extends QuerySchema>(
+        schema: Schema,
+        options: OperationOptions = {}
+    ): Promise<OperationResult<Schema>> {
+        return collectOperation(schema, 'query', options);
+    }
+
+    async function mutate<Schema extends QuerySchema>(
+        schema: Schema,
+        options: OperationOptions = {}
+    ): Promise<OperationResult<Schema>> {
+        return collectOperation(schema, 'mutation', options);
+    }
+
+    function inspectOperationPayload(index: number): GraphqlOverHttpOperationRequestPayload {
+        const payload = operationPayloads[index];
         if (payload === undefined) {
             throw new Error(`No query payload at index ${index} recorded`);
         }
@@ -82,13 +100,24 @@ export function createFakeGraphqlClient(clientOptions: FakeClientOptions = {}): 
                 return result.data;
             }
 
-            throw new GraphqlQueryError(result.errorDetails);
+            throw new GraphqlOperationError(result.errorDetails);
         },
 
-        inspectQueryPayload,
+        mutate,
 
-        inspectFirstQueryPayload() {
-            return inspectQueryPayload(0);
+        async mutateOrThrow(schema, options) {
+            const result = await mutate(schema, options);
+            if (result.success) {
+                return result.data;
+            }
+
+            throw new GraphqlOperationError(result.errorDetails);
+        },
+
+        inspectOperationPayload,
+
+        inspectFirstOperationPayload() {
+            return inspectOperationPayload(0);
         }
     };
 }

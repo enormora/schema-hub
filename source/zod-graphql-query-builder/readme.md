@@ -1,6 +1,6 @@
 # zod-graphql-query-builder
 
-This library transforms a [`zod`](https://github.com/colinhacks/zod) schema into a GraphQL query.
+This library transforms a [`zod`](https://github.com/colinhacks/zod) schema into a GraphQL query or mutation.
 
 ## Example
 
@@ -44,7 +44,7 @@ import { buildGraphqlQuery } from '@schema-hub/zod-graphql-query-builder';
 import { z } from 'zod';
 
 const mySchema = z.object({ foo: z.string() }).strict();
-const query = buildGraphqlQuery(mySchema, { queryName: 'MyQuery' });
+const query = buildGraphqlQuery(mySchema, { operationName: 'MyQuery' });
 ```
 
 **Built query:**
@@ -68,7 +68,7 @@ const query = buildGraphqlQuery(mySchema);
 **Built query:**
 
 ```graphql
-query MyQuery { foo: bar }
+query { foo: bar }
 ```
 
 ### Defining Field Arguments / Parameters
@@ -126,5 +126,76 @@ const query = buildGraphqlQuery(mySchema);
 **Built query:**
 
 ```graphql
-query { foo: { ... on A { __typename, valueA }, ... on B { __typename, valueB } } }
+query { foo { ... on A { __typename, valueA }, ... on B { __typename, valueB } } }
+```
+
+## Mutations
+
+### Basic Mutation
+
+**Input:**
+
+```typescript
+import { buildGraphqlMutation } from '@schema-hub/zod-graphql-query-builder';
+import { z } from 'zod';
+
+const mySchema = z.object({ foo: z.string() }).strict();
+const mutation = buildGraphqlMutation(mySchema);
+```
+
+**Built mutation:**
+
+```graphql
+mutation { foo }
+```
+
+### Mutation with Name
+
+**Input:**
+
+```typescript
+import { buildGraphqlMutation } from '@schema-hub/zod-graphql-query-builder';
+import { z } from 'zod';
+
+const mySchema = z.object({ foo: z.string() }).strict();
+const mutation = buildGraphqlMutation(mySchema, { operationName: 'MyMutation' });
+```
+
+**Built mutation:**
+
+```graphql
+mutation MyMutation { foo }
+```
+
+### Mutation with Variables
+
+**Input:**
+
+```typescript
+import {
+    buildGraphqlMutation,
+    enumValue,
+    graphqlFieldOptions,
+    variablePlaceholder
+} from '@schema-hub/zod-graphql-query-builder';
+import { z } from 'zod';
+
+const mySchema = z
+    .object({
+        foo: graphqlFieldOptions(z.string(), {
+            parameters: {
+                plainValue: 'plain-string',
+                enumParameter: enumValue('foo'),
+                variable: variablePlaceholder('$var')
+            }
+        })
+    })
+    .strict();
+const mutation = buildGraphqlMutation(mySchema, { variableDefinitions: { $var: 'String!' } });
+```
+
+**Built mutation:**
+
+```graphql
+mutation ($var: String!) { foo(plainValue: "plain-string", enumParameter: foo, variable: $var) }
 ```
