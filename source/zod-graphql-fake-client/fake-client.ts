@@ -3,8 +3,8 @@ import type { OperationOptions } from '../zod-graphql-client/client.js';
 import {
     type GraphqlClient,
     GraphqlQueryError,
+    type OperationResult,
     type QueryErrorDetails,
-    type QueryResult,
     type QuerySchema
 } from '../zod-graphql-client/entry-point.js';
 import { extractVariableDefinitions, extractVariableValues } from '../zod-graphql-client/variables.js';
@@ -44,7 +44,7 @@ export function createFakeGraphqlClient(clientOptions: FakeClientOptions = {}): 
     async function query<Schema extends QuerySchema>(
         schema: Schema,
         options: OperationOptions = {}
-    ): Promise<QueryResult<Schema>> {
+    ): Promise<OperationResult<Schema>> {
         const { variables = {} } = options;
         const variableDefinitions = extractVariableDefinitions(variables);
         const variableValues = extractVariableValues(variables);

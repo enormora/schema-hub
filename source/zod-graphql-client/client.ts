@@ -3,8 +3,8 @@ import type { TypeOf } from 'zod';
 import { safeParse } from '../zod-error-formatter/formatter.js';
 import { buildGraphqlQuery, type QuerySchema } from '../zod-graphql-query-builder/entry-point.js';
 import { parseGraphqlResponse } from './graphql-response.js';
+import type { OperationFailureResult, OperationResult, OperationResultForType } from './operation-result.js';
 import { GraphqlQueryError } from './query-error.js';
-import type { FailureQueryResult, QueryResult, QueryResultForType } from './query-result.js';
 import { extractVariableDefinitions, extractVariableValues, type Variables } from './variables.js';
 
 export type OperationOptions = {
@@ -24,7 +24,7 @@ export type GraphqlClient = {
     readonly query: <Schema extends QuerySchema>(
         schema: Schema,
         options?: OperationOptions
-    ) => Promise<QueryResult<Schema>>;
+    ) => Promise<OperationResult<Schema>>;
     readonly queryOrThrow: <Schema extends QuerySchema>(
         schema: Schema,
         options?: OperationOptions
@@ -40,7 +40,7 @@ export type CreateClientDependencies = {
 const defaultRequestTimeout = 10_000;
 const successResponseStatusCode = 200;
 
-function mapUnknownNetworkErrorToFailureResult(error: unknown, timeout: number): FailureQueryResult {
+function mapUnknownNetworkErrorToFailureResult(error: unknown, timeout: number): OperationFailureResult {
     if (error instanceof TimeoutError) {
         return {
             success: false,
@@ -102,7 +102,7 @@ export function createClientFactory(dependencies: CreateClientDependencies): Cre
             };
         }
 
-        async function parseServerResponse(response: Response): Promise<QueryResultForType<unknown>> {
+        async function parseServerResponse(response: Response): Promise<OperationResultForType<unknown>> {
             try {
                 const responseBody = await response.json() as unknown;
                 return {
@@ -123,7 +123,7 @@ export function createClientFactory(dependencies: CreateClientDependencies): Cre
             }
         }
 
-        function parseResponseData<Schema extends QuerySchema>(schema: Schema, data: unknown): QueryResult<Schema> {
+        function parseResponseData<Schema extends QuerySchema>(schema: Schema, data: unknown): OperationResult<Schema> {
             const dataParseResult = safeParse(schema, data);
 
             if (dataParseResult.success) {
@@ -146,7 +146,7 @@ export function createClientFactory(dependencies: CreateClientDependencies): Cre
         async function fetchGraphqlEndpoint(
             options: OperationOptions,
             payload: unknown
-        ): Promise<QueryResultForType<unknown>> {
+        ): Promise<OperationResultForType<unknown>> {
             const baseRequestOptions = buildBaseRequestOptions(options);
             try {
                 const response = await ky.post(clientOptions.endpoint, {
@@ -174,7 +174,7 @@ export function createClientFactory(dependencies: CreateClientDependencies): Cre
         async function query<Schema extends QuerySchema>(
             schema: Schema,
             options: OperationOptions = {}
-        ): Promise<QueryResult<Schema>> {
+        ): Promise<OperationResult<Schema>> {
             const payload = prepareRequestPayload(schema, options);
 
             const serverResponseParseResult = await fetchGraphqlEndpoint(options, payload);
