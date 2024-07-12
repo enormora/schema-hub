@@ -32,7 +32,7 @@ type GraphqlFieldOptions = {
     parameters?: Record<string, GraphqlValue>;
 };
 
-export type QueryOptions = {
+export type OperationOptions = {
     operationName?: string | undefined;
     variableDefinitions?: VariableDefinitions | undefined;
 };
@@ -42,8 +42,8 @@ export type QueryBuilder = {
         schema: Schema,
         options: GraphqlFieldOptions
     ) => ZodLazy<Schema>;
-    buildQuery: <Schema extends QuerySchema>(schema: Schema, options?: QueryOptions) => string;
-    buildMutation: <Schema extends QuerySchema>(schema: Schema, options?: QueryOptions) => string;
+    buildQuery: <Schema extends QuerySchema>(schema: Schema, options?: OperationOptions) => string;
+    buildMutation: <Schema extends QuerySchema>(schema: Schema, options?: OperationOptions) => string;
 };
 
 function unwrapFromArraySchema<SchemaType extends FieldSchema>(
@@ -201,7 +201,7 @@ export function createQueryBuilder(): QueryBuilder {
     function buildDocument<Schema extends QuerySchema>(
         documentType: 'mutation' | 'query',
         schema: Schema,
-        options: QueryOptions
+        options: OperationOptions
     ): string {
         let referencedVariables = new Set<string>();
         const { variableDefinitions = {}, operationName = '' } = options;

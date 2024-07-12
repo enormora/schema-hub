@@ -2,7 +2,7 @@ import { test } from '@sondr3/minitest';
 import { oneLine } from 'common-tags';
 import assert from 'node:assert';
 import { z } from 'zod';
-import { createQueryBuilder, type QueryBuilder, type QueryOptions } from './builder.js';
+import { createQueryBuilder, type OperationOptions, type QueryBuilder } from './builder.js';
 import type { QuerySchema } from './query-schema.js';
 import { variablePlaceholder } from './values/variable-placeholder.js';
 
@@ -13,21 +13,21 @@ type BuildSchema = (builder: QueryBuilder) => QuerySchema;
 type ErrorTestCase = {
     type: 'mutation' | 'query';
     buildSchema: BuildSchema;
-    queryOptions?: QueryOptions;
+    operationOptions?: OperationOptions;
     expectedError: string;
 };
 
 function checkError(testCase: ErrorTestCase): TestFn {
-    const { buildSchema, expectedError, queryOptions } = testCase;
+    const { buildSchema, expectedError, operationOptions } = testCase;
     return () => {
         const builder = createQueryBuilder();
         const schema = buildSchema(builder);
 
         try {
             if (testCase.type === 'query') {
-                builder.buildQuery(schema, queryOptions);
+                builder.buildQuery(schema, operationOptions);
             } else {
-                builder.buildMutation(schema, queryOptions);
+                builder.buildMutation(schema, operationOptions);
             }
             assert.fail('Expected buildQuery() to fail but it did not');
         } catch (error: unknown) {
@@ -39,29 +39,29 @@ function checkError(testCase: ErrorTestCase): TestFn {
 type QueryTestCase = {
     type: 'mutation' | 'query';
     buildSchema: BuildSchema;
-    queryOptions?: QueryOptions;
+    operationOptions?: OperationOptions;
     expectedQuery: string;
 };
 
 function checkQuery(testCase: QueryTestCase): TestFn {
-    const { buildSchema, expectedQuery, queryOptions } = testCase;
+    const { buildSchema, expectedQuery, operationOptions } = testCase;
     return () => {
         const builder = createQueryBuilder();
         const schema = buildSchema(builder);
 
         const result = testCase.type === 'query'
-            ? builder.buildQuery(schema, queryOptions)
-            : builder.buildMutation(schema, queryOptions);
+            ? builder.buildQuery(schema, operationOptions)
+            : builder.buildMutation(schema, operationOptions);
 
         assert.strictEqual(result, expectedQuery);
     };
 }
 
-(['query', 'mutation'] as const).forEach((queryType) => {
+(['query', 'mutation'] as const).forEach((operationType) => {
     test(
-        `throws building the ${queryType} when a referenced variable is not defined`,
+        `throws building the ${operationType} when a referenced variable is not defined`,
         checkError({
-            type: queryType,
+            type: operationType,
             buildSchema(builder) {
                 return z
                     .object({
@@ -71,38 +71,38 @@ function checkQuery(testCase: QueryTestCase): TestFn {
                     })
                     .strict();
             },
-            queryOptions: {},
+            operationOptions: {},
             expectedError: 'Referenced variable "$bar" is missing in variableDefinitions'
         })
     );
 
     test(
-        `builds a simple unnamed ${queryType}`,
+        `builds a simple unnamed ${operationType}`,
         checkQuery({
-            type: queryType,
+            type: operationType,
             buildSchema() {
                 return z.object({ foo: z.string() }).strict();
             },
-            expectedQuery: `${queryType} { foo }`
+            expectedQuery: `${operationType} { foo }`
         })
     );
 
     test(
-        `builds a simple named ${queryType}`,
+        `builds a simple named ${operationType}`,
         checkQuery({
-            type: queryType,
+            type: operationType,
             buildSchema() {
                 return z.object({ foo: z.string() }).strict();
             },
-            queryOptions: { operationName: 'theOperationName' },
-            expectedQuery: `${queryType} theOperationName { foo }`
+            operationOptions: { operationName: 'theOperationName' },
+            expectedQuery: `${operationType} theOperationName { foo }`
         })
     );
 
     test(
-        `builds a simple unnamed ${queryType} with variables`,
+        `builds a simple unnamed ${operationType} with variables`,
         checkQuery({
-            type: queryType,
+            type: operationType,
             buildSchema(builder) {
                 return z
                     .object({
@@ -112,17 +112,17 @@ function checkQuery(testCase: QueryTestCase): TestFn {
                     })
                     .strict();
             },
-            queryOptions: {
+            operationOptions: {
                 variableDefinitions: { $bar: 'String!' }
             },
-            expectedQuery: `${queryType} ($bar: String!) { foo(bar: $bar) }`
+            expectedQuery: `${operationType} ($bar: String!) { foo(bar: $bar) }`
         })
     );
 
     test(
-        `builds a simple named ${queryType} with variables`,
+        `builds a simple named ${operationType} with variables`,
         checkQuery({
-            type: queryType,
+            type: operationType,
             buildSchema(builder) {
                 return z
                     .object({
@@ -132,40 +132,40 @@ function checkQuery(testCase: QueryTestCase): TestFn {
                     })
                     .strict();
             },
-            queryOptions: {
+            operationOptions: {
                 operationName: 'theOperationName',
                 variableDefinitions: { $bar: 'String!' }
             },
-            expectedQuery: `${queryType} theOperationName($bar: String!) { foo(bar: $bar) }`
+            expectedQuery: `${operationType} theOperationName($bar: String!) { foo(bar: $bar) }`
         })
     );
 
     test(
-        `builds a ${queryType} with multiple top-level fields`,
+        `builds a ${operationType} with multiple top-level fields`,
         checkQuery({
-            type: queryType,
+            type: operationType,
             buildSchema() {
                 return z.object({ foo: z.string(), bar: z.number() }).strict();
             },
-            expectedQuery: `${queryType} { foo, bar }`
+            expectedQuery: `${operationType} { foo, bar }`
         })
     );
 
     test(
-        `builds a ${queryType} with nested objects`,
+        `builds a ${operationType} with nested objects`,
         checkQuery({
-            type: queryType,
+            type: operationType,
             buildSchema() {
                 return z.object({ foo: z.object({ bar: z.object({ baz: z.number() }).strict() }).strict() }).strict();
             },
-            expectedQuery: `${queryType} { foo { bar { baz } } }`
+            expectedQuery: `${operationType} { foo { bar { baz } } }`
         })
     );
 
     test(
-        `builds a ${queryType} with nested objects and multiple top-level fields`,
+        `builds a ${operationType} with nested objects and multiple top-level fields`,
         checkQuery({
-            type: queryType,
+            type: operationType,
             buildSchema() {
                 return z
                     .object({
@@ -174,14 +174,14 @@ function checkQuery(testCase: QueryTestCase): TestFn {
                     })
                     .strict();
             },
-            expectedQuery: `${queryType} { foo { bar { baz } }, qux }`
+            expectedQuery: `${operationType} { foo { bar { baz } }, qux }`
         })
     );
 
     test(
-        `builds a ${queryType} with nested objects and parameters`,
+        `builds a ${operationType} with nested objects and parameters`,
         checkQuery({
-            type: queryType,
+            type: operationType,
             buildSchema(builder) {
                 return z
                     .object({
@@ -195,14 +195,14 @@ function checkQuery(testCase: QueryTestCase): TestFn {
                     })
                     .strict();
             },
-            expectedQuery: `${queryType} { foo { bar(parameter: "value") { baz } } }`
+            expectedQuery: `${operationType} { foo { bar(parameter: "value") { baz } } }`
         })
     );
 
     test(
-        `builds a ${queryType} with nested objects and an alias`,
+        `builds a ${operationType} with nested objects and an alias`,
         checkQuery({
-            type: queryType,
+            type: operationType,
             buildSchema(builder) {
                 return z
                     .object({
@@ -216,14 +216,14 @@ function checkQuery(testCase: QueryTestCase): TestFn {
                     })
                     .strict();
             },
-            expectedQuery: `${queryType} { foo { bar: qux { baz } } }`
+            expectedQuery: `${operationType} { foo { bar: qux { baz } } }`
         })
     );
 
     test(
-        `builds a ${queryType} with nested objects and an alias and parameters`,
+        `builds a ${operationType} with nested objects and an alias and parameters`,
         checkQuery({
-            type: queryType,
+            type: operationType,
             buildSchema(builder) {
                 return z
                     .object({
@@ -238,14 +238,14 @@ function checkQuery(testCase: QueryTestCase): TestFn {
                     })
                     .strict();
             },
-            expectedQuery: `${queryType} { foo { bar: qux(parameter: "value") { baz } } }`
+            expectedQuery: `${operationType} { foo { bar: qux(parameter: "value") { baz } } }`
         })
     );
 
     test(
-        `builds a ${queryType} with fragments`,
+        `builds a ${operationType} with fragments`,
         checkQuery({
-            type: queryType,
+            type: operationType,
             buildSchema() {
                 return z
                     .object({
@@ -256,14 +256,15 @@ function checkQuery(testCase: QueryTestCase): TestFn {
                     })
                     .strict();
             },
-            expectedQuery: `${queryType} { foo { ... on A { __typename, valueA }, ... on B { __typename, valueB } } }`
+            expectedQuery:
+                `${operationType} { foo { ... on A { __typename, valueA }, ... on B { __typename, valueB } } }`
         })
     );
 
     test(
-        `builds a ${queryType} with fragments and parameters`,
+        `builds a ${operationType} with fragments and parameters`,
         checkQuery({
-            type: queryType,
+            type: operationType,
             buildSchema(builder) {
                 return z
                     .object({
@@ -279,15 +280,15 @@ function checkQuery(testCase: QueryTestCase): TestFn {
                     })
                     .strict();
             },
-            expectedQuery:
-                `${queryType} { foo { ... on A { __typename, valueA(baz: "qux") }, ... on B { __typename, valueB } } }`
+            expectedQuery: oneLine`${operationType} { foo { ... on A {
+                __typename, valueA(baz: "qux") }, ... on B { __typename, valueB } } }`
         })
     );
 
     test(
-        `builds a ${queryType} with nested fragments`,
+        `builds a ${operationType} with nested fragments`,
         checkQuery({
-            type: queryType,
+            type: operationType,
             buildSchema() {
                 return z
                     .object({
@@ -306,16 +307,16 @@ function checkQuery(testCase: QueryTestCase): TestFn {
                     })
                     .strict();
             },
-            expectedQuery: oneLine`${queryType} { foo { ... on A { __typename, valueA {
+            expectedQuery: oneLine`${operationType} { foo { ... on A { __typename, valueA {
             ... on C { __typename, valueC }, ... on D { __typename, valueD } } },
             ... on B { __typename, valueB } } }`
         })
     );
 
     test(
-        `builds a ${queryType} with fragments in arrays`,
+        `builds a ${operationType} with fragments in arrays`,
         checkQuery({
-            type: queryType,
+            type: operationType,
             buildSchema() {
                 return z
                     .object({
@@ -326,14 +327,15 @@ function checkQuery(testCase: QueryTestCase): TestFn {
                     })
                     .strict();
             },
-            expectedQuery: `${queryType} { foo { ... on A { __typename, valueA }, ... on B { __typename, valueB } } }`
+            expectedQuery:
+                `${operationType} { foo { ... on A { __typename, valueA }, ... on B { __typename, valueB } } }`
         })
     );
 
     test(
-        `builds a ${queryType} with fragments in tuples`,
+        `builds a ${operationType} with fragments in tuples`,
         checkQuery({
-            type: queryType,
+            type: operationType,
             buildSchema() {
                 return z
                     .object({
@@ -344,14 +346,15 @@ function checkQuery(testCase: QueryTestCase): TestFn {
                     })
                     .strict();
             },
-            expectedQuery: `${queryType} { foo { ... on A { __typename, valueA }, ... on B { __typename, valueB } } }`
+            expectedQuery:
+                `${operationType} { foo { ... on A { __typename, valueA }, ... on B { __typename, valueB } } }`
         })
     );
 
     test(
-        `builds a ${queryType} with fragments in nullable arrays`,
+        `builds a ${operationType} with fragments in nullable arrays`,
         checkQuery({
-            type: queryType,
+            type: operationType,
             buildSchema() {
                 return z
                     .object({
@@ -364,14 +367,15 @@ function checkQuery(testCase: QueryTestCase): TestFn {
                     })
                     .strict();
             },
-            expectedQuery: `${queryType} { foo { ... on A { __typename, valueA }, ... on B { __typename, valueB } } }`
+            expectedQuery:
+                `${operationType} { foo { ... on A { __typename, valueA }, ... on B { __typename, valueB } } }`
         })
     );
 
     test(
-        `builds a ${queryType} with nullable fragments in nullable arrays`,
+        `builds a ${operationType} with nullable fragments in nullable arrays`,
         checkQuery({
-            type: queryType,
+            type: operationType,
             buildSchema() {
                 return z
                     .object({
@@ -388,14 +392,15 @@ function checkQuery(testCase: QueryTestCase): TestFn {
                     })
                     .strict();
             },
-            expectedQuery: `${queryType} { foo { ... on A { __typename, valueA }, ... on B { __typename, valueB } } }`
+            expectedQuery:
+                `${operationType} { foo { ... on A { __typename, valueA }, ... on B { __typename, valueB } } }`
         })
     );
 
     test(
-        `builds a ${queryType} with objects in arrays`,
+        `builds a ${operationType} with objects in arrays`,
         checkQuery({
-            type: queryType,
+            type: operationType,
             buildSchema() {
                 return z
                     .object({
@@ -403,14 +408,14 @@ function checkQuery(testCase: QueryTestCase): TestFn {
                     })
                     .strict();
             },
-            expectedQuery: `${queryType} { foo { bar } }`
+            expectedQuery: `${operationType} { foo { bar } }`
         })
     );
 
     test(
-        `builds a ${queryType} with objects in tuples`,
+        `builds a ${operationType} with objects in tuples`,
         checkQuery({
-            type: queryType,
+            type: operationType,
             buildSchema() {
                 return z
                     .object({
@@ -418,14 +423,14 @@ function checkQuery(testCase: QueryTestCase): TestFn {
                     })
                     .strict();
             },
-            expectedQuery: `${queryType} { foo { bar } }`
+            expectedQuery: `${operationType} { foo { bar } }`
         })
     );
 
     test(
-        `builds a ${queryType} with objects in nullable arrays`,
+        `builds a ${operationType} with objects in nullable arrays`,
         checkQuery({
-            type: queryType,
+            type: operationType,
             buildSchema() {
                 return z
                     .object({
@@ -433,14 +438,14 @@ function checkQuery(testCase: QueryTestCase): TestFn {
                     })
                     .strict();
             },
-            expectedQuery: `${queryType} { foo { bar } }`
+            expectedQuery: `${operationType} { foo { bar } }`
         })
     );
 
     test(
-        `builds a ${queryType} with nullable objects in nullable arrays`,
+        `builds a ${operationType} with nullable objects in nullable arrays`,
         checkQuery({
-            type: queryType,
+            type: operationType,
             buildSchema() {
                 return z
                     .object({
@@ -448,14 +453,14 @@ function checkQuery(testCase: QueryTestCase): TestFn {
                     })
                     .strict();
             },
-            expectedQuery: `${queryType} { foo { bar } }`
+            expectedQuery: `${operationType} { foo { bar } }`
         })
     );
 
     test(
-        `builds a ${queryType} with transformable object`,
+        `builds a ${operationType} with transformable object`,
         checkQuery({
-            type: queryType,
+            type: operationType,
             buildSchema() {
                 return z
                     .object({
@@ -465,58 +470,58 @@ function checkQuery(testCase: QueryTestCase): TestFn {
                     })
                     .strict();
             },
-            expectedQuery: `${queryType} { foo { bar } }`
+            expectedQuery: `${operationType} { foo { bar } }`
         })
     );
 
     test(
-        `builds a ${queryType} with a simple number field`,
+        `builds a ${operationType} with a simple number field`,
         checkQuery({
-            type: queryType,
+            type: operationType,
             buildSchema() {
                 return z.object({ foo: z.number() }).strict();
             },
-            expectedQuery: `${queryType} { foo }`
+            expectedQuery: `${operationType} { foo }`
         })
     );
 
     test(
-        `builds a ${queryType} with a simple boolean field`,
+        `builds a ${operationType} with a simple boolean field`,
         checkQuery({
-            type: queryType,
+            type: operationType,
             buildSchema() {
                 return z.object({ foo: z.boolean() }).strict();
             },
-            expectedQuery: `${queryType} { foo }`
+            expectedQuery: `${operationType} { foo }`
         })
     );
 
     test(
-        `builds a ${queryType} with a simple literal field`,
+        `builds a ${operationType} with a simple literal field`,
         checkQuery({
-            type: queryType,
+            type: operationType,
             buildSchema() {
                 return z.object({ foo: z.literal('') }).strict();
             },
-            expectedQuery: `${queryType} { foo }`
+            expectedQuery: `${operationType} { foo }`
         })
     );
 
     test(
-        `builds a ${queryType} with a simple nullable field`,
+        `builds a ${operationType} with a simple nullable field`,
         checkQuery({
-            type: queryType,
+            type: operationType,
             buildSchema() {
                 return z.object({ foo: z.literal('').nullable() }).strict();
             },
-            expectedQuery: `${queryType} { foo }`
+            expectedQuery: `${operationType} { foo }`
         })
     );
 
     test(
-        `builds a ${queryType} with a field that is wrapped multiple times`,
+        `builds a ${operationType} with a field that is wrapped multiple times`,
         checkQuery({
-            type: queryType,
+            type: operationType,
             buildSchema() {
                 return z
                     .object({
@@ -530,18 +535,18 @@ function checkQuery(testCase: QueryTestCase): TestFn {
                     })
                     .strict();
             },
-            expectedQuery: `${queryType} { foo }`
+            expectedQuery: `${operationType} { foo }`
         })
     );
 
     test(
-        `builds a ${queryType} with a simple array field`,
+        `builds a ${operationType} with a simple array field`,
         checkQuery({
-            type: queryType,
+            type: operationType,
             buildSchema() {
                 return z.object({ foo: z.array(z.literal('')) }).strict();
             },
-            expectedQuery: `${queryType} { foo }`
+            expectedQuery: `${operationType} { foo }`
         })
     );
 });

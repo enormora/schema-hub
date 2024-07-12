@@ -1,5 +1,5 @@
 import type { TypeOf } from 'zod';
-import type { QueryOptions } from '../zod-graphql-client/client.js';
+import type { OperationOptions } from '../zod-graphql-client/client.js';
 import {
     type GraphqlClient,
     GraphqlQueryError,
@@ -43,7 +43,7 @@ export function createFakeGraphqlClient(clientOptions: FakeClientOptions = {}): 
 
     async function query<Schema extends QuerySchema>(
         schema: Schema,
-        options: QueryOptions = {}
+        options: OperationOptions = {}
     ): Promise<QueryResult<Schema>> {
         const { variables = {} } = options;
         const variableDefinitions = extractVariableDefinitions(variables);

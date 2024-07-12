@@ -7,7 +7,7 @@ import { GraphqlQueryError } from './query-error.js';
 import type { FailureQueryResult, QueryResult, QueryResultForType } from './query-result.js';
 import { extractVariableDefinitions, extractVariableValues, type Variables } from './variables.js';
 
-export type QueryOptions = {
+export type OperationOptions = {
     operationName?: string;
     timeout?: number;
     headers?: Record<string, string | undefined>;
@@ -23,11 +23,11 @@ export type ClientOptions = {
 export type GraphqlClient = {
     readonly query: <Schema extends QuerySchema>(
         schema: Schema,
-        options?: QueryOptions
+        options?: OperationOptions
     ) => Promise<QueryResult<Schema>>;
     readonly queryOrThrow: <Schema extends QuerySchema>(
         schema: Schema,
-        options?: QueryOptions
+        options?: OperationOptions
     ) => Promise<TypeOf<Schema>>;
 };
 
@@ -72,12 +72,12 @@ export function createClientFactory(dependencies: CreateClientDependencies): Cre
     const { ky } = dependencies;
 
     return function createClient(clientOptions) {
-        function buildBaseRequestOptions(queryOptions: QueryOptions): KyRequestOptions & { timeout: number; } {
-            const timeout = queryOptions.timeout ?? clientOptions.timeout ?? defaultRequestTimeout;
+        function buildBaseRequestOptions(operationOptions: OperationOptions): KyRequestOptions & { timeout: number; } {
+            const timeout = operationOptions.timeout ?? clientOptions.timeout ?? defaultRequestTimeout;
             return {
                 headers: {
                     ...clientOptions.headers,
-                    ...queryOptions.headers
+                    ...operationOptions.headers
                 },
                 timeout,
                 throwHttpErrors: false,
@@ -85,7 +85,7 @@ export function createClientFactory(dependencies: CreateClientDependencies): Cre
             };
         }
 
-        function prepareRequestPayload<Schema extends QuerySchema>(schema: Schema, options: QueryOptions): unknown {
+        function prepareRequestPayload<Schema extends QuerySchema>(schema: Schema, options: OperationOptions): unknown {
             const { variables = {} } = options;
             const variableDefinitions = extractVariableDefinitions(variables);
             const variableValues = extractVariableValues(variables);
@@ -144,7 +144,7 @@ export function createClientFactory(dependencies: CreateClientDependencies): Cre
         }
 
         async function fetchGraphqlEndpoint(
-            options: QueryOptions,
+            options: OperationOptions,
             payload: unknown
         ): Promise<QueryResultForType<unknown>> {
             const baseRequestOptions = buildBaseRequestOptions(options);
@@ -173,7 +173,7 @@ export function createClientFactory(dependencies: CreateClientDependencies): Cre
 
         async function query<Schema extends QuerySchema>(
             schema: Schema,
-            options: QueryOptions = {}
+            options: OperationOptions = {}
         ): Promise<QueryResult<Schema>> {
             const payload = prepareRequestPayload(schema, options);
 
