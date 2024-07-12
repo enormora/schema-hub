@@ -43,6 +43,7 @@ export type QueryBuilder = {
         options: GraphqlFieldOptions
     ) => ZodLazy<Schema>;
     buildQuery: <Schema extends QuerySchema>(schema: Schema, options?: QueryOptions) => string;
+    buildMutation: <Schema extends QuerySchema>(schema: Schema, options?: QueryOptions) => string;
 };
 
 function unwrapFromArraySchema<SchemaType extends FieldSchema>(
@@ -239,6 +240,10 @@ export function createQueryBuilder(): QueryBuilder {
 
         buildQuery(schema, options = {}) {
             return buildDocument('query', schema, options);
+        },
+
+        buildMutation(schema, options = {}) {
+            return buildDocument('mutation', schema, options);
         }
     };
 }

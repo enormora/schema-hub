@@ -42,6 +42,13 @@ export default [
         }
     },
     {
+        files: ['**/*.test.ts'],
+        rules: {
+            'max-statements': 'off',
+            'max-lines': 'off'
+        }
+    },
+    {
         files: ['source/zod-graphql-query-builder/builder.ts'],
         // those rules crash for some reason, we should re-enable them as soon as they are not crashing anymore
         rules: {
