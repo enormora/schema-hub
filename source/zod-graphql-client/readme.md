@@ -93,72 +93,96 @@ const result = await client.query(schema, {
 console.log(result);
 ```
 
-#### Options
+### Sending a Mutation
 
-- `operationName` (optional): The name of the query. This is useful for debugging and introspection purposes.
-- `variables` (optional): A record of all variable values and types that should be included in the query. This allows you to parameterize your queries and provide dynamic values at runtime.
+```typescript
+import { createGraphqlClient, graphqlFieldOptions, variablePlaceholder } from '@schema-hub/zod-graphql-client';
+import { z } from 'zod';
+
+// Define your mutation schema using Zod
+const schema = z
+    .object({
+        // Provide graphql-specific metadata to your zod schema
+        foo: graphqlFieldOptions(z.string(), {
+            parameters: {
+                bar: variablePlaceholder('$bar')
+            }
+        })
+    })
+    .strict();
+
+// Send the mutation using the client
+const client = createGraphqlClient({ endpoint: 'https://example.com/graphql' });
+const result = await client.mutate(schema, {
+    operationName: 'YourMutationName', // Optional mutation name
+    variables: {
+        bar: {
+            type: 'String!',
+            value: 'the-actual-value-for-bar'
+        }
+    }
+});
+
+console.log(result);
+```
+
+### Options for Queries and Mutations
+
+- `operationName` (optional): The name of the query or mutation. This is useful for debugging and introspection purposes.
+- `variables` (optional): A record of all variable values and types that should be included in the query or mutation. This allows you to parameterize your operations and provide dynamic values at runtime.
 - `headers` (optional): A key-value map of additional headers that should be sent with the request. These headers will be merged with any headers specified when creating the client.
 - `timeout` (optional): The request timeout in milliseconds. This determines how long the client will wait for a response before considering the request failed. If not specified, the default timeout specified when creating the client will be used.
 
-Adjust these options according to your specific requirements and the needs of your GraphQL API.
+### Operation Result
 
-Adding a section to elaborate on the return value of the `query()` method would be beneficial under the "Sending a Query" section. This would provide users with a clear understanding of what to expect when making a query and how to handle the response.
+When you send a query or mutation using the `query()` or `mutate()` method of the GraphQL client, you receive an `OperationResult` object representing the outcome of the operation. This object contains information about whether the operation was successful and, if so, the data returned by the GraphQL server.
 
-Here's a suggestion for the content of this section:
-
-### Query Result
-
-When you send a query using the `query()` method of the GraphQL client, you receive a `QueryResult` object representing the outcome of the query. This object contains information about whether the query was successful and, if so, the data returned by the GraphQL server.
-
-The `QueryResult` object has the following structure:
+The `OperationResult` object has the following structure:
 
 ```typescript
-type FailureQueryResult = {
+type FailureOperationResult = {
     success: false;
     errorDetails: OperationErrorDetails;
 };
 
-type SuccessQueryResult<Schema extends QuerySchema> = {
+type SuccessOperationResult<Schema extends OperationSchema> = {
     success: true;
     data: z.infer<Schema>;
 };
 
-type QueryResult<Schema extends QuerySchema> = FailureQueryResult | SuccessQueryResult<Schema>;
+type OperationResult<Schema extends OperationSchema> = FailureOperationResult | SuccessOperationResult<Schema>;
 ```
 
-- If the query was successful, the `success` property will be `true`, and the `data` property will contain the response data, inferred based on the provided Zod schema.
+- If the operation was successful, the `success` property will be `true`, and the `data` property will contain the response data, inferred based on the provided Zod schema.
+- If the operation failed, the `success` property will be `false`, and the `errorDetails` property will contain information about the error encountered during the operation. This includes details such as the error type, status code (if applicable), and error message.
 
-- If the query failed, the `success` property will be `false`, and the `errorDetails` property will contain information about the error encountered during the query. This includes details such as the error type, status code (if applicable), and error message.
-
-Here's how you can handle the query result:
+Here's how you can handle the operation result:
 
 ```typescript
 const result = await client.query(schema, options);
 
 if (result.success) {
-    // Query was successful, handle the response data
+    // Operation was successful, handle the response data
     console.log(result.data);
 } else {
-    // Query failed, handle the error
-    console.error('Query failed:', result.errorDetails);
+    // Operation failed, handle the error
+    console.error('Operation failed:', result.errorDetails);
 }
 ```
 
-Certainly! Here's the updated explanation along with the modifications to the error types section:
+### Error Types
 
-#### Error Types
-
-Errors distinguishable based on the `type` property within the `errorDetails` object. The possible error types are:
+Errors are distinguishable based on the `type` property within the `errorDetails` object. The possible error types are:
 
 - **`network`**: Occurs when there are issues with the network connection, such as timeouts or unexpected network problems.
 - **`server`**: Indicates an error response from the server, typically due to unexpected status codes like `500`.
 - **`graphql`**: Indicates errors in the GraphQL response, such as invalid query syntax or execution errors on the server.
-- **`validation`**: Occurs when the data in the query response does not match the given `zod` schema, indicating a validation failure.
+- **`validation`**: Occurs when the data in the operation response does not match the given `zod` schema, indicating a validation failure.
 - **`unknown`**: Represents any other unexpected errors that do not fall into the above categories.
 
-#### `queryOrThrow()`
+### `queryOrThrow()` and `mutateOrThrow()`
 
-The `queryOrThrow()` function behaves similarly to `query()`, but with one key difference in its return type. If the query execution is successful, the function returns the query result data directly. However, if an error occurs during the query execution, it throws an instance of `GraphqlOperationError`. This custom error contains detailed information about the encountered error in its `details` property, which aligns with the `errorDetails` structure returned by the `query()` function.
+The `queryOrThrow()` and `mutateOrThrow()` functions behaves similarly to `query()` and `mutate()`, but with one key difference in its return type. If the operation execution is successful, the function returns the operation result data directly. However, if an error occurs during the operation execution, it throws an instance of `GraphqlOperationError`. This custom error contains detailed information about the encountered error in its `details` property, which aligns with the `errorDetails` structure returned by the `operation()` function.
 
 ### Re-exported Functions
 
@@ -172,9 +196,9 @@ For more details, see the [`@schema-hub/zod-graphql-query-builder` documentation
 
 ### Testing
 
-If you're writing tests for your code, consider using the `@schema-hub/zod-graphql-fake-client` package for testing. It provides a fake GraphQL client that can be used in place of the real client. This allows you to control the behavior of the client and inspect the queries sent without making actual network requests.
+If you're writing tests for your code, consider using the `@schema-hub/zod-graphql-fake-client` package for testing. It provides a fake GraphQL client that can be used in place of the real client. This allows control over the client behavior and inspection of the queries and mutations sent without making actual network requests.
 
-Here's a quick example of how you can use it:
+Here's a quick example of how to use it:
 
 ```typescript
 import { createFakeGraphqlClient } from '@schema-hub/zod-graphql-fake-client';
@@ -183,4 +207,4 @@ import { createFakeGraphqlClient } from '@schema-hub/zod-graphql-fake-client';
 const client = createFakeGraphqlClient();
 ```
 
-Replace the real client with the fake client in your test environment to isolate your tests and ensure predictable behavior.
+Replace the real client with the fake client in the test environment to isolate tests and ensure predictable behavior.

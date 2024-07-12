@@ -63,6 +63,21 @@ test('query() sends the query derived from the given schema to the configured en
     }]);
 });
 
+test('mutate() sends the mutation derived from the given schema to the configured endpoint', async () => {
+    const post = createFakeKyMethod();
+    const client = clientFactory({ post, options: { endpoint: 'http://example/the-endpoint' } });
+    await client.mutate(simpleQuerySchema);
+
+    assert.strictEqual(post.callCount, 1);
+    assert.deepStrictEqual(post.firstCall.args, ['http://example/the-endpoint', {
+        headers: {},
+        json: { operationName: undefined, query: 'mutation { foo }', variables: {} },
+        retry: 0,
+        throwHttpErrors: false,
+        timeout: 10_000
+    }]);
+});
+
 test('query() sets the given operationName', async () => {
     const post = createFakeKyMethod();
     const client = clientFactory({ post, options: { endpoint: 'http://example/the-endpoint' } });
@@ -362,6 +377,16 @@ test('queryOrThrow() returns the data when it matches the given schema', async (
     });
 });
 
+test('mutateOrThrow() returns the data when it matches the given schema', async () => {
+    const post = createFakeKyMethod({ responseJsonBody: { data: { foo: 'bar' } } });
+    const client = clientFactory({ post });
+    const result = await client.mutateOrThrow(simpleQuerySchema);
+
+    assert.deepStrictEqual(result, {
+        foo: 'bar'
+    });
+});
+
 test('queryOrThrow() rejects an error when there is a failure', async () => {
     const post = createFakeKyMethod({ responseJsonBody: { data: {} } });
     const client = clientFactory({ post });
@@ -369,6 +394,26 @@ test('queryOrThrow() rejects an error when there is a failure', async () => {
     try {
         await client.queryOrThrow(simpleQuerySchema);
         assert.fail('Expected queryOrThrow() to fail but it did not');
+    } catch (error: unknown) {
+        assert.strictEqual(error instanceof GraphqlOperationError, true);
+        assert.strictEqual(
+            (error as GraphqlOperationError).message,
+            'GraphQL response data doesn’t match the expected schema'
+        );
+        assert.deepStrictEqual((error as GraphqlOperationError).details, {
+            type: 'validation',
+            issues: ['at foo: missing property']
+        });
+    }
+});
+
+test('mutateOrThrow() rejects an error when there is a failure', async () => {
+    const post = createFakeKyMethod({ responseJsonBody: { data: {} } });
+    const client = clientFactory({ post });
+
+    try {
+        await client.mutateOrThrow(simpleQuerySchema);
+        assert.fail('Expected mutateOrThrow() to fail but it did not');
     } catch (error: unknown) {
         assert.strictEqual(error instanceof GraphqlOperationError, true);
         assert.strictEqual(

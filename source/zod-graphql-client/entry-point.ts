@@ -15,7 +15,7 @@ export function createGraphqlClient(clientOptions: GraphqlClientOptions): Graphq
 
 export type { QuerySchema } from '../zod-graphql-query-builder/entry-point.js';
 export { enumValue, graphqlFieldOptions, variablePlaceholder } from '../zod-graphql-query-builder/entry-point.js';
-export type { GraphqlClient } from './client.js';
+export type { GraphqlClient, GraphqlOverHttpOperationRequestPayload } from './client.js';
 export type { OperationErrorDetails } from './operation-error.js';
 export { GraphqlOperationError } from './operation-error.js';
 export type { OperationResult } from './operation-result.js';
