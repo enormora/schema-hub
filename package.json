@@ -29,7 +29,6 @@
         "tslib": "2.6.3"
     },
     "devDependencies": {
-        "@ava/typescript": "5.0.0",
         "@ben_12/eslint-plugin-dprint": "0.11.3",
         "@dprint/json": "0.19.3",
         "@dprint/markdown": "0.16.4",
@@ -46,8 +45,8 @@
         "common-tags": "1.8.2",
         "dprint": "0.47.2",
         "eslint": "8.57.0",
-        "typescript": "5.5.4",
         "sinon": "18.0.0",
+        "typescript": "5.5.4",
         "zod": "3.23.8"
     },
     "engines": {
