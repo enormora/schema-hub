@@ -44,7 +44,7 @@ import { buildGraphqlQuery } from '@schema-hub/zod-graphql-query-builder';
 import { z } from 'zod';
 
 const mySchema = z.object({ foo: z.string() }).strict();
-const query = buildGraphqlQuery(mySchema, { queryName: 'MyQuery' });
+const query = buildGraphqlQuery(mySchema, { operationName: 'MyQuery' });
 ```
 
 **Built query:**

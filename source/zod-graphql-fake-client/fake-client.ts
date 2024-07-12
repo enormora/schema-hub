@@ -50,13 +50,13 @@ export function createFakeGraphqlClient(clientOptions: FakeClientOptions = {}): 
         const variableValues = extractVariableValues(variables);
 
         const serializedQuery = buildGraphqlQuery(schema, {
-            queryName: options.queryName,
+            operationName: options.operationName,
             variableDefinitions
         });
 
         const result = results[queryPayloads.length] ?? defaultResult;
 
-        queryPayloads.push({ operationName: options.queryName, query: serializedQuery, variables: variableValues });
+        queryPayloads.push({ operationName: options.operationName, query: serializedQuery, variables: variableValues });
 
         if (result.error !== undefined) {
             return { success: false, errorDetails: result.error };

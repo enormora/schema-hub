@@ -68,7 +68,7 @@ test('queryOrThrow() throws the configured error', async () => {
 test('inspectFirstQueryPayload() returns the query payload of the first query', async () => {
     const client = createFakeGraphqlClient();
 
-    await client.queryOrThrow(simpleQuery, { queryName: 'foo' });
+    await client.queryOrThrow(simpleQuery, { operationName: 'foo' });
     const payload = client.inspectFirstQueryPayload();
 
     assert.deepStrictEqual(payload, { operationName: 'foo', query: 'query foo { foo }', variables: {} });

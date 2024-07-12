@@ -33,7 +33,7 @@ type GraphqlFieldOptions = {
 };
 
 export type QueryOptions = {
-    queryName?: string | undefined;
+    operationName?: string | undefined;
     variableDefinitions?: VariableDefinitions | undefined;
 };
 
@@ -204,7 +204,7 @@ export function createQueryBuilder(): QueryBuilder {
         options: QueryOptions
     ): string {
         let referencedVariables = new Set<string>();
-        const { variableDefinitions = {}, queryName = '' } = options;
+        const { variableDefinitions = {}, operationName = '' } = options;
         const bodyEntries: string[] = [];
 
         for (const [fieldName, fieldSchema] of Object.entries(schema.shape)) {
@@ -218,11 +218,11 @@ export function createQueryBuilder(): QueryBuilder {
         }
 
         ensureValidVariableCorrelations(variableDefinitions, referencedVariables);
-        const queryNameAndParams = withTrailingSpace(
-            `${queryName}${serializeVariableDefinitions(variableDefinitions)}`
+        const operationNameAndParams = withTrailingSpace(
+            `${operationName}${serializeVariableDefinitions(variableDefinitions)}`
         );
 
-        return `${documentType} ${queryNameAndParams}{ ${bodyEntries.join(', ')} }`;
+        return `${documentType} ${operationNameAndParams}{ ${bodyEntries.join(', ')} }`;
     }
 
     return {

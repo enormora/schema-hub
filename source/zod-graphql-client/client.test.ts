@@ -66,7 +66,7 @@ test('query() sends the query derived from the given schema to the configured en
 test('query() sets the given operationName', async () => {
     const post = createFakeKyMethod();
     const client = clientFactory({ post, options: { endpoint: 'http://example/the-endpoint' } });
-    await client.query(simpleQuerySchema, { queryName: 'theQuery' });
+    await client.query(simpleQuerySchema, { operationName: 'theQuery' });
 
     assert.strictEqual(post.callCount, 1);
     assert.deepStrictEqual(post.firstCall.args, ['http://example/the-endpoint', {

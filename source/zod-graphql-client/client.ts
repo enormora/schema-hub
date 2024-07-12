@@ -8,7 +8,7 @@ import type { FailureQueryResult, QueryResult, QueryResultForType } from './quer
 import { extractVariableDefinitions, extractVariableValues, type Variables } from './variables.js';
 
 export type QueryOptions = {
-    queryName?: string;
+    operationName?: string;
     timeout?: number;
     headers?: Record<string, string | undefined>;
     variables?: Variables;
@@ -91,14 +91,14 @@ export function createClientFactory(dependencies: CreateClientDependencies): Cre
             const variableValues = extractVariableValues(variables);
 
             const serializedQuery = buildGraphqlQuery(schema, {
-                queryName: options.queryName,
+                operationName: options.operationName,
                 variableDefinitions
             });
 
             return {
                 query: serializedQuery,
                 variables: variableValues,
-                operationName: options.queryName
+                operationName: options.operationName
             };
         }
 

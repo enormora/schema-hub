@@ -81,7 +81,7 @@ const schema = z
 // Send the query using the client
 const client = createGraphqlClient({ endpoint: 'https://example.com/graphql' });
 const result = await client.query(schema, {
-    queryName: 'YourQueryName', // Optional query name
+    operationName: 'YourQueryName', // Optional query name
     variables: {
         bar: {
             type: 'String!',
@@ -95,7 +95,7 @@ console.log(result);
 
 #### Options
 
-- `queryName` (optional): The name of the query. This is useful for debugging and introspection purposes.
+- `operationName` (optional): The name of the query. This is useful for debugging and introspection purposes.
 - `variables` (optional): A record of all variable values and types that should be included in the query. This allows you to parameterize your queries and provide dynamic values at runtime.
 - `headers` (optional): A key-value map of additional headers that should be sent with the request. These headers will be merged with any headers specified when creating the client.
 - `timeout` (optional): The request timeout in milliseconds. This determines how long the client will wait for a response before considering the request failed. If not specified, the default timeout specified when creating the client will be used.

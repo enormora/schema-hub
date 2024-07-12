@@ -94,8 +94,8 @@ function checkQuery(testCase: QueryTestCase): TestFn {
             buildSchema() {
                 return z.object({ foo: z.string() }).strict();
             },
-            queryOptions: { queryName: 'queryName' },
-            expectedQuery: `${queryType} queryName { foo }`
+            queryOptions: { operationName: 'theOperationName' },
+            expectedQuery: `${queryType} theOperationName { foo }`
         })
     );
 
@@ -133,10 +133,10 @@ function checkQuery(testCase: QueryTestCase): TestFn {
                     .strict();
             },
             queryOptions: {
-                queryName: 'queryName',
+                operationName: 'theOperationName',
                 variableDefinitions: { $bar: 'String!' }
             },
-            expectedQuery: `${queryType} queryName($bar: String!) { foo(bar: $bar) }`
+            expectedQuery: `${queryType} theOperationName($bar: String!) { foo(bar: $bar) }`
         })
     );
 
