@@ -88,9 +88,9 @@ const mySchema = z
     .object({
         foo: graphqlFieldOptions(z.string(), {
             parameters: {
-                plainValue: 'plain-string',
-                enumParameter: enumValue('foo'),
-                variable: variablePlaceholder('$var')
+                anyParameterAssignedToPlainValue: 'plain-string',
+                anyParameterAssignedToEnumValue: enumValue('foo'),
+                anyParameterReferencingAVariable: variablePlaceholder('$var')
             }
         })
     })
@@ -101,7 +101,7 @@ const query = buildGraphqlQuery(mySchema, { variableDefinitions: { $var: 'String
 **Built query:**
 
 ```graphql
-query ($var: String!) { foo(plainValue: "plain-string", enumParameter: foo, variable: $var) }
+query ($var: String!) { foo(anyParameterAssignedToPlainValue: "plain-string", anyParameterAssignedToEnumValue: foo, anyParameterReferencingAVariable: $var) }
 ```
 
 ### Defining Fragments
@@ -184,9 +184,9 @@ const mySchema = z
     .object({
         foo: graphqlFieldOptions(z.string(), {
             parameters: {
-                plainValue: 'plain-string',
-                enumParameter: enumValue('foo'),
-                variable: variablePlaceholder('$var')
+                anyParameterAssignedToPlainValue: 'plain-string',
+                anyParameterAssignedToEnumValue: enumValue('foo'),
+                anyParameterReferencingAVariable: variablePlaceholder('$var')
             }
         })
     })
@@ -197,5 +197,5 @@ const mutation = buildGraphqlMutation(mySchema, { variableDefinitions: { $var: '
 **Built mutation:**
 
 ```graphql
-mutation ($var: String!) { foo(plainValue: "plain-string", enumParameter: foo, variable: $var) }
+mutation ($var: String!) { foo(anyParameterAssignedToPlainValue: "plain-string", anyParameterAssignedToEnumValue: foo, anyParameterReferencingAVariable: $var) }
 ```
