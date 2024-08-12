@@ -18,3 +18,9 @@ Currently, the `@schema-hub` monorepo contains the following projects:
 - **[@schema-hub/zod-graphql-fake-client](./source/zod-graphql-fake-client/readme.md)**:
   Fake GraphQL client for testing `@schema-hub/zod-graphql-client`.
   [![npm version](https://img.shields.io/npm/v/@schema-hub/zod-graphql-fake-client?style=flat-square&logo=npm&logoColor=fff&cacheSeconds=300&labelColor=CB3837&color=37CACB)](https://www.npmjs.com/package/@schema-hub/zod-graphql-fake-client)
+
+## Versioning
+
+All packages in this repository use [`packtory`](https://github.com/enormora/packtory) to automatically determine version numbers and do not follow semantic versioning. A version number smaller than 1 (e.g., `0.0.42`) does not mean the package is experimental but indicates that any version bump could include breaking changes.
+
+To mitigate risks, ensure you have solid test coverage and use TypeScript type-checking in your projects. This will help make dependency updates low risk.
