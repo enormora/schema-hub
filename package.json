@@ -26,7 +26,7 @@
     "dependencies": {
         "graphql": "16.9.0",
         "ky": "1.7.1",
-        "tslib": "2.6.3"
+        "tslib": "2.7.0"
     },
     "devDependencies": {
         "@ben_12/eslint-plugin-dprint": "0.11.3",
