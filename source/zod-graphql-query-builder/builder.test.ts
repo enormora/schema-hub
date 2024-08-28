@@ -120,6 +120,53 @@ function checkQuery(testCase: QueryTestCase): TestFn {
     );
 
     test(
+        `builds a simple ${operationType} using field options which are composed with zod methods`,
+        checkQuery({
+            type: operationType,
+            buildSchema(builder) {
+                return z
+                    .object({
+                        foo: builder
+                            .registerFieldOptions(z.string(), {
+                                parameters: { bar: 'baz' }
+                            })
+                            .nullable()
+                    })
+                    .strict();
+            },
+            expectedQuery: `${operationType} { foo(bar: "baz") }`
+        })
+    );
+
+    test(
+        oneLine`builds a simple ${operationType} using the outmost defined field options when
+            there are defined multiple for the same field`,
+        checkQuery({
+            type: operationType,
+            buildSchema(builder) {
+                return z
+                    .object({
+                        foo: builder.registerFieldOptions(
+                            builder
+                                .registerFieldOptions(z.string(), {
+                                    parameters: { bar: 'inner-overwritten', baz: 'inner-only' }
+                                })
+                                .nullable(),
+                            {
+                                parameters: {
+                                    bar: 'outer-overwritten',
+                                    qux: 'outer-only'
+                                }
+                            }
+                        )
+                    })
+                    .strict();
+            },
+            expectedQuery: `${operationType} { foo(bar: "outer-overwritten", qux: "outer-only") }`
+        })
+    );
+
+    test(
         `builds a simple named ${operationType} with variables`,
         checkQuery({
             type: operationType,
