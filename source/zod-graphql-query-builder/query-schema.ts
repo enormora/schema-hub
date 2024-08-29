@@ -53,8 +53,23 @@ function isWrappedFieldSchema(schema: FieldSchema): schema is WrappedFieldSchema
     return schema instanceof ZodLazy || schema instanceof ZodEffects || schema instanceof ZodNullable;
 }
 
-export function unwrapFieldSchema(parent: FieldSchema): NonWrappedFieldSchema {
+type UnwrappedChainResult = {
+    unwrappedSchema: NonWrappedFieldSchema;
+    wrapperElements: WrappedFieldSchema[];
+};
+
+function recursiveUnwrapFieldSchemaChain(
+    parent: FieldSchema,
+    currentChain: WrappedFieldSchema[]
+): UnwrappedChainResult {
     let unwrapped: FieldSchema = parent;
+
+    if (!isWrappedFieldSchema(parent)) {
+        return {
+            unwrappedSchema: parent,
+            wrapperElements: currentChain
+        };
+    }
 
     if (parent instanceof ZodLazy) {
         unwrapped = parent.schema;
@@ -65,10 +80,22 @@ export function unwrapFieldSchema(parent: FieldSchema): NonWrappedFieldSchema {
     }
 
     if (isWrappedFieldSchema(unwrapped)) {
-        return unwrapFieldSchema(unwrapped);
+        return recursiveUnwrapFieldSchemaChain(unwrapped, [...currentChain, parent]);
     }
 
-    return unwrapped;
+    return {
+        unwrappedSchema: unwrapped,
+        wrapperElements: [...currentChain, parent]
+    };
+}
+
+export function unwrapFieldSchemaChain(parent: FieldSchema): UnwrappedChainResult {
+    return recursiveUnwrapFieldSchemaChain(parent, []);
+}
+
+export function unwrapFieldSchema(parent: FieldSchema): NonWrappedFieldSchema {
+    const result = unwrapFieldSchemaChain(parent);
+    return result.unwrappedSchema;
 }
 
 type QueryShape = Record<string, FieldSchema>;

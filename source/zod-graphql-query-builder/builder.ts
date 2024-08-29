@@ -13,7 +13,8 @@ import {
     type QuerySchema,
     type StrictObjectSchema,
     type UnionOrListSchema,
-    unwrapFieldSchema
+    unwrapFieldSchema,
+    unwrapFieldSchemaChain
 } from './query-schema.js';
 import { normalizeParameterList } from './values/parameter-list.js';
 import type { GraphqlValue, NormalizedGraphqlValue } from './values/value.js';
@@ -95,8 +96,18 @@ export function createQueryBuilder(): QueryBuilder {
     const fieldOptionsRegistry = new WeakMap<FieldSchema, GraphqlFieldOptions>();
 
     function getFieldOptionsForSchema(schema: FieldSchema): GraphqlFieldOptions {
-        const fieldOptions = fieldOptionsRegistry.get(schema);
-        return fieldOptions ?? {};
+        const unwrappingResult = unwrapFieldSchemaChain(schema);
+        const queue = [...unwrappingResult.wrapperElements, unwrappingResult.unwrappedSchema];
+
+        for (const currentSchema of queue) {
+            const fieldOptions = fieldOptionsRegistry.get(currentSchema);
+
+            if (fieldOptions !== undefined) {
+                return fieldOptions;
+            }
+        }
+
+        return {};
     }
 
     function serializedFieldSelector(fieldName: string, fieldSchema: FieldSchema): NormalizedGraphqlValue {
