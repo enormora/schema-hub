@@ -10,6 +10,7 @@ import {
     type ZodNumber,
     ZodObject,
     type ZodRawShape,
+    type ZodReadonly,
     type ZodString,
     ZodTuple,
     type ZodTypeAny,
@@ -47,7 +48,11 @@ export type NonWrappedFieldSchema =
     | ZodArray<FieldSchema>
     | ZodDiscriminatedUnion<'__typename', FragmentUnionOptionSchema[]>
     | ZodTuple<[FieldSchema, ...FieldSchema[]]>;
-export type WrappedFieldSchema = EffectSchema<FieldSchema> | ZodLazy<FieldSchema> | ZodNullable<FieldSchema>;
+export type WrappedFieldSchema =
+    | EffectSchema<FieldSchema>
+    | ZodLazy<FieldSchema>
+    | ZodNullable<FieldSchema>
+    | ZodReadonly<FieldSchema>;
 export type FieldSchema = NonWrappedFieldSchema | WrappedFieldSchema;
 
 function isWrappedFieldSchema(schema: FieldSchema): schema is WrappedFieldSchema {

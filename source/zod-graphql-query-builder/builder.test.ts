@@ -607,4 +607,15 @@ function checkQuery(testCase: QueryTestCase): TestFn {
             expectedQuery: `${operationType} { foo }`
         })
     );
+
+    test(
+        `builds a ${operationType} with readonly fields`,
+        checkQuery({
+            type: operationType,
+            buildSchema() {
+                return z.object({ foo: z.array(z.string()).readonly() }).strict();
+            },
+            expectedQuery: `${operationType} { foo }`
+        })
+    );
 });
