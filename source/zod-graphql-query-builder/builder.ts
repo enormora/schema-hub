@@ -1,4 +1,4 @@
-import { z, ZodArray, ZodDiscriminatedUnion, type ZodLazy, type ZodTuple } from 'zod';
+import { z, ZodArray, ZodDiscriminatedUnion, type ZodLazy, type ZodTuple, ZodUndefined } from 'zod';
 import {
     type FieldSchema,
     type FieldShape,
@@ -186,6 +186,10 @@ export function createQueryBuilder(): QueryBuilder {
         const fieldSelector = serializedFieldSelector(fieldName, fieldSchema);
         const unwrappedSchema = unwrapFieldSchema(fieldSchema);
 
+        if (unwrappedSchema instanceof ZodUndefined) {
+            return { serializedValue: '', referencedVariables: new Set() };
+        }
+
         if (isObjectOrListSchema(unwrappedSchema)) {
             const objectSchema = getObjectSchema(unwrappedSchema);
 
@@ -209,6 +213,7 @@ export function createQueryBuilder(): QueryBuilder {
         return fieldSelector;
     }
 
+    // eslint-disable-next-line max-statements -- no idea right now to make this smaller
     function buildDocument<Schema extends QuerySchema>(
         documentType: 'mutation' | 'query',
         schema: Schema,
@@ -221,7 +226,9 @@ export function createQueryBuilder(): QueryBuilder {
         for (const [fieldName, fieldSchema] of Object.entries(schema.shape)) {
             const serializedField = serializeFieldSchema(fieldName, fieldSchema);
 
-            bodyEntries.push(serializedField.serializedValue);
+            if (serializedField.serializedValue.length > 0) {
+                bodyEntries.push(serializedField.serializedValue);
+            }
             referencedVariables = new Set([
                 ...referencedVariables,
                 ...serializedField.referencedVariables

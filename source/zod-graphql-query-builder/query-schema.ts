@@ -12,7 +12,8 @@ import {
     type ZodRawShape,
     type ZodString,
     ZodTuple,
-    type ZodTypeAny
+    type ZodTypeAny,
+    type ZodUndefined
 } from 'zod';
 
 // eslint-disable-next-line @typescript-eslint/consistent-type-definitions -- generic type alias can’t be circular
@@ -27,7 +28,7 @@ export function isStrictObjectSchema(schema: unknown): schema is StrictObjectSch
 interface EffectSchema<Schema extends ZodTypeAny> extends ZodEffects<Schema> {}
 
 type LiteralSchema = ZodLiteral<null> | ZodLiteral<number> | ZodLiteral<string>;
-type PrimitiveSchema = LiteralSchema | ZodBoolean | ZodNull | ZodNumber | ZodString;
+type PrimitiveSchema = LiteralSchema | ZodBoolean | ZodNull | ZodNumber | ZodString | ZodUndefined;
 
 export type FragmentTypeName = boolean | number | string | null;
 
