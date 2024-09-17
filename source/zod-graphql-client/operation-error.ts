@@ -30,7 +30,7 @@ type UnknownError = BaseError & {
 export type OperationErrorDetails = GraphqlResponseError | NetworkError | ServerError | UnknownError | ValidationError;
 
 export class GraphqlOperationError extends Error {
-    // eslint-disable-next-line @typescript-eslint/ban-types -- no type-fest installed
+    // eslint-disable-next-line @typescript-eslint/no-restricted-types -- no type-fest installed
     public readonly details: Omit<OperationErrorDetails, 'message'>;
 
     constructor(details: OperationErrorDetails) {

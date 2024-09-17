@@ -43,8 +43,8 @@ export type QueryBuilder = {
         schema: Schema,
         options: GraphqlFieldOptions
     ) => ZodLazy<Schema>;
-    buildQuery: <Schema extends QuerySchema>(schema: Schema, options?: OperationOptions) => string;
-    buildMutation: <Schema extends QuerySchema>(schema: Schema, options?: OperationOptions) => string;
+    buildQuery: (schema: QuerySchema, options?: OperationOptions) => string;
+    buildMutation: (schema: QuerySchema, options?: OperationOptions) => string;
 };
 
 function unwrapFromArraySchema<SchemaType extends FieldSchema>(
@@ -214,9 +214,9 @@ export function createQueryBuilder(): QueryBuilder {
     }
 
     // eslint-disable-next-line max-statements -- no idea right now to make this smaller
-    function buildDocument<Schema extends QuerySchema>(
+    function buildDocument(
         documentType: 'mutation' | 'query',
-        schema: Schema,
+        schema: QuerySchema,
         options: OperationOptions
     ): string {
         let referencedVariables = new Set<string>();
