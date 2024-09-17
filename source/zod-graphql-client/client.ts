@@ -101,8 +101,8 @@ export function createClientFactory(dependencies: CreateClientDependencies): Cre
             };
         }
 
-        function prepareRequestPayload<Schema extends QuerySchema>(
-            schema: Schema,
+        function prepareRequestPayload(
+            schema: QuerySchema,
             operationType: OperationType,
             options: OperationOptions
         ): GraphqlOverHttpOperationRequestPayload {

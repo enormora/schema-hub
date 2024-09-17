@@ -32,7 +32,7 @@ function isSamePath(pathA: readonly (number | string)[], pathB: readonly (number
 }
 
 type SupportedIssueType = ZodInvalidLiteralIssue | ZodInvalidTypeIssue;
-// eslint-disable-next-line @typescript-eslint/ban-types -- we don’t have type-fest here
+// eslint-disable-next-line @typescript-eslint/no-restricted-types -- we don’t have type-fest here
 type BaseZodIssue = Omit<ZodIssue, 'fatal' | 'message'>;
 
 function isSupportedIssueWithSamePath(

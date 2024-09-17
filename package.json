@@ -33,9 +33,9 @@
         "@dprint/json": "0.19.3",
         "@dprint/markdown": "0.16.4",
         "@dprint/typescript": "0.90.5",
-        "@enormora/eslint-config-base": "0.0.12",
-        "@enormora/eslint-config-node": "0.0.11",
-        "@enormora/eslint-config-typescript": "0.0.12",
+        "@enormora/eslint-config-base": "0.0.14",
+        "@enormora/eslint-config-node": "0.0.12",
+        "@enormora/eslint-config-typescript": "0.0.14",
         "@packtory/cli": "0.0.5",
         "@sondr3/minitest": "0.1.2",
         "@types/common-tags": "1.8.4",
@@ -44,13 +44,13 @@
         "c8": "10.1.2",
         "common-tags": "1.8.2",
         "dprint": "0.47.2",
-        "eslint": "8.57.1",
+        "eslint": "9.10.0",
         "sinon": "18.0.1",
         "typescript": "5.6.2",
         "zod": "3.23.8"
     },
     "engines": {
-        "node": "^20 || ^22"
+        "node": "^22"
     },
     "peerDependencies": {
         "zod": "^3.22.4"

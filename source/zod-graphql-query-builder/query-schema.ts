@@ -17,7 +17,7 @@ import {
     type ZodUndefined
 } from 'zod';
 
-// eslint-disable-next-line @typescript-eslint/consistent-type-definitions -- generic type alias can’t be circular
+// eslint-disable-next-line @typescript-eslint/consistent-type-definitions,@typescript-eslint/no-empty-object-type -- generic type alias can’t be circular
 export interface StrictObjectSchema<Shape extends ZodRawShape>
     extends Omit<ZodObject<Shape, 'strict'>, 'deepPartial' | 'keyof'> {}
 
@@ -25,7 +25,7 @@ export function isStrictObjectSchema(schema: unknown): schema is StrictObjectSch
     return schema instanceof ZodObject;
 }
 
-// eslint-disable-next-line @typescript-eslint/consistent-type-definitions -- generic type alias can’t be circular
+// eslint-disable-next-line @typescript-eslint/consistent-type-definitions,@typescript-eslint/no-empty-object-type -- generic type alias can’t be circular
 interface EffectSchema<Schema extends ZodTypeAny> extends ZodEffects<Schema> {}
 
 type LiteralSchema = ZodLiteral<null> | ZodLiteral<number> | ZodLiteral<string>;

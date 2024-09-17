@@ -228,7 +228,7 @@ test('query() returns a network failure result when the request errors', async (
 
 test('query() returns a unknown failure result when the request rejects with a non-error', async () => {
     const post = fake(() => {
-        // eslint-disable-next-line @typescript-eslint/no-throw-literal, no-throw-literal -- we need to test this scenario
+        // eslint-disable-next-line @typescript-eslint/only-throw-error, no-throw-literal -- we need to test this scenario
         throw 'not-an-error';
     });
     const client = clientFactory({ post });
@@ -274,7 +274,7 @@ test('query() returns a server failure when json parsing fails but a non-error w
     const post = fake.resolves({
         status: 200,
         json: fake(() => {
-            // eslint-disable-next-line @typescript-eslint/no-throw-literal, no-throw-literal -- we need to test this scenario
+            // eslint-disable-next-line @typescript-eslint/only-throw-error, no-throw-literal -- we need to test this scenario
             throw 'not-an-error';
         })
     });
@@ -295,7 +295,7 @@ test('query() returns a server failure when json parsing fails but a non-error w
     const post = fake.resolves({
         status: 200,
         json: fake(() => {
-            // eslint-disable-next-line @typescript-eslint/no-throw-literal, no-throw-literal -- we need to test this scenario
+            // eslint-disable-next-line @typescript-eslint/only-throw-error, no-throw-literal -- we need to test this scenario
             throw 'not-an-error';
         })
     });
