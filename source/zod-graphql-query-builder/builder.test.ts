@@ -618,4 +618,20 @@ function checkQuery(testCase: QueryTestCase): TestFn {
             expectedQuery: `${operationType} { foo }`
         })
     );
+
+    test(
+        `builds a ${operationType} with union of primitives fields`,
+        checkQuery({
+            type: operationType,
+            buildSchema() {
+                return z
+                    .object({
+                        foo: z.union([z.string(), z.number(), z.boolean(), z.null(), z.undefined()]),
+                        bar: z.union([z.literal('a'), z.literal(1), z.literal(false)])
+                    })
+                    .strict();
+            },
+            expectedQuery: `${operationType} { foo, bar }`
+        })
+    );
 });

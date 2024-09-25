@@ -14,7 +14,8 @@ import {
     type ZodString,
     ZodTuple,
     type ZodTypeAny,
-    type ZodUndefined
+    type ZodUndefined,
+    type ZodUnion
 } from 'zod';
 
 // eslint-disable-next-line @typescript-eslint/consistent-type-definitions,@typescript-eslint/no-empty-object-type -- generic type alias can’t be circular
@@ -28,7 +29,7 @@ export function isStrictObjectSchema(schema: unknown): schema is StrictObjectSch
 // eslint-disable-next-line @typescript-eslint/consistent-type-definitions,@typescript-eslint/no-empty-object-type -- generic type alias can’t be circular
 interface EffectSchema<Schema extends ZodTypeAny> extends ZodEffects<Schema> {}
 
-type LiteralSchema = ZodLiteral<null> | ZodLiteral<number> | ZodLiteral<string>;
+type LiteralSchema = ZodLiteral<boolean> | ZodLiteral<null> | ZodLiteral<number> | ZodLiteral<string>;
 type PrimitiveSchema = LiteralSchema | ZodBoolean | ZodNull | ZodNumber | ZodString | ZodUndefined;
 
 export type FragmentTypeName = boolean | number | string | null;
@@ -47,7 +48,8 @@ export type NonWrappedFieldSchema =
     | StrictObjectSchema<FieldShape>
     | ZodArray<FieldSchema>
     | ZodDiscriminatedUnion<'__typename', FragmentUnionOptionSchema[]>
-    | ZodTuple<[FieldSchema, ...FieldSchema[]]>;
+    | ZodTuple<[FieldSchema, ...FieldSchema[]]>
+    | ZodUnion<readonly [PrimitiveSchema, ...(readonly PrimitiveSchema[])]>;
 export type WrappedFieldSchema =
     | EffectSchema<FieldSchema>
     | ZodLazy<FieldSchema>
