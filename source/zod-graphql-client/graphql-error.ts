@@ -24,7 +24,7 @@ export const graphqlErrorSchema = z
 
 export type GraphqlError = z.infer<typeof graphqlErrorSchema>;
 
-function formatLocations(locations?: Location[] | undefined): string {
+function formatLocations(locations?: Location[]): string {
     if (locations === undefined) {
         return '';
     }
@@ -36,7 +36,7 @@ function formatLocations(locations?: Location[] | undefined): string {
     return `${firstLocation.line}:${firstLocation.column}`;
 }
 
-function formatPath(path?: PathSegment[] | undefined): string {
+function formatPath(path?: PathSegment[]): string {
     return path === undefined ? '' : path.join('.');
 }
 
