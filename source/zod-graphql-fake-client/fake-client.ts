@@ -13,6 +13,8 @@ import { buildGraphqlMutation, buildGraphqlQuery } from '../zod-graphql-query-bu
 export type FakeGraphqlClient = GraphqlClient & {
     readonly inspectOperationPayload: (index: number) => GraphqlOverHttpOperationRequestPayload;
     readonly inspectFirstOperationPayload: () => GraphqlOverHttpOperationRequestPayload;
+    readonly inspectOperationOptions: (index: number) => OperationOptions;
+    readonly inspectFirstOperationOptions: () => OperationOptions;
 };
 
 type FakeSuccessData = {
@@ -33,6 +35,7 @@ type FakeClientOptions = {
 export function createFakeGraphqlClient(clientOptions: FakeClientOptions = {}): FakeGraphqlClient {
     const { results = [] } = clientOptions;
     const operationPayloads: GraphqlOverHttpOperationRequestPayload[] = [];
+    const operationOptions: OperationOptions[] = [];
     const defaultResult: FakeResult = { data: {} };
 
     async function collectOperation<Schema extends QuerySchema>(
@@ -61,6 +64,7 @@ export function createFakeGraphqlClient(clientOptions: FakeClientOptions = {}): 
             query: serializedQuery,
             variables: variableValues
         });
+        operationOptions.push(options);
 
         if (result.error !== undefined) {
             return { success: false, errorDetails: result.error };
@@ -91,6 +95,15 @@ export function createFakeGraphqlClient(clientOptions: FakeClientOptions = {}): 
         return payload;
     }
 
+    function inspectOperationOptions(index: number): OperationOptions {
+        const operationOption = operationOptions[index];
+        if (operationOption === undefined) {
+            throw new Error(`No operationOption at index ${index} recorded`);
+        }
+
+        return operationOption;
+    }
+
     return {
         query,
 
@@ -118,6 +131,10 @@ export function createFakeGraphqlClient(clientOptions: FakeClientOptions = {}): 
 
         inspectFirstOperationPayload() {
             return inspectOperationPayload(0);
+        },
+        inspectOperationOptions,
+        inspectFirstOperationOptions() {
+            return inspectOperationOptions(0);
         }
     };
 }

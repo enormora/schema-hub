@@ -17,6 +17,17 @@ test('throws when inspecting a query that doesn’t exist', () => {
     }
 });
 
+test('throws when inspecting a operation options that don’t exist', () => {
+    const client = createFakeGraphqlClient();
+
+    try {
+        client.inspectFirstOperationOptions();
+        assert.fail('Expected inspectFirstOperationOptions() to throw but it did not');
+    } catch (error: unknown) {
+        assert.strictEqual((error as Error).message, 'No operationOption at index 0 recorded');
+    }
+});
+
 test('query() returns the default result when no result is configured', async () => {
     const client = createFakeGraphqlClient();
 
@@ -107,4 +118,42 @@ test('inspectFirstOperationPayload() returns the mutation payload of the first m
     const payload = client.inspectFirstOperationPayload();
 
     assert.deepStrictEqual(payload, { operationName: 'foo', query: 'mutation foo { foo }', variables: {} });
+});
+
+test('inspectFirstOperationOptions() returns the operation options of the first query', async () => {
+    const client = createFakeGraphqlClient();
+
+    await client.queryOrThrow(simpleQuery, {
+        operationName: 'foo',
+        headers: { foo: 'bar' },
+        timeout: 42,
+        variables: {}
+    });
+    const options = client.inspectFirstOperationOptions();
+
+    assert.deepStrictEqual(options, {
+        operationName: 'foo',
+        headers: { foo: 'bar' },
+        timeout: 42,
+        variables: {}
+    });
+});
+
+test('inspectFirstOperationOptions() returns the operation options of the first mutation', async () => {
+    const client = createFakeGraphqlClient();
+
+    await client.mutateOrThrow(simpleQuery, {
+        operationName: 'foo',
+        headers: { foo: 'bar' },
+        timeout: 42,
+        variables: {}
+    });
+    const options = client.inspectFirstOperationOptions();
+
+    assert.deepStrictEqual(options, {
+        operationName: 'foo',
+        headers: { foo: 'bar' },
+        timeout: 42,
+        variables: {}
+    });
 });
