@@ -129,6 +129,34 @@ const query = buildGraphqlQuery(mySchema);
 query { foo { ... on A { __typename, valueA }, ... on B { __typename, valueB } } }
 ```
 
+### Working with custom scalars
+
+**Input:**
+
+```typescript
+import { buildGraphqlQuery, customScalar } from '@schema-hub/zod-graphql-query-builder';
+import { z } from 'zod';
+
+const mySchema = z
+    .object({
+        foo: customScalar(
+            z
+                .object({
+                    bar: z.record(z.string())
+                })
+                .strip()
+        )
+    })
+    .strict();
+const query = buildGraphqlQuery(mySchema);
+```
+
+**Built query:**
+
+```graphql
+query { foo }
+```
+
 ## Mutations
 
 ### Basic Mutation

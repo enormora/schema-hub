@@ -17,6 +17,7 @@ import {
     type ZodUndefined,
     type ZodUnion
 } from 'zod';
+import { type CustomScalarSchema, isCustomScalarSchema } from './custom-scalar.js';
 
 // eslint-disable-next-line @typescript-eslint/consistent-type-definitions,@typescript-eslint/no-empty-object-type -- generic type alias can’t be circular
 export interface StrictObjectSchema<Shape extends ZodRawShape>
@@ -44,6 +45,7 @@ export declare type FragmentUnionOptionSchema = ZodObject<
 // eslint-disable-next-line @typescript-eslint/consistent-indexed-object-style -- see https://github.com/microsoft/TypeScript/pull/57293
 export type FieldShape = { readonly [FieldName: string]: FieldSchema; };
 export type NonWrappedFieldSchema =
+    | CustomScalarSchema<ZodTypeAny>
     | PrimitiveSchema
     | StrictObjectSchema<FieldShape>
     | ZodArray<FieldSchema>
@@ -58,6 +60,10 @@ export type WrappedFieldSchema =
 export type FieldSchema = NonWrappedFieldSchema | WrappedFieldSchema;
 
 function isWrappedFieldSchema(schema: FieldSchema): schema is WrappedFieldSchema {
+    if (isCustomScalarSchema(schema)) {
+        return false;
+    }
+
     return schema instanceof ZodLazy || schema instanceof ZodEffects || schema instanceof ZodNullable;
 }
 

@@ -49,7 +49,7 @@ export default [
         }
     },
     {
-        files: ['source/zod-graphql-query-builder/builder.ts'],
+        files: ['source/zod-graphql-query-builder/builder.ts', 'source/zod-graphql-query-builder/query-schema.ts'],
         // those rules crash for some reason, we should re-enable them as soon as they are not crashing anymore
         rules: {
             '@typescript-eslint/no-unnecessary-type-assertion': 'off',

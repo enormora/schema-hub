@@ -191,6 +191,7 @@ Some functions from `@schema-hub/zod-graphql-query-builder` are re-exported for 
 - `graphqlFieldOptions()`
 - `enumValue()`
 - `variablePlaceholder()`
+- `customScalar()`
 
 For more details, see the [`@schema-hub/zod-graphql-query-builder` documentation](../zod-graphql-query-builder/readme.md).
 
