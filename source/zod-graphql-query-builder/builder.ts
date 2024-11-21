@@ -1,4 +1,5 @@
 import { z, ZodArray, ZodDiscriminatedUnion, type ZodLazy, type ZodTuple, ZodUndefined } from 'zod';
+import { isCustomScalarSchema } from './custom-scalar.js';
 import {
     type FieldSchema,
     type FieldShape,
@@ -178,12 +179,17 @@ export function createQueryBuilder(): QueryBuilder {
         };
     }
 
-    // eslint-disable-next-line max-statements -- no good idea how to refactor at the moment
+    // eslint-disable-next-line max-statements, complexity -- no good idea how to refactor at the moment
     function serializeFieldSchema(
         fieldName: string,
         fieldSchema: FieldSchema
     ): NormalizedGraphqlValue {
         const fieldSelector = serializedFieldSelector(fieldName, fieldSchema);
+
+        if (isCustomScalarSchema(fieldSchema)) {
+            return fieldSelector;
+        }
+
         const unwrappedSchema = unwrapFieldSchema(fieldSchema);
 
         if (unwrappedSchema instanceof ZodUndefined) {

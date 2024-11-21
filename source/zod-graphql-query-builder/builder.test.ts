@@ -3,6 +3,7 @@ import { oneLine } from 'common-tags';
 import assert from 'node:assert';
 import { z } from 'zod';
 import { createQueryBuilder, type OperationOptions, type QueryBuilder } from './builder.js';
+import { createCustomScalarSchema } from './custom-scalar.js';
 import type { QuerySchema } from './query-schema.js';
 import { variablePlaceholder } from './values/variable-placeholder.js';
 
@@ -634,4 +635,31 @@ function checkQuery(testCase: QueryTestCase): TestFn {
             expectedQuery: `${operationType} { foo, bar }`
         })
     );
+
+    test(
+        `builds a ${operationType} with a custom scalar`,
+        checkQuery({
+            type: operationType,
+            buildSchema() {
+                return z
+                    .object({
+                        foo: createCustomScalarSchema(z.object({ bar: z.record(z.string()) }).strip())
+                    })
+                    .strict();
+            },
+            expectedQuery: `${operationType} { foo }`
+        })
+    );
+});
+
+test('a schema with custom scalar validates correctly', () => {
+    const schema = z
+        .object({
+            foo: createCustomScalarSchema(z.object({ bar: z.record(z.string()) }).strip())
+        })
+        .strict();
+
+    const result = schema.safeParse({ foo: { bar: 'bar' } });
+
+    assert.strictEqual(result.error?.issues[0]?.message, 'Expected object, received string');
 });
