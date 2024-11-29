@@ -289,7 +289,7 @@ function checkQuery(testCase: QueryTestCase): TestFn {
             expectedQuery: `${operationType} { foo { bar: qux(parameter: "value") { baz } } }`
         })
     );
-
+    // example test with new expected query
     test(
         `builds a ${operationType} with fragments`,
         checkQuery({
@@ -304,8 +304,7 @@ function checkQuery(testCase: QueryTestCase): TestFn {
                     })
                     .strict();
             },
-            expectedQuery:
-                `${operationType} { foo { ... on A { __typename, valueA }, ... on B { __typename, valueB } } }`
+            expectedQuery: `${operationType} { foo { __typename, ... on A { valueA }, ... on B { valueB } } }`
         })
     );
 

@@ -154,14 +154,14 @@ export function createQueryBuilder(): QueryBuilder {
     ): NormalizedGraphqlValue {
         let referencedVariables = new Set<string>();
         const serializedFragments: string[] = [];
-
+        // how can we ignore/ remove __typename here?
         for (const [fragmentName, fragmentSchema] of unionOptions.entries()) {
             const serializedFragment = serializeObjectSchema(fragmentSchema);
             referencedVariables = new Set([...referencedVariables, ...serializedFragment.referencedVariables]);
             serializedFragments.push(`... on ${fragmentName}${serializedFragment.serializedValue}`);
         }
         return {
-            serializedValue: ` { ${serializedFragments.join(', ')} }`,
+            serializedValue: ` { __typename  ${serializedFragments.join(', ')} }`,
             referencedVariables
         };
     }
