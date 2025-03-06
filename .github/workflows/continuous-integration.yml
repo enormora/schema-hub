@@ -60,6 +60,8 @@ jobs:
               with:
                   name: build-artifacts-node-${{ matrix.node-version }}
                   path: target/build
+            - name: Modify AppArmor Settings
+              run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
             - name: Run unit tests
               run: "unshare --map-root-user -n npm run test:unit:with-coverage"
 
