@@ -1,7 +1,8 @@
-import { z, ZodArray, ZodDiscriminatedUnion, type ZodLazy, type ZodTuple, ZodUndefined } from 'zod';
+import { z, ZodArray, ZodDiscriminatedUnion, type ZodLazy, ZodUndefined } from 'zod';
 import { isCustomScalarSchema } from './custom-scalar.js';
 import {
     type FieldSchema,
+    type FieldSchemaTuple,
     type FieldShape,
     type FragmentsSchema,
     type FragmentTypeName,
@@ -61,7 +62,7 @@ function unwrapFromArraySchema<SchemaType extends FieldSchema>(
 
 function unwrapFromTupleSchema<SchemaType extends FieldSchema>(
     predicate: (schema: FieldSchema) => schema is SchemaType,
-    schema: ZodTuple<[FieldSchema, ...FieldSchema[]]>
+    schema: FieldSchemaTuple<FieldSchema>
 ): SchemaType | null {
     const [firstElementSchema] = schema.items;
     const unwrappedElementSchema = unwrapFieldSchema(firstElementSchema);

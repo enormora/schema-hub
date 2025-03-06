@@ -476,6 +476,23 @@ function checkQuery(testCase: QueryTestCase): TestFn {
     );
 
     test(
+        `builds a ${operationType} with objects in tuples with rest`,
+        checkQuery({
+            type: operationType,
+            buildSchema() {
+                return z
+                    .object({
+                        foo: z.tuple([z.object({ bar: z.string() }).strict()]).rest(
+                            z.object({ x: z.number() }).strict()
+                        )
+                    })
+                    .strict();
+            },
+            expectedQuery: `${operationType} { foo { bar } }`
+        })
+    );
+
+    test(
         `builds a ${operationType} with objects in nullable arrays`,
         checkQuery({
             type: operationType,

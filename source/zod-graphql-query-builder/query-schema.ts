@@ -42,6 +42,7 @@ export declare type FragmentUnionOptionSchema = ZodObject<
     },
     'strict'
 >;
+
 // eslint-disable-next-line @typescript-eslint/consistent-indexed-object-style -- see https://github.com/microsoft/TypeScript/pull/57293
 export type FieldShape = { readonly [FieldName: string]: FieldSchema; };
 export type NonWrappedFieldSchema =
@@ -50,7 +51,7 @@ export type NonWrappedFieldSchema =
     | StrictObjectSchema<FieldShape>
     | ZodArray<FieldSchema>
     | ZodDiscriminatedUnion<'__typename', FragmentUnionOptionSchema[]>
-    | ZodTuple<[FieldSchema, ...FieldSchema[]]>
+    | ZodTuple<[FieldSchema, ...FieldSchema[]], FieldSchema | null>
     | ZodUnion<readonly [PrimitiveSchema, ...(readonly PrimitiveSchema[])]>;
 export type WrappedFieldSchema =
     | EffectSchema<FieldSchema>
@@ -115,10 +116,12 @@ export function unwrapFieldSchema(parent: FieldSchema): NonWrappedFieldSchema {
 type QueryShape = Record<string, FieldSchema>;
 export type QuerySchema = StrictObjectSchema<QueryShape>;
 
+export type FieldSchemaTuple<Schema extends FieldSchema> = ZodTuple<[Schema, ...Schema[]], Schema | null>;
+
 export type ObjectOrListSchema =
+    | FieldSchemaTuple<FieldSchema>
     | StrictObjectSchema<FieldShape>
-    | ZodArray<FieldSchema>
-    | ZodTuple<[FieldSchema, ...FieldSchema[]]>;
+    | ZodArray<FieldSchema>;
 
 export function isObjectOrListSchema(schema: FieldSchema): schema is ObjectOrListSchema {
     return isStrictObjectSchema(schema) || schema instanceof ZodArray || schema instanceof ZodTuple;
@@ -130,7 +133,10 @@ export function isFragmentsSchema(schema: FieldSchema): schema is FragmentsSchem
     return schema instanceof ZodDiscriminatedUnion;
 }
 
-export type UnionOrListSchema = FragmentsSchema | ZodArray<FieldSchema> | ZodTuple<[FieldSchema, ...FieldSchema[]]>;
+export type UnionOrListSchema =
+    | FieldSchemaTuple<FieldSchema>
+    | FragmentsSchema
+    | ZodArray<FieldSchema>;
 
 export function isUnionOrListSchema(schema: FieldSchema): schema is UnionOrListSchema {
     return isFragmentsSchema(schema) || schema instanceof ZodArray || schema instanceof ZodTuple;
