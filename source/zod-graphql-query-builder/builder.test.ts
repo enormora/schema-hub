@@ -493,6 +493,21 @@ function checkQuery(testCase: QueryTestCase): TestFn {
     );
 
     test(
+        `builds a ${operationType} with objects in non-empty arrays`,
+        checkQuery({
+            type: operationType,
+            buildSchema() {
+                return z
+                    .object({
+                        foo: z.array(z.object({ bar: z.string() }).strict()).nonempty()
+                    })
+                    .strict();
+            },
+            expectedQuery: `${operationType} { foo { bar } }`
+        })
+    );
+
+    test(
         `builds a ${operationType} with objects in nullable arrays`,
         checkQuery({
             type: operationType,

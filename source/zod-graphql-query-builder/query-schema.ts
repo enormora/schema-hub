@@ -1,4 +1,5 @@
 import {
+    type ArrayCardinality,
     ZodArray,
     type ZodBoolean,
     ZodDiscriminatedUnion,
@@ -49,7 +50,7 @@ export type NonWrappedFieldSchema =
     | CustomScalarSchema<ZodTypeAny>
     | PrimitiveSchema
     | StrictObjectSchema<FieldShape>
-    | ZodArray<FieldSchema>
+    | ZodArray<FieldSchema, ArrayCardinality>
     | ZodDiscriminatedUnion<'__typename', FragmentUnionOptionSchema[]>
     | ZodTuple<[FieldSchema, ...FieldSchema[]], FieldSchema | null>
     | ZodUnion<readonly [PrimitiveSchema, ...(readonly PrimitiveSchema[])]>;
@@ -121,7 +122,7 @@ export type FieldSchemaTuple<Schema extends FieldSchema> = ZodTuple<[Schema, ...
 export type ObjectOrListSchema =
     | FieldSchemaTuple<FieldSchema>
     | StrictObjectSchema<FieldShape>
-    | ZodArray<FieldSchema>;
+    | ZodArray<FieldSchema, ArrayCardinality>;
 
 export function isObjectOrListSchema(schema: FieldSchema): schema is ObjectOrListSchema {
     return isStrictObjectSchema(schema) || schema instanceof ZodArray || schema instanceof ZodTuple;
@@ -136,7 +137,7 @@ export function isFragmentsSchema(schema: FieldSchema): schema is FragmentsSchem
 export type UnionOrListSchema =
     | FieldSchemaTuple<FieldSchema>
     | FragmentsSchema
-    | ZodArray<FieldSchema>;
+    | ZodArray<FieldSchema, ArrayCardinality>;
 
 export function isUnionOrListSchema(schema: FieldSchema): schema is UnionOrListSchema {
     return isFragmentsSchema(schema) || schema instanceof ZodArray || schema instanceof ZodTuple;
