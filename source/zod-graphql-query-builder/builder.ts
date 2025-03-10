@@ -1,4 +1,12 @@
-import { type ArrayCardinality, z, ZodArray, ZodDiscriminatedUnion, type ZodLazy, ZodUndefined } from 'zod';
+import {
+    type ArrayCardinality,
+    z,
+    ZodArray,
+    ZodDiscriminatedUnion,
+    type ZodLazy,
+    ZodReadonly,
+    ZodUndefined
+} from 'zod';
 import { isCustomScalarSchema } from './custom-scalar.js';
 import {
     type FieldSchema,
@@ -229,8 +237,9 @@ export function createQueryBuilder(): QueryBuilder {
         let referencedVariables = new Set<string>();
         const { variableDefinitions = {}, operationName = '' } = options;
         const bodyEntries: string[] = [];
+        const shape = schema instanceof ZodReadonly ? schema.unwrap().shape : schema.shape;
 
-        for (const [fieldName, fieldSchema] of Object.entries(schema.shape)) {
+        for (const [fieldName, fieldSchema] of Object.entries(shape)) {
             const serializedField = serializeFieldSchema(fieldName, fieldSchema);
 
             if (serializedField.serializedValue.length > 0) {

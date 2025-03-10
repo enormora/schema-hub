@@ -15,7 +15,8 @@ export default [
             'prettier/prettier': 'off',
             'dprint/typescript': ['error', { configFile: 'dprint.json' }],
             'import/order': 'off',
-            '@stylistic/member-delimiter-style': 'off'
+            '@stylistic/member-delimiter-style': 'off',
+            '@stylistic/operator-linebreak': 'off'
         }
     },
     {

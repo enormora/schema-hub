@@ -12,7 +12,7 @@
         "singleBodyPosition": "nextLine",
         "nextControlFlowPosition": "sameLine",
         "trailingCommas": "never",
-        "operatorPosition": "nextLine",
+        "operatorPosition": "sameLine",
         "preferHanging": false,
         "preferSingleLine": false,
         "arrowFunction.useParentheses": "force",
@@ -68,11 +68,7 @@
         "emphasisKind": "underscores",
         "strongKind": "asterisks"
     },
-    "excludes": [
-        "target/",
-        "**/node_modules",
-        "**/*-lock.json"
-    ],
+    "excludes": ["target/", "**/node_modules", "**/*-lock.json"],
     "plugins": [
         "./node_modules/@dprint/typescript/plugin.wasm",
         "./node_modules/@dprint/json/plugin.wasm",
