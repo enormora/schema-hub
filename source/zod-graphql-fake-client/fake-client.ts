@@ -47,12 +47,12 @@ export function createFakeGraphqlClient(clientOptions: FakeClientOptions = {}): 
         const variableDefinitions = extractVariableDefinitions(variables);
         const variableValues = extractVariableValues(variables);
 
-        const serializedQuery = type === 'query'
-            ? buildGraphqlQuery(schema, {
+        const serializedQuery = type === 'query' ?
+            buildGraphqlQuery(schema, {
                 operationName: options.operationName,
                 variableDefinitions
-            })
-            : buildGraphqlMutation(schema, {
+            }) :
+            buildGraphqlMutation(schema, {
                 operationName: options.operationName,
                 variableDefinitions
             });

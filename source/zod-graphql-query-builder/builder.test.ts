@@ -50,9 +50,9 @@ function checkQuery(testCase: QueryTestCase): TestFn {
         const builder = createQueryBuilder();
         const schema = buildSchema(builder);
 
-        const result = testCase.type === 'query'
-            ? builder.buildQuery(schema, operationOptions)
-            : builder.buildMutation(schema, operationOptions);
+        const result = testCase.type === 'query' ?
+            builder.buildQuery(schema, operationOptions) :
+            builder.buildMutation(schema, operationOptions);
 
         assert.strictEqual(result, expectedQuery);
     };
@@ -649,6 +649,28 @@ function checkQuery(testCase: QueryTestCase): TestFn {
                 return z.object({ foo: z.array(z.string()).readonly() }).strict();
             },
             expectedQuery: `${operationType} { foo }`
+        })
+    );
+
+    test(
+        `builds a ${operationType} with readonly objects`,
+        checkQuery({
+            type: operationType,
+            buildSchema() {
+                return z.object({ foo: z.string() }).strict().readonly();
+            },
+            expectedQuery: `${operationType} { foo }`
+        })
+    );
+
+    test(
+        `builds a ${operationType} with nested readonly objects`,
+        checkQuery({
+            type: operationType,
+            buildSchema() {
+                return z.object({ foo: z.object({ bar: z.string() }).strict().readonly() }).strict().readonly();
+            },
+            expectedQuery: `${operationType} { foo { bar } }`
         })
     );
 

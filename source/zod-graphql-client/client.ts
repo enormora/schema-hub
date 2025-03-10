@@ -110,12 +110,12 @@ export function createClientFactory(dependencies: CreateClientDependencies): Cre
             const variableDefinitions = extractVariableDefinitions(variables);
             const variableValues = extractVariableValues(variables);
 
-            const serializedQuery = operationType === 'query'
-                ? buildGraphqlQuery(schema, {
+            const serializedQuery = operationType === 'query' ?
+                buildGraphqlQuery(schema, {
                     operationName: options.operationName,
                     variableDefinitions
-                })
-                : buildGraphqlMutation(schema, {
+                }) :
+                buildGraphqlMutation(schema, {
                     operationName: options.operationName,
                     variableDefinitions
                 });

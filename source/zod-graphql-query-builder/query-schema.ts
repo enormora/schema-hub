@@ -11,7 +11,7 @@ import {
     type ZodNumber,
     ZodObject,
     type ZodRawShape,
-    type ZodReadonly,
+    ZodReadonly,
     type ZodString,
     ZodTuple,
     type ZodTypeAny,
@@ -66,7 +66,8 @@ function isWrappedFieldSchema(schema: FieldSchema): schema is WrappedFieldSchema
         return false;
     }
 
-    return schema instanceof ZodLazy || schema instanceof ZodEffects || schema instanceof ZodNullable;
+    return schema instanceof ZodLazy || schema instanceof ZodEffects || schema instanceof ZodNullable ||
+        schema instanceof ZodReadonly;
 }
 
 type UnwrappedChainResult = {
@@ -74,6 +75,7 @@ type UnwrappedChainResult = {
     wrapperElements: WrappedFieldSchema[];
 };
 
+// eslint-disable-next-line max-statements,complexity -- no idea how to refactor for now
 function recursiveUnwrapFieldSchemaChain(
     parent: FieldSchema,
     currentChain: WrappedFieldSchema[]
@@ -92,6 +94,8 @@ function recursiveUnwrapFieldSchemaChain(
     } else if (parent instanceof ZodEffects) {
         unwrapped = parent.innerType();
     } else if (parent instanceof ZodNullable) {
+        unwrapped = parent.unwrap();
+    } else if (parent instanceof ZodReadonly) {
         unwrapped = parent.unwrap();
     }
 
@@ -115,7 +119,7 @@ export function unwrapFieldSchema(parent: FieldSchema): NonWrappedFieldSchema {
 }
 
 type QueryShape = Record<string, FieldSchema>;
-export type QuerySchema = StrictObjectSchema<QueryShape>;
+export type QuerySchema = StrictObjectSchema<QueryShape> | ZodReadonly<StrictObjectSchema<QueryShape>>;
 
 export type FieldSchemaTuple<Schema extends FieldSchema> = ZodTuple<[Schema, ...Schema[]], Schema | null>;
 
