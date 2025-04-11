@@ -1,10 +1,8 @@
 import { isNonEmptyArray, type NonEmptyArray } from '../tuple/non-empty-array.js';
 
-type PathItem = number | string;
+type Path = NonEmptyArray<PropertyKey>;
 
-type Path = NonEmptyArray<PathItem>;
-
-export const isNonEmptyPath = isNonEmptyArray<PathItem>;
+export const isNonEmptyPath = isNonEmptyArray<PropertyKey>;
 
 export function formatPath(path: Path): string {
     return path.reduce<string>((currentFormattedPath, item, index) => {
@@ -12,10 +10,10 @@ export function formatPath(path: Path): string {
             return `${currentFormattedPath}[${item}]`;
         }
         if (index === 0) {
-            return item;
+            return item.toString();
         }
 
-        return `${currentFormattedPath}.${item}`;
+        return `${currentFormattedPath}.${item.toString()}`;
     }, '');
 }
 
@@ -33,7 +31,7 @@ type ValueNotFoundResult = {
 
 type ValueResult = FoundValueResult | ValueNotFoundResult;
 
-type Indexable = Record<PathItem, unknown>;
+type Indexable = Record<PropertyKey, unknown>;
 
 function isIndexable(value: unknown): value is Indexable {
     return typeof value === 'object' && value !== null;
@@ -45,15 +43,15 @@ function isMap(value: unknown): value is Map<unknown, unknown> {
 
 type MapEntryPathItem = 'key' | 'value';
 
-function isMapEntryPathItem(pathItem: PathItem): pathItem is MapEntryPathItem {
-    return (['key', 'value'] as PathItem[]).includes(pathItem);
+function isMapEntryPathItem(pathItem: PropertyKey): pathItem is MapEntryPathItem {
+    return (['key', 'value'] as PropertyKey[]).includes(pathItem);
 }
 
-function determinePathItemKind(pathItem: PathItem): 'key' | 'property' {
+function determinePathItemKind(pathItem: PropertyKey): 'key' | 'property' {
     return typeof pathItem === 'number' ? 'key' : 'property';
 }
 
-function findMapValueByPath(value: Map<unknown, unknown>, path: readonly PathItem[]): ValueResult {
+function findMapValueByPath(value: Map<unknown, unknown>, path: readonly PropertyKey[]): ValueResult {
     if (isNonEmptyPath(path)) {
         const [mapEntryKey, keyOrValue, ...remainingPath] = path;
 
@@ -76,7 +74,7 @@ function findMapValueByPath(value: Map<unknown, unknown>, path: readonly PathIte
     return { found: true, value };
 }
 
-export function findValueByPath(value: unknown, path: readonly PathItem[]): ValueResult {
+export function findValueByPath(value: unknown, path: readonly PropertyKey[]): ValueResult {
     if (isMap(value)) {
         return findMapValueByPath(value, path);
     }
