@@ -1,7 +1,7 @@
 import { test } from '@sondr3/minitest';
 import { stripIndents } from 'common-tags';
 import assert from 'node:assert';
-import { z } from 'zod';
+import { z } from 'zod/v4';
 import type { FormattedZodError } from './formatted-error.js';
 import { formatZodError, parse, safeParse } from './formatter.js';
 

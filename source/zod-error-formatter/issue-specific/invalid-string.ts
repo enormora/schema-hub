@@ -1,34 +1,33 @@
-import type { ZodInvalidStringIssue } from 'zod';
+import type {
+    $ZodIssueInvalidStringFormat,
+    $ZodIssueStringIncludes,
+    $ZodStringFormatIssues,
+    $ZodStringFormats
+} from 'zod/v4/core';
 
-function hasProperty<ObjectType extends Record<string, unknown>, Key extends string>(
-    object: ObjectType,
-    key: Key
-): object is Extract<ObjectType, Record<Key, unknown>> {
-    return Object.hasOwn(object, key);
+function isStringFormatIssue<Format extends $ZodStringFormats>(
+    issue: $ZodIssueInvalidStringFormat,
+    format: Format
+): issue is Extract<$ZodStringFormatIssues, { format: Format; }> {
+    return issue.format === format;
 }
 
-function formatIncludesValidation(includes: string, position?: number): string {
-    if (position !== undefined) {
-        return `string must include "${includes}" at one ore more positions greater than or equal to ${position}`;
-    }
-
-    return `string must include "${includes}"`;
+function formatIncludesValidation(issue: $ZodIssueStringIncludes): string {
+    return `string must include "${issue.includes}"`;
 }
 
-export function formatInvalidStringIssueMessage(issue: ZodInvalidStringIssue): string {
-    const { validation } = issue;
-
-    if (validation === 'regex') {
+export function formatInvalidStringIssueMessage(issue: $ZodIssueInvalidStringFormat | $ZodStringFormatIssues): string {
+    if (isStringFormatIssue(issue, 'regex')) {
         return 'string doesn’t match expected pattern';
     }
-    if (typeof validation === 'string') {
-        return `invalid ${validation}`;
+    if (isStringFormatIssue(issue, 'includes')) {
+        return formatIncludesValidation(issue);
     }
-    if (hasProperty(validation, 'includes')) {
-        return formatIncludesValidation(validation.includes, validation.position);
+    if (isStringFormatIssue(issue, 'starts_with')) {
+        return `string must start with "${issue.prefix}"`;
     }
-    if (hasProperty(validation, 'startsWith')) {
-        return `string must start with "${validation.startsWith}"`;
+    if (isStringFormatIssue(issue, 'ends_with')) {
+        return `string must end with "${issue.suffix}"`;
     }
-    return `string must end with "${validation.endsWith}"`;
+    return `invalid ${issue.format}`;
 }

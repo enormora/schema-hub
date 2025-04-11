@@ -1,7 +1,7 @@
 import { test } from '@sondr3/minitest';
 import { oneLine } from 'common-tags';
 import assert from 'node:assert';
-import { z } from 'zod';
+import { z } from 'zod/v4-mini';
 import { createQueryBuilder, type OperationOptions, type QueryBuilder } from './builder.js';
 import { createCustomScalarSchema } from './custom-scalar.js';
 import type { QuerySchema } from './query-schema.js';
@@ -65,12 +65,11 @@ function checkQuery(testCase: QueryTestCase): TestFn {
             type: operationType,
             buildSchema(builder) {
                 return z
-                    .object({
+                    .strictObject({
                         foo: builder.registerFieldOptions(z.string(), {
                             parameters: { bar: variablePlaceholder('$bar') }
                         })
-                    })
-                    .strict();
+                    });
             },
             operationOptions: {},
             expectedError: 'Referenced variable "$bar" is missing in variableDefinitions'
@@ -82,7 +81,7 @@ function checkQuery(testCase: QueryTestCase): TestFn {
         checkQuery({
             type: operationType,
             buildSchema() {
-                return z.object({ foo: z.string() }).strict();
+                return z.strictObject({ foo: z.string() });
             },
             expectedQuery: `${operationType} { foo }`
         })
@@ -93,7 +92,7 @@ function checkQuery(testCase: QueryTestCase): TestFn {
         checkQuery({
             type: operationType,
             buildSchema() {
-                return z.object({ foo: z.string() }).strict();
+                return z.strictObject({ foo: z.string() });
             },
             operationOptions: { operationName: 'theOperationName' },
             expectedQuery: `${operationType} theOperationName { foo }`
@@ -106,12 +105,11 @@ function checkQuery(testCase: QueryTestCase): TestFn {
             type: operationType,
             buildSchema(builder) {
                 return z
-                    .object({
+                    .strictObject({
                         foo: builder.registerFieldOptions(z.string(), {
                             parameters: { bar: variablePlaceholder('$bar') }
                         })
-                    })
-                    .strict();
+                    });
             },
             operationOptions: {
                 variableDefinitions: { $bar: 'String!' }
@@ -125,15 +123,15 @@ function checkQuery(testCase: QueryTestCase): TestFn {
         checkQuery({
             type: operationType,
             buildSchema(builder) {
-                return z
-                    .object({
-                        foo: builder
+                const schema = z
+                    .strictObject({
+                        foo: z.nullable(builder
                             .registerFieldOptions(z.string(), {
                                 parameters: { bar: 'baz' }
-                            })
-                            .nullable()
-                    })
-                    .strict();
+                            }))
+                    });
+
+                return schema;
             },
             expectedQuery: `${operationType} { foo(bar: "baz") }`
         })
@@ -145,14 +143,15 @@ function checkQuery(testCase: QueryTestCase): TestFn {
         checkQuery({
             type: operationType,
             buildSchema(builder) {
-                return z
-                    .object({
+                const schema = z
+                    .strictObject({
                         foo: builder.registerFieldOptions(
-                            builder
-                                .registerFieldOptions(z.string(), {
-                                    parameters: { bar: 'inner-overwritten', baz: 'inner-only' }
-                                })
-                                .nullable(),
+                            z.nullable(
+                                builder
+                                    .registerFieldOptions(z.string(), {
+                                        parameters: { bar: 'inner-overwritten', baz: 'inner-only' }
+                                    })
+                            ),
                             {
                                 parameters: {
                                     bar: 'outer-overwritten',
@@ -160,8 +159,9 @@ function checkQuery(testCase: QueryTestCase): TestFn {
                                 }
                             }
                         )
-                    })
-                    .strict();
+                    });
+
+                return schema;
             },
             expectedQuery: `${operationType} { foo(bar: "outer-overwritten", qux: "outer-only") }`
         })
@@ -173,12 +173,11 @@ function checkQuery(testCase: QueryTestCase): TestFn {
             type: operationType,
             buildSchema(builder) {
                 return z
-                    .object({
+                    .strictObject({
                         foo: builder.registerFieldOptions(z.string(), {
                             parameters: { bar: variablePlaceholder('$bar') }
                         })
-                    })
-                    .strict();
+                    });
             },
             operationOptions: {
                 operationName: 'theOperationName',
@@ -193,7 +192,7 @@ function checkQuery(testCase: QueryTestCase): TestFn {
         checkQuery({
             type: operationType,
             buildSchema() {
-                return z.object({ foo: z.string(), bar: z.number() }).strict();
+                return z.strictObject({ foo: z.string(), bar: z.number() });
             },
             expectedQuery: `${operationType} { foo, bar }`
         })
@@ -204,7 +203,8 @@ function checkQuery(testCase: QueryTestCase): TestFn {
         checkQuery({
             type: operationType,
             buildSchema() {
-                return z.object({ foo: z.object({ bar: z.object({ baz: z.number() }).strict() }).strict() }).strict();
+                const schema = z.strictObject({ foo: z.strictObject({ bar: z.strictObject({ baz: z.number() }) }) });
+                return schema;
             },
             expectedQuery: `${operationType} { foo { bar { baz } } }`
         })
@@ -215,12 +215,12 @@ function checkQuery(testCase: QueryTestCase): TestFn {
         checkQuery({
             type: operationType,
             buildSchema() {
-                return z
-                    .object({
-                        foo: z.object({ bar: z.object({ baz: z.number() }).strict() }).strict(),
+                const schema = z
+                    .strictObject({
+                        foo: z.strictObject({ bar: z.strictObject({ baz: z.number() }) }),
                         qux: z.boolean()
-                    })
-                    .strict();
+                    });
+                return schema;
             },
             expectedQuery: `${operationType} { foo { bar { baz } }, qux }`
         })
@@ -231,17 +231,16 @@ function checkQuery(testCase: QueryTestCase): TestFn {
         checkQuery({
             type: operationType,
             buildSchema(builder) {
-                return z
-                    .object({
+                const schema = z
+                    .strictObject({
                         foo: z
-                            .object({
-                                bar: builder.registerFieldOptions(z.object({ baz: z.number() }).strict(), {
+                            .strictObject({
+                                bar: builder.registerFieldOptions(z.strictObject({ baz: z.number() }), {
                                     parameters: { parameter: 'value' }
                                 })
                             })
-                            .strict()
-                    })
-                    .strict();
+                    });
+                return schema;
             },
             expectedQuery: `${operationType} { foo { bar(parameter: "value") { baz } } }`
         })
@@ -252,17 +251,16 @@ function checkQuery(testCase: QueryTestCase): TestFn {
         checkQuery({
             type: operationType,
             buildSchema(builder) {
-                return z
-                    .object({
+                const schema = z
+                    .strictObject({
                         foo: z
-                            .object({
-                                bar: builder.registerFieldOptions(z.object({ baz: z.number() }).strict(), {
+                            .strictObject({
+                                bar: builder.registerFieldOptions(z.strictObject({ baz: z.number() }), {
                                     aliasFor: 'qux'
                                 })
                             })
-                            .strict()
-                    })
-                    .strict();
+                    });
+                return schema;
             },
             expectedQuery: `${operationType} { foo { bar: qux { baz } } }`
         })
@@ -273,18 +271,17 @@ function checkQuery(testCase: QueryTestCase): TestFn {
         checkQuery({
             type: operationType,
             buildSchema(builder) {
-                return z
-                    .object({
+                const schema = z
+                    .strictObject({
                         foo: z
-                            .object({
-                                bar: builder.registerFieldOptions(z.object({ baz: z.number() }).strict(), {
+                            .strictObject({
+                                bar: builder.registerFieldOptions(z.strictObject({ baz: z.number() }), {
                                     aliasFor: 'qux',
                                     parameters: { parameter: 'value' }
                                 })
                             })
-                            .strict()
-                    })
-                    .strict();
+                    });
+                return schema;
             },
             expectedQuery: `${operationType} { foo { bar: qux(parameter: "value") { baz } } }`
         })
@@ -295,14 +292,14 @@ function checkQuery(testCase: QueryTestCase): TestFn {
         checkQuery({
             type: operationType,
             buildSchema() {
-                return z
-                    .object({
+                const schema = z
+                    .strictObject({
                         foo: z.discriminatedUnion('__typename', [
-                            z.object({ __typename: z.literal('A'), valueA: z.string() }).strict(),
-                            z.object({ __typename: z.literal('B'), valueB: z.string() }).strict()
+                            z.strictObject({ __typename: z.literal('A'), valueA: z.string() }),
+                            z.strictObject({ __typename: z.literal('B'), valueB: z.string() })
                         ])
-                    })
-                    .strict();
+                    });
+                return schema;
             },
             expectedQuery:
                 `${operationType} { foo { ... on A { __typename, valueA }, ... on B { __typename, valueB } } }`
@@ -314,19 +311,18 @@ function checkQuery(testCase: QueryTestCase): TestFn {
         checkQuery({
             type: operationType,
             buildSchema(builder) {
-                return z
-                    .object({
+                const schema = z
+                    .strictObject({
                         foo: z.discriminatedUnion('__typename', [
                             z
-                                .object({
+                                .strictObject({
                                     __typename: z.literal('A'),
                                     valueA: builder.registerFieldOptions(z.string(), { parameters: { baz: 'qux' } })
-                                })
-                                .strict(),
-                            z.object({ __typename: z.literal('B'), valueB: z.string() }).strict()
+                                }),
+                            z.strictObject({ __typename: z.literal('B'), valueB: z.string() })
                         ])
-                    })
-                    .strict();
+                    });
+                return schema;
             },
             expectedQuery: oneLine`${operationType} { foo { ... on A {
                 __typename, valueA(baz: "qux") }, ... on B { __typename, valueB } } }`
@@ -338,22 +334,21 @@ function checkQuery(testCase: QueryTestCase): TestFn {
         checkQuery({
             type: operationType,
             buildSchema() {
-                return z
-                    .object({
+                const schema = z
+                    .strictObject({
                         foo: z.discriminatedUnion('__typename', [
                             z
-                                .object({
+                                .strictObject({
                                     __typename: z.literal('A'),
                                     valueA: z.discriminatedUnion('__typename', [
-                                        z.object({ __typename: z.literal('C'), valueC: z.string() }).strict(),
-                                        z.object({ __typename: z.literal('D'), valueD: z.string() }).strict()
+                                        z.strictObject({ __typename: z.literal('C'), valueC: z.string() }),
+                                        z.strictObject({ __typename: z.literal('D'), valueD: z.string() })
                                     ])
-                                })
-                                .strict(),
-                            z.object({ __typename: z.literal('B'), valueB: z.string() }).strict()
+                                }),
+                            z.strictObject({ __typename: z.literal('B'), valueB: z.string() })
                         ])
-                    })
-                    .strict();
+                    });
+                return schema;
             },
             expectedQuery: oneLine`${operationType} { foo { ... on A { __typename, valueA {
             ... on C { __typename, valueC }, ... on D { __typename, valueD } } },
@@ -366,14 +361,14 @@ function checkQuery(testCase: QueryTestCase): TestFn {
         checkQuery({
             type: operationType,
             buildSchema() {
-                return z
-                    .object({
+                const schema = z
+                    .strictObject({
                         foo: z.array(z.discriminatedUnion('__typename', [
-                            z.object({ __typename: z.literal('A'), valueA: z.string() }).strict(),
-                            z.object({ __typename: z.literal('B'), valueB: z.string() }).strict()
+                            z.strictObject({ __typename: z.literal('A'), valueA: z.string() }),
+                            z.strictObject({ __typename: z.literal('B'), valueB: z.string() })
                         ]))
-                    })
-                    .strict();
+                    });
+                return schema;
             },
             expectedQuery:
                 `${operationType} { foo { ... on A { __typename, valueA }, ... on B { __typename, valueB } } }`
@@ -385,14 +380,14 @@ function checkQuery(testCase: QueryTestCase): TestFn {
         checkQuery({
             type: operationType,
             buildSchema() {
-                return z
-                    .object({
+                const schema = z
+                    .strictObject({
                         foo: z.tuple([z.discriminatedUnion('__typename', [
-                            z.object({ __typename: z.literal('A'), valueA: z.string() }).strict(),
-                            z.object({ __typename: z.literal('B'), valueB: z.string() }).strict()
+                            z.strictObject({ __typename: z.literal('A'), valueA: z.string() }),
+                            z.strictObject({ __typename: z.literal('B'), valueB: z.string() })
                         ])])
-                    })
-                    .strict();
+                    });
+                return schema;
             },
             expectedQuery:
                 `${operationType} { foo { ... on A { __typename, valueA }, ... on B { __typename, valueB } } }`
@@ -404,16 +399,15 @@ function checkQuery(testCase: QueryTestCase): TestFn {
         checkQuery({
             type: operationType,
             buildSchema() {
-                return z
-                    .object({
-                        foo: z
+                const schema = z
+                    .strictObject({
+                        foo: z.nullable(z
                             .array(z.discriminatedUnion('__typename', [
-                                z.object({ __typename: z.literal('A'), valueA: z.string() }).strict(),
-                                z.object({ __typename: z.literal('B'), valueB: z.string() }).strict()
-                            ]))
-                            .nullable()
-                    })
-                    .strict();
+                                z.strictObject({ __typename: z.literal('A'), valueA: z.string() }),
+                                z.strictObject({ __typename: z.literal('B'), valueB: z.string() })
+                            ])))
+                    });
+                return schema;
             },
             expectedQuery:
                 `${operationType} { foo { ... on A { __typename, valueA }, ... on B { __typename, valueB } } }`
@@ -425,20 +419,18 @@ function checkQuery(testCase: QueryTestCase): TestFn {
         checkQuery({
             type: operationType,
             buildSchema() {
-                return z
-                    .object({
-                        foo: z
+                const schema = z
+                    .strictObject({
+                        foo: z.nullable(z
                             .array(
-                                z
+                                z.nullable(z
                                     .discriminatedUnion('__typename', [
-                                        z.object({ __typename: z.literal('A'), valueA: z.string() }).strict(),
-                                        z.object({ __typename: z.literal('B'), valueB: z.string() }).strict()
-                                    ])
-                                    .nullable()
-                            )
-                            .nullable()
-                    })
-                    .strict();
+                                        z.strictObject({ __typename: z.literal('A'), valueA: z.string() }),
+                                        z.strictObject({ __typename: z.literal('B'), valueB: z.string() })
+                                    ]))
+                            ))
+                    });
+                return schema;
             },
             expectedQuery:
                 `${operationType} { foo { ... on A { __typename, valueA }, ... on B { __typename, valueB } } }`
@@ -450,11 +442,11 @@ function checkQuery(testCase: QueryTestCase): TestFn {
         checkQuery({
             type: operationType,
             buildSchema() {
-                return z
-                    .object({
-                        foo: z.array(z.object({ bar: z.string() }).strict())
-                    })
-                    .strict();
+                const schema = z
+                    .strictObject({
+                        foo: z.array(z.strictObject({ bar: z.string() }))
+                    });
+                return schema;
             },
             expectedQuery: `${operationType} { foo { bar } }`
         })
@@ -465,11 +457,11 @@ function checkQuery(testCase: QueryTestCase): TestFn {
         checkQuery({
             type: operationType,
             buildSchema() {
-                return z
-                    .object({
-                        foo: z.tuple([z.object({ bar: z.string() }).strict()])
-                    })
-                    .strict();
+                const schema = z
+                    .strictObject({
+                        foo: z.tuple([z.strictObject({ bar: z.string() })])
+                    });
+                return schema;
             },
             expectedQuery: `${operationType} { foo { bar } }`
         })
@@ -480,13 +472,11 @@ function checkQuery(testCase: QueryTestCase): TestFn {
         checkQuery({
             type: operationType,
             buildSchema() {
-                return z
-                    .object({
-                        foo: z.tuple([z.object({ bar: z.string() }).strict()]).rest(
-                            z.object({ x: z.number() }).strict()
-                        )
-                    })
-                    .strict();
+                const schema = z
+                    .strictObject({
+                        foo: z.tuple([z.strictObject({ bar: z.string() })], z.strictObject({ x: z.number() }))
+                    });
+                return schema;
             },
             expectedQuery: `${operationType} { foo { bar } }`
         })
@@ -498,10 +488,9 @@ function checkQuery(testCase: QueryTestCase): TestFn {
             type: operationType,
             buildSchema() {
                 return z
-                    .object({
-                        foo: z.array(z.object({ bar: z.string() }).strict()).nonempty()
-                    })
-                    .strict();
+                    .strictObject({
+                        foo: z.array(z.strictObject({ bar: z.string() })).check(z.minLength(1))
+                    });
             },
             expectedQuery: `${operationType} { foo { bar } }`
         })
@@ -512,11 +501,11 @@ function checkQuery(testCase: QueryTestCase): TestFn {
         checkQuery({
             type: operationType,
             buildSchema() {
-                return z
-                    .object({
-                        foo: z.array(z.object({ bar: z.string() }).strict()).nullable()
-                    })
-                    .strict();
+                const schema = z
+                    .strictObject({
+                        foo: z.nullable(z.array(z.strictObject({ bar: z.string() })))
+                    });
+                return schema;
             },
             expectedQuery: `${operationType} { foo { bar } }`
         })
@@ -527,11 +516,11 @@ function checkQuery(testCase: QueryTestCase): TestFn {
         checkQuery({
             type: operationType,
             buildSchema() {
-                return z
-                    .object({
-                        foo: z.array(z.object({ bar: z.string() }).strict().nullable()).nullable()
-                    })
-                    .strict();
+                const schema = z
+                    .strictObject({
+                        foo: z.nullable(z.array(z.nullable(z.strictObject({ bar: z.string() }))))
+                    });
+                return schema;
             },
             expectedQuery: `${operationType} { foo { bar } }`
         })
@@ -542,13 +531,16 @@ function checkQuery(testCase: QueryTestCase): TestFn {
         checkQuery({
             type: operationType,
             buildSchema() {
-                return z
-                    .object({
-                        foo: z.object({ bar: z.string() }).strict().transform(() => {
-                            return '';
-                        })
-                    })
-                    .strict();
+                const schema = z
+                    .strictObject({
+                        foo: z.pipe(
+                            z.strictObject({ bar: z.string() }),
+                            z.transform(() => {
+                                return '';
+                            })
+                        )
+                    });
+                return schema;
             },
             expectedQuery: `${operationType} { foo { bar } }`
         })
@@ -559,7 +551,7 @@ function checkQuery(testCase: QueryTestCase): TestFn {
         checkQuery({
             type: operationType,
             buildSchema() {
-                return z.object({ foo: z.number() }).strict();
+                return z.strictObject({ foo: z.number() });
             },
             expectedQuery: `${operationType} { foo }`
         })
@@ -570,7 +562,7 @@ function checkQuery(testCase: QueryTestCase): TestFn {
         checkQuery({
             type: operationType,
             buildSchema() {
-                return z.object({ foo: z.boolean() }).strict();
+                return z.strictObject({ foo: z.boolean() });
             },
             expectedQuery: `${operationType} { foo }`
         })
@@ -581,7 +573,8 @@ function checkQuery(testCase: QueryTestCase): TestFn {
         checkQuery({
             type: operationType,
             buildSchema() {
-                return z.object({ foo: z.literal('') }).strict();
+                const schema = z.strictObject({ foo: z.literal('bar') });
+                return schema;
             },
             expectedQuery: `${operationType} { foo }`
         })
@@ -592,7 +585,8 @@ function checkQuery(testCase: QueryTestCase): TestFn {
         checkQuery({
             type: operationType,
             buildSchema() {
-                return z.object({ foo: z.literal('').nullable() }).strict();
+                const schema = z.strictObject({ foo: z.nullable(z.literal('')) });
+                return schema;
             },
             expectedQuery: `${operationType} { foo }`
         })
@@ -603,17 +597,19 @@ function checkQuery(testCase: QueryTestCase): TestFn {
         checkQuery({
             type: operationType,
             buildSchema() {
-                return z
-                    .object({
-                        foo: z
-                            .lazy(() => {
-                                return z.literal('').nullable();
-                            })
-                            .transform(() => {
+                const schema = z
+                    .strictObject({
+                        foo: z.pipe(
+                            z
+                                .lazy(() => {
+                                    return z.nullable(z.literal(''));
+                                }),
+                            z.transform(() => {
                                 return '';
                             })
-                    })
-                    .strict();
+                        )
+                    });
+                return schema;
             },
             expectedQuery: `${operationType} { foo }`
         })
@@ -624,7 +620,8 @@ function checkQuery(testCase: QueryTestCase): TestFn {
         checkQuery({
             type: operationType,
             buildSchema() {
-                return z.object({ foo: z.array(z.literal('')) }).strict();
+                const schema = z.strictObject({ foo: z.array(z.literal('')) });
+                return schema;
             },
             expectedQuery: `${operationType} { foo }`
         })
@@ -635,7 +632,7 @@ function checkQuery(testCase: QueryTestCase): TestFn {
         checkQuery({
             type: operationType,
             buildSchema() {
-                return z.object({ foo: z.string(), bar: z.undefined() }).strict();
+                return z.strictObject({ foo: z.string(), bar: z.undefined() });
             },
             expectedQuery: `${operationType} { foo }`
         })
@@ -646,7 +643,8 @@ function checkQuery(testCase: QueryTestCase): TestFn {
         checkQuery({
             type: operationType,
             buildSchema() {
-                return z.object({ foo: z.array(z.string()).readonly() }).strict();
+                const schema = z.strictObject({ foo: z.readonly(z.array(z.string())) });
+                return schema;
             },
             expectedQuery: `${operationType} { foo }`
         })
@@ -657,7 +655,8 @@ function checkQuery(testCase: QueryTestCase): TestFn {
         checkQuery({
             type: operationType,
             buildSchema() {
-                return z.object({ foo: z.string() }).strict().readonly();
+                const schema = z.readonly(z.strictObject({ foo: z.string() }));
+                return schema;
             },
             expectedQuery: `${operationType} { foo }`
         })
@@ -668,7 +667,8 @@ function checkQuery(testCase: QueryTestCase): TestFn {
         checkQuery({
             type: operationType,
             buildSchema() {
-                return z.object({ foo: z.object({ bar: z.string() }).strict().readonly() }).strict().readonly();
+                const schema = z.readonly(z.strictObject({ foo: z.readonly(z.strictObject({ bar: z.string() })) }));
+                return schema;
             },
             expectedQuery: `${operationType} { foo { bar } }`
         })
@@ -679,12 +679,12 @@ function checkQuery(testCase: QueryTestCase): TestFn {
         checkQuery({
             type: operationType,
             buildSchema() {
-                return z
-                    .object({
+                const schema = z
+                    .strictObject({
                         foo: z.union([z.string(), z.number(), z.boolean(), z.null(), z.undefined()]),
                         bar: z.union([z.literal('a'), z.literal(1), z.literal(false)])
-                    })
-                    .strict();
+                    });
+                return schema;
             },
             expectedQuery: `${operationType} { foo, bar }`
         })
@@ -695,11 +695,11 @@ function checkQuery(testCase: QueryTestCase): TestFn {
         checkQuery({
             type: operationType,
             buildSchema() {
-                return z
-                    .object({
-                        foo: createCustomScalarSchema(z.object({ bar: z.record(z.string()) }).strip())
-                    })
-                    .strict();
+                const schema = z
+                    .strictObject({
+                        foo: createCustomScalarSchema(z.object({ bar: z.record(z.string(), z.string()) }))
+                    });
+                return schema;
             },
             expectedQuery: `${operationType} { foo }`
         })
@@ -708,12 +708,11 @@ function checkQuery(testCase: QueryTestCase): TestFn {
 
 test('a schema with custom scalar validates correctly', () => {
     const schema = z
-        .object({
-            foo: createCustomScalarSchema(z.object({ bar: z.record(z.string()) }).strip())
-        })
-        .strict();
+        .strictObject({
+            foo: createCustomScalarSchema(z.object({ bar: z.record(z.string(), z.string()) }))
+        });
 
     const result = schema.safeParse({ foo: { bar: 'bar' } });
 
-    assert.strictEqual(result.error?.issues[0]?.message, 'Expected object, received string');
+    assert.strictEqual(result.error?.issues[0]?.message, 'Invalid input: expected record, received string');
 });

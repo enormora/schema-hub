@@ -8,8 +8,8 @@ test('formats the expected and received value correctly', () => {
         path: [],
         message: '',
         expected: 'date',
-        received: 'null'
-    }, '');
+        input: 'null'
+    }, null);
     assert.strictEqual(message, 'expected date, but got null');
 });
 
@@ -19,7 +19,7 @@ test('formats the issue as missing property when the path couldn’t be resolved
         path: ['foo', 'bar'],
         message: '',
         expected: 'date',
-        received: 'null'
+        input: 'null'
     }, { foo: {} });
     assert.strictEqual(message, 'missing property');
 });
@@ -30,7 +30,7 @@ test('formats the issue as missing key when the path couldn’t be resolved in t
         path: [1],
         message: '',
         expected: 'date',
-        received: 'null'
+        input: 'null'
     }, []);
     assert.strictEqual(message, 'missing key');
 });

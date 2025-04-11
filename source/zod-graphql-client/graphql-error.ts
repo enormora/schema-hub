@@ -1,12 +1,11 @@
-import { z } from 'zod';
+import { z } from 'zod/v4-mini';
 import { mapTuple, type NonEmptyArray } from '../tuple/non-empty-array.js';
 
 const locationSchema = z
-    .object({
-        line: z.number().int().positive(),
-        column: z.number().int().positive()
-    })
-    .strict();
+    .strictObject({
+        line: z.number().check(z.int(), z.positive()),
+        column: z.number().check(z.int(), z.positive())
+    });
 
 type Location = z.infer<typeof locationSchema>;
 
@@ -17,10 +16,9 @@ type PathSegment = z.infer<typeof pathSegmentSchema>;
 export const graphqlErrorSchema = z
     .object({
         message: z.string(),
-        locations: z.array(locationSchema).optional(),
-        path: z.array(pathSegmentSchema).optional()
-    })
-    .strip();
+        locations: z.optional(z.array(locationSchema)),
+        path: z.optional(z.array(pathSegmentSchema))
+    });
 
 export type GraphqlError = z.infer<typeof graphqlErrorSchema>;
 

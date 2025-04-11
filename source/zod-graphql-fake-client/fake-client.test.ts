@@ -1,6 +1,6 @@
 import { test } from '@sondr3/minitest';
 import assert from 'node:assert';
-import { z } from 'zod';
+import { z } from 'zod/v4';
 import type { GraphqlOperationError } from '../zod-graphql-client/operation-error.js';
 import { createFakeGraphqlClient } from './fake-client.js';
 

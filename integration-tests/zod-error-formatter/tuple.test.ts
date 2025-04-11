@@ -1,6 +1,6 @@
 import { test } from '@sondr3/minitest';
 import assert from 'node:assert';
-import { z } from 'zod';
+import { z } from 'zod/v4-mini';
 import { safeParse } from '../../source/zod-error-formatter/formatter.js';
 
 test('formats messages for invalid items in tuple schemas correctly', () => {
@@ -25,7 +25,7 @@ test('formats messages for missing keys correctly', () => {
 });
 
 test('formats messages for invalid rest values in tuple schemas correctly', () => {
-    const schema = z.tuple([z.literal('a')]).rest(z.number());
+    const schema = z.tuple([z.literal('a')], z.number());
     const result = safeParse(schema, ['a', true]);
 
     assert.strictEqual(result.success, false);
@@ -40,6 +40,6 @@ test('formats messages for extra items in fixed tuple schemas correctly', () => 
 
     assert.strictEqual(result.success, false);
     assert.deepStrictEqual(result.error.issues, [
-        'array must contain at most 1 element'
+        'array must contain less than 1 element'
     ]);
 });

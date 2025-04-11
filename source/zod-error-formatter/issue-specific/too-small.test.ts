@@ -7,7 +7,8 @@ test('formats the boundary correctly for string type with minimum 1', () => {
         code: 'too_small',
         path: [],
         message: '',
-        type: 'string',
+        input: '',
+        origin: 'string',
         minimum: 1,
         inclusive: true
     });
@@ -19,7 +20,8 @@ test('formats the boundary correctly for string type with minimum more than 1', 
         code: 'too_small',
         path: [],
         message: '',
-        type: 'string',
+        input: '',
+        origin: 'string',
         minimum: 2,
         inclusive: true
     });
@@ -31,7 +33,8 @@ test('formats the boundary correctly for array type with minimum 1', () => {
         code: 'too_small',
         path: [],
         message: '',
-        type: 'array',
+        input: '',
+        origin: 'array',
         minimum: 1,
         inclusive: true
     });
@@ -43,7 +46,8 @@ test('formats the boundary correctly for array type with minimum more than 1', (
         code: 'too_small',
         path: [],
         message: '',
-        type: 'array',
+        input: '',
+        origin: 'array',
         minimum: 2,
         inclusive: true
     });
@@ -55,7 +59,8 @@ test('formats the boundary correctly for set type with minimum 1', () => {
         code: 'too_small',
         path: [],
         message: '',
-        type: 'set',
+        input: '',
+        origin: 'set',
         minimum: 1,
         inclusive: true
     });
@@ -67,7 +72,8 @@ test('formats the boundary correctly for set type with minimum more than 1', () 
         code: 'too_small',
         path: [],
         message: '',
-        type: 'set',
+        input: '',
+        origin: 'set',
         minimum: 2,
         inclusive: true
     });
@@ -79,7 +85,8 @@ test('formats the boundary correctly for number type', () => {
         code: 'too_small',
         path: [],
         message: '',
-        type: 'number',
+        input: '',
+        origin: 'number',
         minimum: 1,
         inclusive: true
     });
@@ -91,7 +98,8 @@ test('formats the boundary correctly for bigint type', () => {
         code: 'too_small',
         path: [],
         message: '',
-        type: 'bigint',
+        input: '',
+        origin: 'bigint',
         minimum: 1n,
         inclusive: true
     });
@@ -103,178 +111,165 @@ test('formats the boundary correctly for date type', () => {
         code: 'too_small',
         path: [],
         message: '',
-        type: 'date',
+        input: '',
+        origin: 'date',
         minimum: 1,
         inclusive: true
     });
     assert.strictEqual(message, 'date must be greater than or equal to Thu, 01 Jan 1970 00:00:00 GMT');
 });
 
-test('formats the predicate correctly when exact is true', () => {
+test('formats the predicate correctly when inclusive true for string type', () => {
     const message = formatTooSmallIssueMessage({
         code: 'too_small',
         path: [],
         message: '',
-        type: 'number',
+        input: '',
+        origin: 'string',
         minimum: 1,
-        inclusive: true,
-        exact: true
-    });
-    assert.strictEqual(message, 'number must be exactly 1');
-});
-
-test('formats the predicate correctly when exact is false and inclusive true for string type', () => {
-    const message = formatTooSmallIssueMessage({
-        code: 'too_small',
-        path: [],
-        message: '',
-        type: 'string',
-        minimum: 1,
-        inclusive: true,
-        exact: false
+        inclusive: true
     });
     assert.strictEqual(message, 'string must contain at least 1 character');
 });
 
-test('formats the predicate correctly when exact is false and inclusive false for string type', () => {
+test('formats the predicate correctly when inclusive false for string type', () => {
     const message = formatTooSmallIssueMessage({
         code: 'too_small',
         path: [],
         message: '',
-        type: 'string',
+        input: '',
+        origin: 'string',
         minimum: 1,
-        inclusive: false,
-        exact: false
+        inclusive: false
     });
     assert.strictEqual(message, 'string must contain more than 1 character');
 });
 
-test('formats the predicate correctly when exact is false and inclusive true for set type', () => {
+test('formats the predicate correctly when inclusive true for set type', () => {
     const message = formatTooSmallIssueMessage({
         code: 'too_small',
         path: [],
         message: '',
-        type: 'set',
+        input: '',
+        origin: 'set',
         minimum: 1,
-        inclusive: true,
-        exact: false
+        inclusive: true
     });
     assert.strictEqual(message, 'set must contain at least 1 element');
 });
 
-test('formats the predicate correctly when exact is false and inclusive false for set type', () => {
+test('formats the predicate correctly when inclusive false for set type', () => {
     const message = formatTooSmallIssueMessage({
         code: 'too_small',
         path: [],
         message: '',
-        type: 'set',
+        input: '',
+        origin: 'set',
         minimum: 1,
-        inclusive: false,
-        exact: false
+        inclusive: false
     });
     assert.strictEqual(message, 'set must contain more than 1 element');
 });
 
-test('formats the predicate correctly when exact is false and inclusive true for array type', () => {
+test('formats the predicate correctly when inclusive true for array type', () => {
     const message = formatTooSmallIssueMessage({
         code: 'too_small',
         path: [],
         message: '',
-        type: 'array',
+        input: '',
+        origin: 'array',
         minimum: 1,
-        inclusive: true,
-        exact: false
+        inclusive: true
     });
     assert.strictEqual(message, 'array must contain at least 1 element');
 });
 
-test('formats the predicate correctly when exact is false and inclusive false for array type', () => {
+test('formats the predicate correctly when inclusive false for array type', () => {
     const message = formatTooSmallIssueMessage({
         code: 'too_small',
         path: [],
         message: '',
-        type: 'array',
+        input: '',
+        origin: 'array',
         minimum: 1,
-        inclusive: false,
-        exact: false
+        inclusive: false
     });
     assert.strictEqual(message, 'array must contain more than 1 element');
 });
 
-test('formats the predicate correctly when exact is false and inclusive true for number type', () => {
+test('formats the predicate correctly when inclusive true for number type', () => {
     const message = formatTooSmallIssueMessage({
         code: 'too_small',
         path: [],
         message: '',
-        type: 'number',
+        input: '',
+        origin: 'number',
         minimum: 1,
-        inclusive: true,
-        exact: false
+        inclusive: true
     });
     assert.strictEqual(message, 'number must be greater than or equal to 1');
 });
 
-test('formats the predicate correctly when exact is false and inclusive false for number type', () => {
+test('formats the predicate correctly when inclusive false for number type', () => {
     const message = formatTooSmallIssueMessage({
         code: 'too_small',
         path: [],
         message: '',
-        type: 'number',
-        minimum: 1,
-        inclusive: false,
-        exact: false
+        input: '',
+        origin: 'number',
+        minimum: 1
     });
     assert.strictEqual(message, 'number must be greater than 1');
 });
 
-test('formats the predicate correctly when exact is false and inclusive true for bigint type', () => {
+test('formats the predicate correctly when inclusive true for bigint type', () => {
     const message = formatTooSmallIssueMessage({
         code: 'too_small',
         path: [],
         message: '',
-        type: 'bigint',
+        input: '',
+        origin: 'bigint',
         minimum: 1,
-        inclusive: true,
-        exact: false
+        inclusive: true
     });
     assert.strictEqual(message, 'bigint must be greater than or equal to 1');
 });
 
-test('formats the predicate correctly when exact is false and inclusive false for bigint type', () => {
+test('formats the predicate correctly when inclusive false for bigint type', () => {
     const message = formatTooSmallIssueMessage({
         code: 'too_small',
         path: [],
         message: '',
-        type: 'bigint',
+        input: '',
+        origin: 'bigint',
         minimum: 1,
-        inclusive: false,
-        exact: false
+        inclusive: false
     });
     assert.strictEqual(message, 'bigint must be greater than 1');
 });
 
-test('formats the predicate correctly when exact is false and inclusive true for date type', () => {
+test('formats the predicate correctly when inclusive true for date type', () => {
     const message = formatTooSmallIssueMessage({
         code: 'too_small',
         path: [],
         message: '',
-        type: 'date',
+        input: '',
+        origin: 'date',
         minimum: 1,
-        inclusive: true,
-        exact: false
+        inclusive: true
     });
     assert.strictEqual(message, 'date must be greater than or equal to Thu, 01 Jan 1970 00:00:00 GMT');
 });
 
-test('formats the predicate correctly when exact is false and inclusive false for date type', () => {
+test('formats the predicate correctly when inclusive false for date type', () => {
     const message = formatTooSmallIssueMessage({
         code: 'too_small',
         path: [],
         message: '',
-        type: 'date',
+        input: '',
+        origin: 'date',
         minimum: 1,
-        inclusive: false,
-        exact: false
+        inclusive: false
     });
     assert.strictEqual(message, 'date must be greater than Thu, 01 Jan 1970 00:00:00 GMT');
 });

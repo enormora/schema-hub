@@ -1,5 +1,5 @@
 import { type KyInstance, type Options as KyRequestOptions, TimeoutError } from 'ky';
-import type { TypeOf } from 'zod';
+import type { output as TypeOf } from 'zod/v4/core';
 import { safeParse } from '../zod-error-formatter/formatter.js';
 import { buildGraphqlMutation, buildGraphqlQuery, type QuerySchema } from '../zod-graphql-query-builder/entry-point.js';
 import { parseGraphqlResponse } from './graphql-response.js';
@@ -237,6 +237,7 @@ export function createClientFactory(dependencies: CreateClientDependencies): Cre
             async queryOrThrow(schema, options) {
                 const result = await query(schema, options);
                 if (result.success) {
+                    // eslint-disable-next-line @typescript-eslint/no-unsafe-return -- false positive
                     return result.data;
                 }
 
@@ -248,6 +249,7 @@ export function createClientFactory(dependencies: CreateClientDependencies): Cre
             async mutateOrThrow(schema, options) {
                 const result = await mutate(schema, options);
                 if (result.success) {
+                    // eslint-disable-next-line @typescript-eslint/no-unsafe-return -- false positive
                     return result.data;
                 }
 

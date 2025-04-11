@@ -1,4 +1,4 @@
-import type { TypeOf } from 'zod';
+import type { output as TypeOf } from 'zod/v4/core';
 import type { QuerySchema } from '../zod-graphql-query-builder/entry-point.js';
 import type { OperationErrorDetails } from './operation-error.js';
 

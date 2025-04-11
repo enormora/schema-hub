@@ -7,7 +7,8 @@ test('formats the issue correctly mentioning the expected multiple-of factor', (
         code: 'not_multiple_of',
         path: [],
         message: '',
-        multipleOf: 42
+        input: 123,
+        divisor: 42
     });
     assert.strictEqual(message, 'number must be multiple of 42');
 });
