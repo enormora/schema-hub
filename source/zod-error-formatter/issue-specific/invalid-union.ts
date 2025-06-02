@@ -1,27 +1,25 @@
 import {
-    getParsedType,
-    type Primitive,
-    type ZodError,
-    type ZodInvalidLiteralIssue,
-    type ZodInvalidTypeIssue,
-    type ZodInvalidUnionIssue,
-    type ZodIssue
-} from 'zod';
+    type $ZodIssue,
+    type $ZodIssueInvalidType,
+    type $ZodIssueInvalidUnion,
+    type $ZodIssueInvalidValue,
+    util
+} from 'zod/v4/core';
 import { formatOneOfList, isParsedType, type ListValue } from '../list.js';
 import { findValueByPath } from '../path.js';
 
-function flattenAllIssues(errors: readonly ZodError[]): readonly ZodIssue[] {
-    return errors.flatMap((error) => {
-        return error.issues.flatMap((issue) => {
+function flattenAllIssues(errors: readonly $ZodIssue[][]): readonly $ZodIssue[] {
+    return errors.flatMap((issues) => {
+        return issues.flatMap((issue) => {
             if (issue.code === 'invalid_union') {
-                return flattenAllIssues(issue.unionErrors);
+                return flattenAllIssues(issue.errors);
             }
             return issue;
         });
     });
 }
 
-function isSamePath(pathA: readonly (number | string)[], pathB: readonly (number | string)[]): boolean {
+function isSamePath(pathA: readonly PropertyKey[], pathB: readonly PropertyKey[]): boolean {
     if (pathA.length !== pathB.length) {
         return false;
     }
@@ -31,35 +29,27 @@ function isSamePath(pathA: readonly (number | string)[], pathB: readonly (number
     });
 }
 
-type SupportedIssueType = ZodInvalidLiteralIssue | ZodInvalidTypeIssue;
+type SupportedIssueType = $ZodIssueInvalidType | $ZodIssueInvalidValue;
 // eslint-disable-next-line @typescript-eslint/no-restricted-types -- we don’t have type-fest here
-type BaseZodIssue = Omit<ZodIssue, 'fatal' | 'message'>;
+type BaseZodIssue = Omit<$ZodIssue, 'message'>;
 
 function isSupportedIssueWithSamePath(
     issue: BaseZodIssue,
-    expectedPath: readonly (number | string)[]
+    expectedPath: readonly PropertyKey[]
 ): issue is SupportedIssueType {
-    return ['invalid_type', 'invalid_literal'].includes(issue.code) && isSamePath(issue.path, expectedPath);
+    return ['invalid_type', 'invalid_value'].includes(issue.code as string) && isSamePath(issue.path, expectedPath);
 }
 
 function filterSupportedIssuesWithSamePath(
     issues: readonly BaseZodIssue[],
-    expectedPath: readonly (number | string)[]
+    expectedPath: readonly (PropertyKey)[]
 ): readonly SupportedIssueType[] {
     return issues.filter((issue): issue is SupportedIssueType => {
         return isSupportedIssueWithSamePath(issue, expectedPath);
     });
 }
 
-function determineReceivedValue(issue: SupportedIssueType): string {
-    if (issue.code === 'invalid_type') {
-        return issue.received;
-    }
-
-    return getParsedType(issue.received);
-}
-
-function isPrimitive(value: unknown): value is Primitive {
+function isPrimitive(value: unknown): value is util.Primitive {
     return ['string', 'number', 'symbol', 'bigint', 'boolean', 'undefined'].includes(typeof value) || value === null;
 }
 
@@ -68,11 +58,11 @@ function determineExpectedValue(issue: SupportedIssueType): ListValue {
         return { type: issue.expected };
     }
 
-    if (isPrimitive(issue.expected)) {
-        return issue.expected;
+    if (isPrimitive(issue.values[0])) {
+        return issue.values[0];
     }
 
-    return JSON.stringify(issue.expected);
+    return JSON.stringify(issue.values);
 }
 
 function hasValue(values: readonly ListValue[], expectedValue: ListValue): boolean {
@@ -97,18 +87,18 @@ function removeDuplicateListValues(values: readonly ListValue[]): readonly ListV
 }
 
 // eslint-disable-next-line max-statements -- no idea how to refactor right now
-export function formatInvalidUnionIssueMessage(issue: ZodInvalidUnionIssue, input: unknown): string {
+export function formatInvalidUnionIssueMessage(issue: $ZodIssueInvalidUnion, input: unknown): string {
     const result = findValueByPath(input, issue.path);
 
     if (result.found) {
-        const memberIssues = flattenAllIssues(issue.unionErrors);
-        const supportedIssues = filterSupportedIssuesWithSamePath(memberIssues, issue.path);
+        const memberIssues = flattenAllIssues(issue.errors);
+        const supportedIssues = filterSupportedIssuesWithSamePath(memberIssues, []);
         if (memberIssues.length === supportedIssues.length) {
             const [firstIssue] = supportedIssues;
 
             if (firstIssue !== undefined) {
                 const expectedValues = removeDuplicateListValues(supportedIssues.map(determineExpectedValue));
-                const receivedValue = determineReceivedValue(firstIssue);
+                const receivedValue = util.getParsedType(result.value);
 
                 return `invalid value: expected ${formatOneOfList(expectedValues)}, but got ${receivedValue}`;
             }

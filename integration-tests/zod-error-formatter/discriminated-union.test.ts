@@ -1,6 +1,6 @@
 import { test } from '@sondr3/minitest';
 import assert from 'node:assert';
-import { z } from 'zod';
+import { z } from 'zod/v4-mini';
 import { safeParse } from '../../source/zod-error-formatter/formatter.js';
 
 test('formats messages for invalid discriminated union schemas correctly', () => {
@@ -12,7 +12,7 @@ test('formats messages for invalid discriminated union schemas correctly', () =>
 
     assert.strictEqual(result.success, false);
     assert.deepStrictEqual(result.error.issues, [
-        'at type: invalid discriminator: expected one of "foo" or "bar", but got number'
+        'at type: invalid value doesn’t match expected union'
     ]);
 });
 
@@ -38,6 +38,6 @@ test('formats messages for invalid discriminated union schemas correctly when di
 
     assert.strictEqual(result.success, false);
     assert.deepStrictEqual(result.error.issues, [
-        'at type: invalid discriminator: expected one of "foo" or "bar", but got undefined'
+        'at type: invalid value doesn’t match expected union'
     ]);
 });

@@ -2,7 +2,7 @@ import { test } from '@sondr3/minitest';
 import { TimeoutError } from 'ky';
 import assert from 'node:assert';
 import { fake, type SinonSpy } from 'sinon';
-import { z } from 'zod';
+import { z } from 'zod/v4';
 import { graphqlFieldOptions, variablePlaceholder } from '../zod-graphql-query-builder/entry-point.js';
 import {
     type ClientOptions,

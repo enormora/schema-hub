@@ -1,4 +1,4 @@
-import type { Primitive, ZodParsedType } from 'zod';
+import type { $ZodType, util } from 'zod/v4/core';
 import { isNonEmptyArray, type NonEmptyArray } from '../tuple/non-empty-array.js';
 
 function joinList(values: NonEmptyArray<string>, separator: string, lastItemSeparator: string): string {
@@ -13,8 +13,8 @@ function joinList(values: NonEmptyArray<string>, separator: string, lastItemSepa
     return `${joinedInitialList}${lastItemSeparator}${lastItem}`;
 }
 
-type ParsedType = { type: ZodParsedType; };
-export type ListValue = ParsedType | Primitive;
+type ParsedType = { type: $ZodType['_zod']['def']['type']; };
+export type ListValue = ParsedType | util.Primitive;
 
 export function isParsedType(value: ListValue): value is ParsedType {
     return typeof value === 'object' && value !== null && Object.hasOwn(value, 'type');
@@ -28,6 +28,9 @@ function stringify(value: ListValue): string {
         return 'undefined';
     }
     if (typeof value === 'symbol') {
+        return value.toString();
+    }
+    if (typeof value === 'bigint') {
         return value.toString();
     }
 

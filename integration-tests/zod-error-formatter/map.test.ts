@@ -1,6 +1,6 @@
 import { test } from '@sondr3/minitest';
 import assert from 'node:assert';
-import { z } from 'zod';
+import { z } from 'zod/v4-mini';
 import { safeParse } from '../../source/zod-error-formatter/formatter.js';
 
 test('formats messages for invalid keys in map schemas correctly', () => {
@@ -9,7 +9,7 @@ test('formats messages for invalid keys in map schemas correctly', () => {
 
     assert.strictEqual(result.success, false);
     assert.deepStrictEqual(result.error.issues, [
-        'at [0].key: invalid literal: expected "a", but got string'
+        'at b: invalid literal: expected "a", but got string'
     ]);
 });
 
@@ -19,7 +19,7 @@ test('formats messages for invalid values in map schemas correctly', () => {
 
     assert.strictEqual(result.success, false);
     assert.deepStrictEqual(result.error.issues, [
-        'at [0].value: expected string, but got number'
+        'at a: expected string, but got number'
     ]);
 });
 
@@ -29,7 +29,7 @@ test('formats messages for invalid objects within map values correctly', () => {
 
     assert.strictEqual(result.success, false);
     assert.deepStrictEqual(result.error.issues, [
-        'at foo[0].value.bar: expected number, but got boolean'
+        'at foo.a.bar: expected number, but got boolean'
     ]);
 });
 
@@ -39,6 +39,6 @@ test('formats messages for missing object properties within map values correctly
 
     assert.strictEqual(result.success, false);
     assert.deepStrictEqual(result.error.issues, [
-        'at foo[0].value.bar: missing property'
+        'at foo.a.bar: missing property'
     ]);
 });

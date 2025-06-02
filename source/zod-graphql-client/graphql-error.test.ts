@@ -77,7 +77,7 @@ test('graphqlErrorSchema: validation fails when a locations item has zero as col
 test('graphqlErrorSchema: validation fails when a locations item has a floating point number as column', () => {
     const result = safeParse(graphqlErrorSchema, { message: '', locations: [{ line: 1, column: 1.4 }] });
     assert.strictEqual(result.success, false);
-    assert.deepStrictEqual(result.error.issues, ['at locations[0].column: expected integer, but got float']);
+    assert.deepStrictEqual(result.error.issues, ['at locations[0].column: expected int, but got number']);
 });
 
 test('graphqlErrorSchema: validation fails when a locations item has an invalid line', () => {
@@ -98,10 +98,10 @@ test('graphqlErrorSchema: validation fails when a locations item has zero as lin
     assert.deepStrictEqual(result.error.issues, ['at locations[0].line: number must be greater than 0']);
 });
 
-test('graphqlErrorSchema: validation fails when a locations item has a floating point number as column', () => {
+test('graphqlErrorSchema: validation fails when a locations item has a floating point number as line', () => {
     const result = safeParse(graphqlErrorSchema, { message: '', locations: [{ line: 1.4, column: 1 }] });
     assert.strictEqual(result.success, false);
-    assert.deepStrictEqual(result.error.issues, ['at locations[0].line: expected integer, but got float']);
+    assert.deepStrictEqual(result.error.issues, ['at locations[0].line: expected int, but got number']);
 });
 
 test('graphqlErrorSchema: validation fails when a locations item has additional properties', () => {

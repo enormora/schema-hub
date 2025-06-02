@@ -7,6 +7,7 @@ test('formats a message which says the property is unknown when the given keys i
         code: 'unrecognized_keys',
         path: [],
         message: '',
+        input: {},
         keys: []
     });
     assert.strictEqual(message, 'unexpected additional property: unknown');
@@ -17,6 +18,7 @@ test('properly escapes the keys so it doesn’t get confused with unknown when t
         code: 'unrecognized_keys',
         path: [],
         message: '',
+        input: {},
         keys: ['unknown']
     });
     assert.strictEqual(message, 'unexpected additional property: "unknown"');
@@ -27,6 +29,7 @@ test('properly escapes the keys in case they contain special characters', () => 
         code: 'unrecognized_keys',
         path: [],
         message: '',
+        input: {},
         keys: ['foo"bar']
     });
     assert.strictEqual(message, 'unexpected additional property: "foo\\"bar"');
@@ -37,6 +40,7 @@ test('correctly formats two properties using "and" as a separator', () => {
         code: 'unrecognized_keys',
         path: [],
         message: '',
+        input: {},
         keys: ['foo', 'bar']
     });
     assert.strictEqual(message, 'unexpected additional properties: "foo" and "bar"');
@@ -47,6 +51,7 @@ test('correctly formats three properties using comma as separator and "and" for 
         code: 'unrecognized_keys',
         path: [],
         message: '',
+        input: {},
         keys: ['foo', 'bar', 'baz']
     });
     assert.strictEqual(message, 'unexpected additional properties: "foo", "bar" and "baz"');

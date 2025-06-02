@@ -1,64 +1,69 @@
+/* eslint-disable no-underscore-dangle -- we need to access _zod */
+/* eslint-disable @typescript-eslint/consistent-type-definitions, @typescript-eslint/no-empty-object-type -- using an interface to avoid circular reference */
 import {
-    type ArrayCardinality,
-    ZodArray,
-    type ZodBoolean,
-    ZodDiscriminatedUnion,
-    ZodEffects,
-    ZodLazy,
-    type ZodLiteral,
-    type ZodNull,
-    ZodNullable,
-    type ZodNumber,
-    ZodObject,
-    type ZodRawShape,
-    ZodReadonly,
-    type ZodString,
-    ZodTuple,
-    type ZodTypeAny,
-    type ZodUndefined,
-    type ZodUnion
-} from 'zod';
+    type $strict,
+    $ZodArray,
+    type $ZodBoolean,
+    $ZodDiscriminatedUnion,
+    $ZodLazy,
+    type $ZodLiteral,
+    type $ZodNull,
+    $ZodNullable,
+    type $ZodNumber,
+    $ZodObject,
+    $ZodPipe,
+    $ZodReadonly,
+    type $ZodShape,
+    type $ZodString,
+    type $ZodTransform,
+    $ZodTuple,
+    type $ZodType,
+    type $ZodUndefined,
+    type $ZodUnion
+} from 'zod/v4/core';
 import { type CustomScalarSchema, isCustomScalarSchema } from './custom-scalar.js';
 
-// eslint-disable-next-line @typescript-eslint/consistent-type-definitions,@typescript-eslint/no-empty-object-type -- generic type alias can’t be circular
-export interface StrictObjectSchema<Shape extends ZodRawShape>
-    extends Omit<ZodObject<Shape, 'strict'>, 'deepPartial' | 'keyof'> {}
+export interface StrictObjectSchema<Shape extends $ZodShape> extends $ZodObject<Shape, $strict> {}
 
+// @ts-expect-error -- ok in this case
 export function isStrictObjectSchema(schema: unknown): schema is StrictObjectSchema<FieldShape> {
-    return schema instanceof ZodObject;
+    return schema instanceof $ZodObject;
 }
 
-// eslint-disable-next-line @typescript-eslint/consistent-type-definitions,@typescript-eslint/no-empty-object-type -- generic type alias can’t be circular
-interface EffectSchema<Schema extends ZodTypeAny> extends ZodEffects<Schema> {}
-
-type LiteralSchema = ZodLiteral<boolean> | ZodLiteral<null> | ZodLiteral<number> | ZodLiteral<string>;
-type PrimitiveSchema = LiteralSchema | ZodBoolean | ZodNull | ZodNumber | ZodString | ZodUndefined;
+type LiteralSchema = $ZodLiteral<boolean> | $ZodLiteral<null> | $ZodLiteral<number> | $ZodLiteral<string>;
+type PrimitiveSchema = $ZodBoolean | $ZodNull | $ZodNumber | $ZodString | $ZodUndefined | LiteralSchema;
 
 export type FragmentTypeName = boolean | number | string | null;
 
-export declare type FragmentUnionOptionSchema = ZodObject<
-    & FieldShape
-    & {
-        __typename: PrimitiveSchema;
-    },
-    'strict'
->;
+export interface FragmentUnionOptionSchema extends
+    StrictObjectSchema<
+        & FieldShape
+        & {
+            __typename: PrimitiveSchema;
+        }
+    > {}
 
-// eslint-disable-next-line @typescript-eslint/consistent-indexed-object-style -- see https://github.com/microsoft/TypeScript/pull/57293
-export type FieldShape = { readonly [FieldName: string]: FieldSchema; };
+interface FieldTuple extends $ZodTuple<readonly [FieldSchema, ...(readonly FieldSchema[])]> {}
+export interface FieldArray extends $ZodArray<FieldSchema> {}
+interface FieldDiscriminatedUnion extends $ZodDiscriminatedUnion<FragmentUnionOptionSchema[]> {}
+interface FieldUnion extends $ZodUnion<readonly [PrimitiveSchema, ...(readonly PrimitiveSchema[])]> {}
 export type NonWrappedFieldSchema =
-    | CustomScalarSchema<ZodTypeAny>
+    | CustomScalarSchema<$ZodType>
+    | FieldArray
+    | FieldDiscriminatedUnion
+    | FieldTuple
+    | FieldUnion
     | PrimitiveSchema
-    | StrictObjectSchema<FieldShape>
-    | ZodArray<FieldSchema, ArrayCardinality>
-    | ZodDiscriminatedUnion<'__typename', FragmentUnionOptionSchema[]>
-    | ZodTuple<[FieldSchema, ...FieldSchema[]], FieldSchema | null>
-    | ZodUnion<readonly [PrimitiveSchema, ...(readonly PrimitiveSchema[])]>;
+    | StrictObjectSchema<FieldShape>;
+interface FieldLazy extends $ZodLazy<FieldSchema> {}
+interface FieldNullable extends $ZodNullable<FieldSchema> {}
+interface FieldReadonly extends $ZodReadonly<FieldSchema> {}
+interface FieldPipe extends $ZodPipe<FieldSchema, $ZodTransform> {}
 export type WrappedFieldSchema =
-    | EffectSchema<FieldSchema>
-    | ZodLazy<FieldSchema>
-    | ZodNullable<FieldSchema>
-    | ZodReadonly<FieldSchema>;
+    | FieldLazy
+    | FieldNullable
+    | FieldPipe
+    | FieldReadonly;
 export type FieldSchema = NonWrappedFieldSchema | WrappedFieldSchema;
 
 function isWrappedFieldSchema(schema: FieldSchema): schema is WrappedFieldSchema {
@@ -66,8 +71,8 @@ function isWrappedFieldSchema(schema: FieldSchema): schema is WrappedFieldSchema
         return false;
     }
 
-    return schema instanceof ZodLazy || schema instanceof ZodEffects || schema instanceof ZodNullable ||
-        schema instanceof ZodReadonly;
+    return schema instanceof $ZodLazy || schema instanceof $ZodPipe || schema instanceof $ZodNullable ||
+        schema instanceof $ZodReadonly;
 }
 
 type UnwrappedChainResult = {
@@ -89,14 +94,14 @@ function recursiveUnwrapFieldSchemaChain(
         };
     }
 
-    if (parent instanceof ZodLazy) {
-        unwrapped = parent.schema;
-    } else if (parent instanceof ZodEffects) {
-        unwrapped = parent.innerType();
-    } else if (parent instanceof ZodNullable) {
-        unwrapped = parent.unwrap();
-    } else if (parent instanceof ZodReadonly) {
-        unwrapped = parent.unwrap();
+    if (parent instanceof $ZodLazy) {
+        unwrapped = parent._zod.def.getter() as FieldSchema;
+    } else if (parent instanceof $ZodPipe) {
+        unwrapped = parent._zod.def.in as FieldSchema;
+    } else if (parent instanceof $ZodNullable) {
+        unwrapped = parent._zod.def.innerType;
+    } else if (parent instanceof $ZodReadonly) {
+        unwrapped = parent._zod.def.innerType as FieldSchema;
     }
 
     if (isWrappedFieldSchema(unwrapped)) {
@@ -118,31 +123,35 @@ export function unwrapFieldSchema(parent: FieldSchema): NonWrappedFieldSchema {
     return result.unwrappedSchema;
 }
 
-type QueryShape = Record<string, FieldSchema>;
-export type QuerySchema = StrictObjectSchema<QueryShape> | ZodReadonly<StrictObjectSchema<QueryShape>>;
+// eslint-disable-next-line @typescript-eslint/consistent-indexed-object-style -- using an interface to avoid circular reference
+export interface FieldShape {
+    [key: string]: FieldSchema;
+}
+export type QuerySchema = $ZodReadonly<StrictObjectSchema<FieldShape>> | StrictObjectSchema<FieldShape>;
 
-export type FieldSchemaTuple<Schema extends FieldSchema> = ZodTuple<[Schema, ...Schema[]], Schema | null>;
+type FieldSchemaTupleItems = readonly [FieldSchema, ...FieldSchema[]];
+export type FieldSchemaTuple = $ZodTuple<FieldSchemaTupleItems, FieldSchema | null>;
 
 export type ObjectOrListSchema =
-    | FieldSchemaTuple<FieldSchema>
-    | StrictObjectSchema<FieldShape>
-    | ZodArray<FieldSchema, ArrayCardinality>;
+    | FieldArray
+    | FieldSchemaTuple
+    | StrictObjectSchema<FieldShape>;
 
 export function isObjectOrListSchema(schema: FieldSchema): schema is ObjectOrListSchema {
-    return isStrictObjectSchema(schema) || schema instanceof ZodArray || schema instanceof ZodTuple;
+    return isStrictObjectSchema(schema) || schema instanceof $ZodArray || schema instanceof $ZodTuple;
 }
 
-export type FragmentsSchema = ZodDiscriminatedUnion<'__typename', FragmentUnionOptionSchema[]>;
+export type FragmentsSchema = $ZodDiscriminatedUnion<FragmentUnionOptionSchema[]>;
 
 export function isFragmentsSchema(schema: FieldSchema): schema is FragmentsSchema {
-    return schema instanceof ZodDiscriminatedUnion;
+    return schema instanceof $ZodDiscriminatedUnion;
 }
 
 export type UnionOrListSchema =
-    | FieldSchemaTuple<FieldSchema>
-    | FragmentsSchema
-    | ZodArray<FieldSchema, ArrayCardinality>;
+    | FieldArray
+    | FieldSchemaTuple
+    | FragmentsSchema;
 
 export function isUnionOrListSchema(schema: FieldSchema): schema is UnionOrListSchema {
-    return isFragmentsSchema(schema) || schema instanceof ZodArray || schema instanceof ZodTuple;
+    return isFragmentsSchema(schema) || schema instanceof $ZodArray || schema instanceof $ZodTuple;
 }

@@ -1,4 +1,4 @@
-import type { TypeOf } from 'zod';
+import type { output as TypeOf } from 'zod/v4/core';
 import type { GraphqlOverHttpOperationRequestPayload, OperationOptions } from '../zod-graphql-client/client.js';
 import {
     type GraphqlClient,
@@ -110,6 +110,7 @@ export function createFakeGraphqlClient(clientOptions: FakeClientOptions = {}): 
         async queryOrThrow(schema, options) {
             const result = await query(schema, options);
             if (result.success) {
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-return -- false positive
                 return result.data;
             }
 
@@ -121,6 +122,7 @@ export function createFakeGraphqlClient(clientOptions: FakeClientOptions = {}): 
         async mutateOrThrow(schema, options) {
             const result = await mutate(schema, options);
             if (result.success) {
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-return -- false positive
                 return result.data;
             }
 

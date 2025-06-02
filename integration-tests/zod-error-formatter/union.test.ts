@@ -1,6 +1,6 @@
 import { test } from '@sondr3/minitest';
 import assert from 'node:assert';
-import { z } from 'zod';
+import { z } from 'zod/v4-mini';
 import { safeParse } from '../../source/zod-error-formatter/formatter.js';
 
 test('formats messages for invalid union schemas with primitives correctly', () => {

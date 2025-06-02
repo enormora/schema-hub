@@ -93,17 +93,12 @@ test('findValueByPath() returns the value of a nested mixed object/array path', 
 });
 
 test('findValueByPath() returns the value of a nested a object path inside a map value', () => {
-    const value = findValueByPath(new Map([['a', { foo: 'bar' }]]), [0, 'value', 'foo']);
+    const value = findValueByPath(new Map([['a', { foo: 'bar' }]]), ['a', 'foo']);
     assert.deepStrictEqual(value, { found: true, value: 'bar' });
 });
 
-test('findValueByPath() returns the value of a nested a array path inside a map key', () => {
-    const value = findValueByPath(new Map([[['a', 'b'], { foo: 'bar' }]]), [0, 'key', 1]);
-    assert.deepStrictEqual(value, { found: true, value: 'b' });
-});
-
-test('findValueByPath() returns not-found result of a nested a object path inside a map value', () => {
-    const value = findValueByPath(new Map([['a', { foo: 'bar' }]]), [0, 'value', 'bar']);
+test('findValueByPath() returns not-found result of a nested object path inside a map value', () => {
+    const value = findValueByPath(new Map([['a', { foo: 'bar' }]]), ['a', 'bar']);
     assert.deepStrictEqual(value, { found: false, pathItemKind: 'property' });
 });
 

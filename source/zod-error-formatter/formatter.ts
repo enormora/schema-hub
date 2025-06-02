@@ -1,19 +1,21 @@
-import type { TypeOf, ZodError, ZodSchema } from 'zod';
+import { z } from 'zod/v4-mini';
+import type { $ZodError, $ZodType, output as TypeOf } from 'zod/v4/core';
 import type { NonEmptyArray } from '../tuple/non-empty-array.js';
 import { formatIssue } from './format-issue.js';
 import { createFormattedZodError, type FormattedZodError } from './formatted-error.js';
 
-export function formatZodError(error: ZodError, input: unknown): FormattedZodError {
+export function formatZodError(error: $ZodError, input: unknown): FormattedZodError {
     const formattedIssues = error.issues.map((issue) => {
         return formatIssue(issue, input);
     });
     return createFormattedZodError(formattedIssues as unknown as NonEmptyArray<string>);
 }
 
-export function parse<Schema extends ZodSchema<unknown>>(schema: Schema, value: unknown): TypeOf<Schema> {
-    const result = schema.safeParse(value);
+export function parse<Schema extends $ZodType>(schema: Schema, value: unknown): TypeOf<Schema> {
+    const result = z.safeParse(schema, value);
 
     if (result.success) {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-return -- false positive
         return result.data;
     }
 
@@ -32,11 +34,11 @@ type SafeParseErrorResult = {
 
 type SafeParseResult<Output> = SafeParseErrorResult | SafeParseSuccessResult<Output>;
 
-export function safeParse<Schema extends ZodSchema<unknown>>(
+export function safeParse<Schema extends $ZodType>(
     schema: Schema,
     value: unknown
 ): SafeParseResult<TypeOf<Schema>> {
-    const result = schema.safeParse(value);
+    const result = z.safeParse(schema, value);
 
     if (result.success) {
         return { success: true, data: result.data };

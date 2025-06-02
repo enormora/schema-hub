@@ -1,24 +1,24 @@
+/* eslint-disable no-underscore-dangle -- we need to access _zod */
 import {
-    type ArrayCardinality,
-    z,
-    ZodArray,
-    ZodDiscriminatedUnion,
-    type ZodLazy,
-    ZodReadonly,
-    ZodUndefined
-} from 'zod';
+    $ZodArray,
+    $ZodDiscriminatedUnion,
+    $ZodReadonly,
+    $ZodUndefined,
+    type util
+} from 'zod/v4/core';
 import { isCustomScalarSchema } from './custom-scalar.js';
 import {
+    type FieldArray,
     type FieldSchema,
     type FieldSchemaTuple,
     type FieldShape,
     type FragmentsSchema,
-    type FragmentTypeName,
     type FragmentUnionOptionSchema,
     isFragmentsSchema,
     isObjectOrListSchema,
     isStrictObjectSchema,
     isUnionOrListSchema,
+    type NonWrappedFieldSchema,
     type ObjectOrListSchema,
     type QuerySchema,
     type StrictObjectSchema,
@@ -52,27 +52,30 @@ export type QueryBuilder = {
     registerFieldOptions: <Schema extends FieldSchema>(
         schema: Schema,
         options: GraphqlFieldOptions
-    ) => ZodLazy<Schema>;
+    ) => Schema;
     buildQuery: (schema: QuerySchema, options?: OperationOptions) => string;
     buildMutation: (schema: QuerySchema, options?: OperationOptions) => string;
 };
 
-function unwrapFromArraySchema<SchemaType extends FieldSchema>(
-    predicate: (schema: FieldSchema) => schema is SchemaType,
-    schema: ZodArray<FieldSchema, ArrayCardinality>
+function unwrapFromArraySchema<SchemaType extends NonWrappedFieldSchema>(
+    predicate: (schema: NonWrappedFieldSchema) => schema is SchemaType,
+    schema: FieldArray
 ): SchemaType | null {
-    const elementSchema = unwrapFieldSchema(schema.element);
+    const elementSchema = unwrapFieldSchema(schema._zod.def.element);
     if (predicate(elementSchema)) {
         return elementSchema;
     }
     return null;
 }
 
-function unwrapFromTupleSchema<SchemaType extends FieldSchema>(
-    predicate: (schema: FieldSchema) => schema is SchemaType,
-    schema: FieldSchemaTuple<FieldSchema>
+function unwrapFromTupleSchema<SchemaType extends NonWrappedFieldSchema>(
+    predicate: (schema: NonWrappedFieldSchema) => schema is SchemaType,
+    schema: FieldSchemaTuple
 ): SchemaType | null {
-    const [firstElementSchema] = schema.items;
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment -- ts-expect-error doesn’t work reliably here
+    // @ts-ignore -  Type instantiation is not infinite
+    const { items } = schema._zod.def;
+    const [firstElementSchema] = items;
     const unwrappedElementSchema = unwrapFieldSchema(firstElementSchema);
     if (predicate(unwrappedElementSchema)) {
         return unwrappedElementSchema;
@@ -84,7 +87,7 @@ function getObjectSchema(schema: ObjectOrListSchema): StrictObjectSchema<FieldSh
     if (isStrictObjectSchema(schema)) {
         return schema;
     }
-    if (schema instanceof ZodArray) {
+    if (schema instanceof $ZodArray) {
         return unwrapFromArraySchema(isStrictObjectSchema, schema);
     }
     return unwrapFromTupleSchema(isStrictObjectSchema, schema);
@@ -93,10 +96,10 @@ function getObjectSchema(schema: ObjectOrListSchema): StrictObjectSchema<FieldSh
 function getUnionSchema(
     schema: UnionOrListSchema
 ): FragmentsSchema | null {
-    if (schema instanceof ZodDiscriminatedUnion) {
+    if (schema instanceof $ZodDiscriminatedUnion) {
         return schema;
     }
-    if (schema instanceof ZodArray) {
+    if (schema instanceof $ZodArray) {
         return unwrapFromArraySchema(isFragmentsSchema, schema);
     }
     return unwrapFromTupleSchema(isFragmentsSchema, schema);
@@ -107,7 +110,7 @@ export function createQueryBuilder(): QueryBuilder {
 
     function getFieldOptionsForSchema(schema: FieldSchema): GraphqlFieldOptions {
         const unwrappingResult = unwrapFieldSchemaChain(schema);
-        const queue = [...unwrappingResult.wrapperElements, unwrappingResult.unwrappedSchema];
+        const queue: FieldSchema[] = [...unwrappingResult.wrapperElements, unwrappingResult.unwrappedSchema];
 
         for (const currentSchema of queue) {
             const fieldOptions = fieldOptionsRegistry.get(currentSchema);
@@ -140,8 +143,10 @@ export function createQueryBuilder(): QueryBuilder {
         };
     }
 
-    function serializeObjectSchema(objectSchema: StrictObjectSchema<FieldShape>): NormalizedGraphqlValue {
-        const entries = Object.entries(objectSchema.shape);
+    function serializeObjectSchema(
+        objectSchema: FragmentUnionOptionSchema | StrictObjectSchema<FieldShape>
+    ): NormalizedGraphqlValue {
+        const entries = Object.entries(objectSchema._zod.def.shape);
         let referencedVariables = new Set<string>();
         const serializedEntries: string[] = [];
 
@@ -158,16 +163,26 @@ export function createQueryBuilder(): QueryBuilder {
         };
     }
 
+    // eslint-disable-next-line max-statements -- no good idea how to refactor at the moment
     function serializeFragments(
-        unionOptions: ReadonlyMap<FragmentTypeName, FragmentUnionOptionSchema>
+        discriminatorMap: util.PropValues,
+        unionOptions: FragmentUnionOptionSchema[]
     ): NormalizedGraphqlValue {
         let referencedVariables = new Set<string>();
         const serializedFragments: string[] = [];
+        const typeNameDiscriminator = discriminatorMap.__typename;
+        const fragmentNames = Array.from(typeNameDiscriminator ?? []);
 
-        for (const [fragmentName, fragmentSchema] of unionOptions.entries()) {
+        for (const [index, fragmentSchema] of unionOptions.entries()) {
+            const fragmentName = fragmentNames[index];
+            if (fragmentName === undefined || fragmentName === null) {
+                throw new Error(
+                    `Fragment name for index ${index} is undefined`
+                );
+            }
             const serializedFragment = serializeObjectSchema(fragmentSchema);
             referencedVariables = new Set([...referencedVariables, ...serializedFragment.referencedVariables]);
-            serializedFragments.push(`... on ${fragmentName}${serializedFragment.serializedValue}`);
+            serializedFragments.push(`... on ${fragmentName.toString()}${serializedFragment.serializedValue}`);
         }
         return {
             serializedValue: ` { ${serializedFragments.join(', ')} }`,
@@ -201,7 +216,7 @@ export function createQueryBuilder(): QueryBuilder {
 
         const unwrappedSchema = unwrapFieldSchema(fieldSchema);
 
-        if (unwrappedSchema instanceof ZodUndefined) {
+        if (unwrappedSchema instanceof $ZodUndefined) {
             return { serializedValue: '', referencedVariables: new Set() };
         }
 
@@ -219,7 +234,8 @@ export function createQueryBuilder(): QueryBuilder {
                 return combineFieldSelectorAndFieldBody(
                     fieldSelector,
                     serializeFragments(
-                        unionSchema.optionsMap as unknown as ReadonlyMap<FragmentTypeName, FragmentUnionOptionSchema>
+                        unionSchema._zod.propValues,
+                        unionSchema._zod.def.options
                     )
                 );
             }
@@ -237,7 +253,9 @@ export function createQueryBuilder(): QueryBuilder {
         let referencedVariables = new Set<string>();
         const { variableDefinitions = {}, operationName = '' } = options;
         const bodyEntries: string[] = [];
-        const shape = schema instanceof ZodReadonly ? schema.unwrap().shape : schema.shape;
+        const shape = schema instanceof $ZodReadonly ?
+            (schema._zod.def.innerType as StrictObjectSchema<FieldShape>)._zod.def.shape :
+            schema._zod.def.shape;
 
         for (const [fieldName, fieldSchema] of Object.entries(shape)) {
             const serializedField = serializeFieldSchema(fieldName, fieldSchema);
@@ -263,13 +281,10 @@ export function createQueryBuilder(): QueryBuilder {
         registerFieldOptions<Schema extends FieldSchema>(
             schema: Schema,
             options: GraphqlFieldOptions
-        ): ZodLazy<Schema> {
-            const newSchemaInstance = z.lazy(() => {
-                return schema;
-            }) as ZodLazy<Schema>;
-            fieldOptionsRegistry.set(newSchemaInstance, options);
+        ): Schema {
+            fieldOptionsRegistry.set(schema, options);
 
-            return newSchemaInstance;
+            return schema;
         },
 
         buildQuery(schema, options = {}) {

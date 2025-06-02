@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from 'zod/v4';
 import { isNonEmptyArray } from '../tuple/non-empty-array.js';
 import { safeParse } from '../zod-error-formatter/formatter.js';
 import { formatAllErrors, graphqlErrorSchema } from './graphql-error.js';
