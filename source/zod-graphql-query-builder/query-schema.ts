@@ -123,7 +123,6 @@ export function unwrapFieldSchema(parent: FieldSchema): NonWrappedFieldSchema {
     return result.unwrappedSchema;
 }
 
-// eslint-disable-next-line @typescript-eslint/consistent-indexed-object-style -- using an interface to avoid circular reference
 export interface FieldShape {
     [key: string]: FieldSchema;
 }
