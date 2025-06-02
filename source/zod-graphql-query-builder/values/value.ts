@@ -3,7 +3,6 @@ import { isValidGraphqlName } from './name.js';
 import { isRecord } from './record.js';
 import { type GraphqlVariablePlaceholder, isVariablePlaceholder } from './variable-placeholder.js';
 
-// eslint-disable-next-line @typescript-eslint/consistent-indexed-object-style -- see https://github.com/microsoft/TypeScript/pull/57293
 type GraphqlObjectValue = { [Key: string]: GraphqlValue; };
 
 function isObjectValue(value: GraphqlValue): value is GraphqlObjectValue {
