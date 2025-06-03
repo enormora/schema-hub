@@ -237,7 +237,6 @@ export function createClientFactory(dependencies: CreateClientDependencies): Cre
             async queryOrThrow(schema, options) {
                 const result = await query(schema, options);
                 if (result.success) {
-                    // eslint-disable-next-line @typescript-eslint/no-unsafe-return -- false positive
                     return result.data;
                 }
 
@@ -249,7 +248,6 @@ export function createClientFactory(dependencies: CreateClientDependencies): Cre
             async mutateOrThrow(schema, options) {
                 const result = await mutate(schema, options);
                 if (result.success) {
-                    // eslint-disable-next-line @typescript-eslint/no-unsafe-return -- false positive
                     return result.data;
                 }
 

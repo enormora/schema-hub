@@ -9,7 +9,7 @@ test('formats messages for invalid string schemas with max boundary correctly', 
 
     assert.strictEqual(result.success, false);
     assert.deepStrictEqual(result.error.issues, [
-        'string must contain less than 1 character'
+        'string must contain at most 1 character'
     ]);
 });
 

@@ -15,7 +15,6 @@ export function parse<Schema extends $ZodType>(schema: Schema, value: unknown): 
     const result = z.safeParse(schema, value);
 
     if (result.success) {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-return -- false positive
         return result.data;
     }
 
