@@ -313,3 +313,17 @@ test('formats the predicate correctly when inclusive false for date type', () =>
     });
     assert.strictEqual(message, 'date must be smaller than Thu, 01 Jan 1970 00:00:00 GMT');
 });
+
+test('formats the predicate correctly when exact is true', () => {
+    const message = formatTooBigIssueMessage({
+        code: 'too_big',
+        path: [],
+        message: '',
+        input: '',
+        origin: 'number',
+        maximum: 1,
+        exact: true,
+        inclusive: false
+    });
+    assert.strictEqual(message, 'number must be exactly 1');
+});

@@ -25,7 +25,7 @@ import { type CustomScalarSchema, isCustomScalarSchema } from './custom-scalar.j
 
 export interface StrictObjectSchema<Shape extends $ZodShape> extends $ZodObject<Shape, $strict> {}
 
-// @ts-expect-error -- ok in this case
+// @ts-expect-error -- https://github.com/colinhacks/zod/issues/4611
 export function isStrictObjectSchema(schema: unknown): schema is StrictObjectSchema<FieldShape> {
     return schema instanceof $ZodObject;
 }
