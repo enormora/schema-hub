@@ -20,6 +20,6 @@ test('formats messages for invalid array schemas with length boundary correctly'
 
     assert.strictEqual(result.success, false);
     assert.deepStrictEqual(result.error.issues, [
-        'array must contain more than 3 elements'
+        'array must contain exactly 3 elements'
     ]);
 });

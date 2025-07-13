@@ -15,6 +15,10 @@ function formatInclusivePredicate(
 }
 
 function formatPredicate(issue: $ZodIssueTooBig): string {
+    if (issue.exact === true) {
+        return 'exactly';
+    }
+
     if (collectionTypes.has(issue.origin)) {
         return formatInclusivePredicate(issue, 'at most', 'less than');
     }

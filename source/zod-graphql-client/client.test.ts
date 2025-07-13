@@ -43,10 +43,9 @@ function clientFactory(overrides: Overrides): GraphqlClient {
     return createClient(options);
 }
 
-const simpleQuerySchema = z.object({ foo: z.string() }).strict();
+const simpleQuerySchema = z.strictObject({ foo: z.string() });
 const queryWithVariablesSchema = z
-    .object({ foo: graphqlFieldOptions(z.string(), { parameters: { bar: variablePlaceholder('$bar') } }) })
-    .strict();
+    .strictObject({ foo: graphqlFieldOptions(z.string(), { parameters: { bar: variablePlaceholder('$bar') } }) });
 
 test('query() sends the query derived from the given schema to the configured endpoint', async () => {
     const post = createFakeKyMethod();
@@ -207,6 +206,7 @@ test('query() sends the query variables when given', async () => {
 test('query() returns a network failure result when the request times out', async () => {
     const post = createFakeKyMethod({ error: new TimeoutError({} as unknown as Request) });
     const client = clientFactory({ post });
+    // @ts-expect-error -- https://github.com/colinhacks/zod/issues/4611
     const result = await client.query(simpleQuerySchema);
 
     assert.deepStrictEqual(result, {

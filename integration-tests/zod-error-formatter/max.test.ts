@@ -20,6 +20,6 @@ test('formats messages for invalid string schemas with length boundary correctly
 
     assert.strictEqual(result.success, false);
     assert.deepStrictEqual(result.error.issues, [
-        'string must contain less than 3 characters'
+        'string must contain exactly 3 characters'
     ]);
 });
