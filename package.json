@@ -47,7 +47,7 @@
         "eslint": "9.31.0",
         "sinon": "20.0.0",
         "typescript": "5.8.3",
-        "zod": "4.0.5"
+        "zod": "4.0.8"
     },
     "engines": {
         "node": "^22"
