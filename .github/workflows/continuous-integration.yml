@@ -56,7 +56,7 @@ jobs:
             - name: Checkout git repository
               uses: actions/checkout@v4
             - uses: ./.github/actions/setup
-            - uses: actions/download-artifact@v4
+            - uses: actions/download-artifact@v5
               with:
                   name: build-artifacts-node-${{ matrix.node-version }}
                   path: target/build
@@ -76,7 +76,7 @@ jobs:
             - name: Checkout git repository
               uses: actions/checkout@v4
             - uses: ./.github/actions/setup
-            - uses: actions/download-artifact@v4
+            - uses: actions/download-artifact@v5
               with:
                   name: build-artifacts-node-${{ matrix.node-version }}
                   path: target/build
