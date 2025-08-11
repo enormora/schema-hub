@@ -45,7 +45,7 @@
         "common-tags": "1.8.2",
         "dprint": "0.50.1",
         "eslint": "9.33.0",
-        "sinon": "20.0.0",
+        "sinon": "21.0.0",
         "typescript": "5.8.3",
         "zod": "4.0.17"
     },
