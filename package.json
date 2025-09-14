@@ -43,7 +43,7 @@
         "@types/sinon": "17.0.4",
         "c8": "10.1.3",
         "common-tags": "1.8.2",
-        "dprint": "0.50.1",
+        "dprint": "0.50.2",
         "eslint": "9.35.0",
         "sinon": "21.0.0",
         "typescript": "5.8.3",
