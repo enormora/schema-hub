@@ -25,7 +25,7 @@
     },
     "dependencies": {
         "graphql": "16.11.0",
-        "ky": "1.10.0",
+        "ky": "1.11.0",
         "tslib": "2.8.1"
     },
     "devDependencies": {
