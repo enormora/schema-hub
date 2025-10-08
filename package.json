@@ -36,7 +36,7 @@
         "@enormora/eslint-config-base": "0.0.23",
         "@enormora/eslint-config-node": "0.0.20",
         "@enormora/eslint-config-typescript": "0.0.26",
-        "@packtory/cli": "0.0.6",
+        "@packtory/cli": "0.0.7",
         "@sondr3/minitest": "0.1.2",
         "@types/common-tags": "1.8.4",
         "@types/node": "22.18.8",
