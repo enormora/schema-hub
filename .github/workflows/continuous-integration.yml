@@ -9,7 +9,7 @@ jobs:
         runs-on: ubuntu-latest
         strategy:
             matrix:
-                node-version: [20.x, 22.x]
+                node-version: [20.x, 22.x, 24.x]
         steps:
             - name: Checkout git repository
               uses: actions/checkout@v5
@@ -20,7 +20,7 @@ jobs:
         runs-on: ubuntu-latest
         strategy:
             matrix:
-                node-version: [20.x, 22.x]
+                node-version: [20.x, 22.x, 24.x]
         needs: ["install"]
         steps:
             - name: Checkout git repository
@@ -50,7 +50,7 @@ jobs:
         runs-on: ubuntu-latest
         strategy:
             matrix:
-                node-version: [20.x, 22.x]
+                node-version: [20.x, 22.x, 24.x]
         needs: ["compile", "static-code-analysis"]
         steps:
             - name: Checkout git repository
@@ -70,7 +70,7 @@ jobs:
         runs-on: ubuntu-latest
         strategy:
             matrix:
-                node-version: [20.x, 22.x]
+                node-version: [20.x, 22.x, 24.x]
         needs: ["compile", "static-code-analysis"]
         steps:
             - name: Checkout git repository

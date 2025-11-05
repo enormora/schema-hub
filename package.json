@@ -50,7 +50,7 @@
         "zod": "4.1.12"
     },
     "engines": {
-        "node": "^22"
+        "node": "^22 || ^24"
     },
     "peerDependencies": {
         "zod": "^4.0.5"
