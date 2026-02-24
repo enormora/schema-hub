@@ -46,7 +46,7 @@
         "dprint": "0.51.1",
         "eslint": "9.39.3",
         "sinon": "21.0.1",
-        "typescript": "5.8.3",
+        "typescript": "5.9.3",
         "zod": "4.2.1"
     },
     "engines": {
