@@ -12,7 +12,7 @@ jobs:
                 node-version: [20.x, 22.x, 24.x]
         steps:
             - name: Checkout git repository
-              uses: actions/checkout@v5
+              uses: actions/checkout@v6
             - uses: ./.github/actions/setup
 
     compile:
@@ -24,7 +24,7 @@ jobs:
         needs: ["install"]
         steps:
             - name: Checkout git repository
-              uses: actions/checkout@v5
+              uses: actions/checkout@v6
             - uses: ./.github/actions/setup
             - name: Compile
               run: "npm run compile"
@@ -40,7 +40,7 @@ jobs:
         needs: ["install"]
         steps:
             - name: Checkout git repository
-              uses: actions/checkout@v5
+              uses: actions/checkout@v6
             - uses: ./.github/actions/setup
             - name: Run linters
               run: "npm run lint"
@@ -54,7 +54,7 @@ jobs:
         needs: ["compile", "static-code-analysis"]
         steps:
             - name: Checkout git repository
-              uses: actions/checkout@v5
+              uses: actions/checkout@v6
             - uses: ./.github/actions/setup
             - uses: actions/download-artifact@v6
               with:
@@ -74,7 +74,7 @@ jobs:
         needs: ["compile", "static-code-analysis"]
         steps:
             - name: Checkout git repository
-              uses: actions/checkout@v5
+              uses: actions/checkout@v6
             - uses: ./.github/actions/setup
             - uses: actions/download-artifact@v6
               with:
