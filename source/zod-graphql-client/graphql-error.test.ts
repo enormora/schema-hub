@@ -12,7 +12,7 @@ test('graphqlErrorSchema: validation fails when a non-object is given', () => {
 test('graphqlErrorSchema: validation fails when an empty object is given', () => {
     const result = safeParse(graphqlErrorSchema, {});
     assert.strictEqual(result.success, false);
-    assert.deepStrictEqual(result.error.issues, ['at message: missing property']);
+    assert.deepStrictEqual(result.error.issues, ['at message: missing property; expected string']);
 });
 
 test('graphqlErrorSchema: validation fails when message is not a string', () => {
@@ -51,8 +51,8 @@ test('graphqlErrorSchema: validation fails when a locations item is an empty obj
     const result = safeParse(graphqlErrorSchema, { message: '', locations: [{}] });
     assert.strictEqual(result.success, false);
     assert.deepStrictEqual(result.error.issues, [
-        'at locations[0].line: missing property',
-        'at locations[0].column: missing property'
+        'at locations[0].line: missing property; expected number',
+        'at locations[0].column: missing property; expected number'
     ]);
 });
 

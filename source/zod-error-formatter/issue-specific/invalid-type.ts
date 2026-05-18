@@ -8,5 +8,5 @@ export function formatInvalidTypeIssueMessage(issue: $ZodIssueInvalidType, input
         return `expected ${issue.expected}, but got ${util.getParsedType(result.value)}`;
     }
 
-    return `missing ${result.pathItemKind}`;
+    return `missing ${result.pathItemKind}; expected ${issue.expected}`;
 }

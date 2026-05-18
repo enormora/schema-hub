@@ -165,12 +165,13 @@ function findCollapseCandidate(alternatives: readonly AlternativeBucket[]): Coll
 }
 
 function renderCollapsedMessage(candidate: CollapseCandidate, inputAtUnion: unknown): string {
+    const expectedValues = removeDuplicateListValues(candidate.issues.map(determineExpectedValue));
     const valueAtCommonPath = findValueByPath(inputAtUnion, candidate.commonPath);
     if (!valueAtCommonPath.found) {
-        return prependPath(candidate.commonPath, `missing ${valueAtCommonPath.pathItemKind}`);
+        const message = `missing ${valueAtCommonPath.pathItemKind}; expected ${formatOneOfList(expectedValues)}`;
+        return prependPath(candidate.commonPath, message);
     }
 
-    const expectedValues = removeDuplicateListValues(candidate.issues.map(determineExpectedValue));
     const receivedValue = util.getParsedType(valueAtCommonPath.value);
     const message = `invalid value: expected ${formatOneOfList(expectedValues)}, but got ${receivedValue}`;
     return prependPath(candidate.commonPath, message);
@@ -187,30 +188,181 @@ function tryCollapseToOneOfMessage(
     return renderCollapsedMessage(candidate, inputAtUnion);
 }
 
-function formatEnumeratedAlternatives(
+type RenderedIssue = { readonly issue: $ZodIssue; readonly rendered: string; };
+
+type RenderedAlternative = readonly RenderedIssue[];
+
+function renderPerAlternative(
+    alternatives: readonly AlternativeBucket[],
+    inputAtUnion: unknown,
+    formatChildIssue: FormatChildIssue
+): readonly RenderedAlternative[] {
+    return alternatives.map((bucket) => {
+        return bucket.map((issue) => {
+            return { issue, rendered: formatChildIssue(issue, inputAtUnion) };
+        });
+    });
+}
+
+// Returns rendered strings present (by exact match) in every alternative.
+// Each string is reported once even if an alternative carries it multiple times,
+// matching the "factor out shared constraints" semantics.
+function findCommonRenderedStrings(perAlternative: readonly RenderedAlternative[]): readonly string[] {
+    const [first, ...rest] = perAlternative;
+    if (first === undefined) {
+        return [];
+    }
+    const uniqueFirst = Array.from(
+        new Set(first.map((item) => {
+            return item.rendered;
+        }))
+    );
+    return uniqueFirst.filter((rendered) => {
+        return rest.every((other) => {
+            return other.some((candidate) => {
+                return candidate.rendered === rendered;
+            });
+        });
+    });
+}
+
+function reduceAlternatives(
+    perAlternative: readonly RenderedAlternative[],
+    commonRendered: readonly string[]
+): readonly AlternativeBucket[] {
+    if (commonRendered.length === 0) {
+        return perAlternative.map((bucket) => {
+            return bucket.map((item) => {
+                return item.issue;
+            });
+        });
+    }
+    return perAlternative.map((bucket) => {
+        return bucket
+            .filter((item) => {
+                return !commonRendered.includes(item.rendered);
+            })
+            .map((item) => {
+                return item.issue;
+            });
+    });
+}
+
+type Group = { readonly indices: readonly number[]; readonly body: readonly string[]; };
+
+// Groups alternatives that produce byte-identical rendered bodies so the output
+// reads "alternatives 1, 3: ..." instead of repeating the same line. Lossless:
+// two alternatives with identical rendered output impose the same constraints
+// at this input, so listing them once preserves all information.
+function groupAlternativesByBody(perAlternative: readonly RenderedAlternative[]): readonly Group[] {
+    const groups: Group[] = [];
+    perAlternative.forEach((bucket, index) => {
+        if (bucket.length === 0) {
+            return;
+        }
+        const body = bucket.map((item) => {
+            return item.rendered;
+        });
+        const key = JSON.stringify(body);
+        const existing = groups.find((group) => {
+            return JSON.stringify(group.body) === key;
+        });
+        if (existing === undefined) {
+            groups.push({ indices: [index + 1], body });
+        } else {
+            (existing.indices as number[]).push(index + 1);
+        }
+    });
+    return groups;
+}
+
+function renderAlternativeLabel(indices: readonly number[]): string {
+    if (indices.length === 1) {
+        return `alternative ${indices[0]}`;
+    }
+    return `alternatives ${indices.join(', ')}`;
+}
+
+function enumerateAlternatives(
     alternatives: readonly AlternativeBucket[],
     inputAtUnion: unknown,
     formatChildIssue: FormatChildIssue
 ): string | null {
-    const renderedAlternatives = alternatives
-        .map((bucket, index): string | null => {
-            if (bucket.length === 0) {
-                return null;
-            }
-            const childMessages = bucket.map((issue) => {
-                return formatChildIssue(issue, inputAtUnion);
-            });
-            return `alternative ${index + 1}: ${childMessages.join('; ')}`;
-        })
-        .filter((line): line is string => {
-            return line !== null;
-        });
-
-    if (renderedAlternatives.length === 0) {
+    const perAlternative = renderPerAlternative(alternatives, inputAtUnion, formatChildIssue);
+    const groups = groupAlternativesByBody(perAlternative);
+    if (groups.length === 0) {
         return null;
     }
+    const lines = groups.map((group) => {
+        return `${renderAlternativeLabel(group.indices)}: ${group.body.join('; ')}`;
+    });
+    return `no union alternative matched: ${lines.join(' | ')}`;
+}
 
-    return `no union alternative matched: ${renderedAlternatives.join(' | ')}`;
+function joinWithCommon(commonRendered: readonly string[], rest: string): string {
+    if (commonRendered.length === 0) {
+        return rest;
+    }
+    return `${commonRendered.join('; ')}; ${rest}`;
+}
+
+// Factor out issues that appear (by rendered-message equality) in every
+// alternative — they are hard requirements of the union regardless of which
+// branch the user picks. After factoring, retry collapse on the reduced
+// alternatives so e.g. a discriminator field can OR-merge once shared
+// constraints have been lifted. Returns null only when there is genuinely
+// nothing reportable.
+// If any alternative is fully described by the common issues, fixing those
+// is sufficient — the union passes via that alternative. Listing the other
+// alternatives' extra constraints would be misleading. Also retries collapse
+// on the reduced alternatives so a discriminator field can OR-merge cleanly.
+function tryFactoredCollapse(
+    commonRendered: readonly string[],
+    reducedAlternatives: readonly AlternativeBucket[],
+    inputAtUnion: unknown
+): string | null {
+    const anyReducedEmpty = reducedAlternatives.some((bucket) => {
+        return bucket.length === 0;
+    });
+    if (commonRendered.length > 0 && anyReducedEmpty) {
+        return commonRendered.join('; ');
+    }
+    const reducedCollapsed = tryCollapseToOneOfMessage(reducedAlternatives, inputAtUnion);
+    if (reducedCollapsed !== null) {
+        return joinWithCommon(commonRendered, reducedCollapsed);
+    }
+    return null;
+}
+
+function enumerateOrCommonFallback(
+    reducedAlternatives: readonly AlternativeBucket[],
+    commonRendered: readonly string[],
+    inputAtUnion: unknown,
+    formatChildIssue: FormatChildIssue
+): string | null {
+    const enumerated = enumerateAlternatives(reducedAlternatives, inputAtUnion, formatChildIssue);
+    if (enumerated !== null) {
+        return joinWithCommon(commonRendered, enumerated);
+    }
+    return commonRendered.length > 0 ? commonRendered.join('; ') : null;
+}
+
+function formatAlternativesWithFactoring(
+    alternatives: readonly AlternativeBucket[],
+    inputAtUnion: unknown,
+    formatChildIssue: FormatChildIssue
+): string | null {
+    if (alternatives.length === 0) {
+        return null;
+    }
+    const perAlternative = renderPerAlternative(alternatives, inputAtUnion, formatChildIssue);
+    const commonRendered = findCommonRenderedStrings(perAlternative);
+    const reducedAlternatives = reduceAlternatives(perAlternative, commonRendered);
+    const factored = tryFactoredCollapse(commonRendered, reducedAlternatives, inputAtUnion);
+    if (factored !== null) {
+        return factored;
+    }
+    return enumerateOrCommonFallback(reducedAlternatives, commonRendered, inputAtUnion, formatChildIssue);
 }
 
 function buildUnionMessage(
@@ -226,9 +378,9 @@ function buildUnionMessage(
         return collapsed;
     }
 
-    const enumerated = formatEnumeratedAlternatives(relativeAlternatives, valueAtUnion, formatChildIssue);
-    if (enumerated !== null) {
-        return enumerated;
+    const factored = formatAlternativesWithFactoring(relativeAlternatives, valueAtUnion, formatChildIssue);
+    if (factored !== null) {
+        return factored;
     }
 
     return 'invalid value doesn’t match expected union';

@@ -55,7 +55,7 @@ test('formats the issue as missing property when the path doesn’t exist in the
         values: [1],
         input: { foo: 'bar' }
     }, {});
-    assert.strictEqual(message, 'missing property');
+    assert.strictEqual(message, 'missing property; expected 1');
 });
 
 test('formats the issue as missing key when the path doesn’t exist in the given array', () => {
@@ -66,5 +66,5 @@ test('formats the issue as missing key when the path doesn’t exist in the give
         values: [1],
         input: { foo: 'bar' }
     }, []);
-    assert.strictEqual(message, 'missing key');
+    assert.strictEqual(message, 'missing key; expected 1');
 });

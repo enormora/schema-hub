@@ -402,7 +402,7 @@ test('queryOrThrow() rejects an error when there is a failure', async () => {
         );
         assert.deepStrictEqual((error as GraphqlOperationError).details, {
             type: 'validation',
-            issues: ['at foo: missing property']
+            issues: ['at foo: missing property; expected string']
         });
     }
 });
@@ -422,7 +422,7 @@ test('mutateOrThrow() rejects an error when there is a failure', async () => {
         );
         assert.deepStrictEqual((error as GraphqlOperationError).details, {
             type: 'validation',
-            issues: ['at foo: missing property']
+            issues: ['at foo: missing property; expected string']
         });
     }
 });

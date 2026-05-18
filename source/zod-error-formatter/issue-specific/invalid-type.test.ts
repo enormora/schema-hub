@@ -21,7 +21,7 @@ test('formats the issue as missing property when the path couldn’t be resolved
         expected: 'date',
         input: 'null'
     }, { foo: {} });
-    assert.strictEqual(message, 'missing property');
+    assert.strictEqual(message, 'missing property; expected date');
 });
 
 test('formats the issue as missing key when the path couldn’t be resolved in the given input data', () => {
@@ -32,5 +32,5 @@ test('formats the issue as missing key when the path couldn’t be resolved in t
         expected: 'date',
         input: 'null'
     }, []);
-    assert.strictEqual(message, 'missing key');
+    assert.strictEqual(message, 'missing key; expected date');
 });

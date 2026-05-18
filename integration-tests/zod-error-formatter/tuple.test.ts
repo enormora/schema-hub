@@ -20,7 +20,7 @@ test('formats messages for missing keys correctly', () => {
 
     assert.strictEqual(result.success, false);
     assert.deepStrictEqual(result.error.issues, [
-        'at [1]: missing key'
+        'at [1]: missing key; expected string'
     ]);
 });
 
