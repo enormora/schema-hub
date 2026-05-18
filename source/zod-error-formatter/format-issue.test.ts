@@ -2,14 +2,14 @@ import { test } from '@sondr3/minitest';
 import assert from 'node:assert';
 import { formatIssue } from './format-issue.js';
 
-test('returns just the message when the path is empty', () => {
-    const formattedIssue = formatIssue({ code: 'custom', message: 'foo', path: [], input: '' }, '');
-    assert.strictEqual(formattedIssue, 'invalid input');
+test('surfaces a non-empty custom message when the path is empty', () => {
+    const formattedIssue = formatIssue({ code: 'custom', message: 'must be positive', path: [], input: '' }, '');
+    assert.strictEqual(formattedIssue, 'must be positive');
 });
 
-test('returns the message with path when the path is not empty', () => {
-    const formattedIssue = formatIssue({ code: 'custom', message: 'bar', path: ['foo'], input: '' }, '');
-    assert.strictEqual(formattedIssue, 'at foo: invalid input');
+test('surfaces a non-empty custom message with its path when the path is not empty', () => {
+    const formattedIssue = formatIssue({ code: 'custom', message: 'must be positive', path: ['foo'], input: '' }, '');
+    assert.strictEqual(formattedIssue, 'at foo: must be positive');
 });
 
 test('returns the formatted issue when an invalid_type issue is given', () => {
@@ -23,7 +23,7 @@ test('returns the formatted issue when an invalid_type issue is given', () => {
     assert.strictEqual(formattedIssue, 'at foo: expected nan, but got number');
 });
 
-test('returns the formatted issue when an invalid_literal issue is given', () => {
+test('returns the formatted issue when an invalid_value issue is given', () => {
     const formattedIssue = formatIssue({
         code: 'invalid_value',
         message: '',
@@ -31,7 +31,7 @@ test('returns the formatted issue when an invalid_literal issue is given', () =>
         input: 'bar',
         path: ['foo']
     }, { foo: '' });
-    assert.strictEqual(formattedIssue, 'at foo: invalid literal: expected "foo", but got string');
+    assert.strictEqual(formattedIssue, 'at foo: invalid value: expected "foo", but got string');
 });
 
 test('returns the formatted issue when an unrecognized_keys issue is given', () => {
@@ -104,7 +104,7 @@ test('returns the formatted issue when an invalid_union issue is given', () => {
     assert.strictEqual(formattedIssue, 'at foo: invalid value doesn’t match expected union');
 });
 
-test('returns the formatted issue when an invalid_key issue is given', () => {
+test('returns a fallback labelled by origin when invalid_key has no inner issues', () => {
     const formattedIssue = formatIssue({
         code: 'invalid_key',
         path: ['foo'],
@@ -113,10 +113,28 @@ test('returns the formatted issue when an invalid_key issue is given', () => {
         issues: [],
         origin: 'map'
     }, '');
-    assert.strictEqual(formattedIssue, 'at foo: invalid key');
+    assert.strictEqual(formattedIssue, 'at foo: invalid map key');
 });
 
-test('returns the formatted issue when an invalid_element issue is given', () => {
+test('surfaces inner issues for invalid_key instead of the fallback', () => {
+    const formattedIssue = formatIssue({
+        code: 'invalid_key',
+        path: ['foo'],
+        message: '',
+        input: {},
+        origin: 'map',
+        issues: [{
+            code: 'invalid_type',
+            path: ['foo'],
+            message: '',
+            expected: 'string',
+            input: 1
+        }]
+    }, { foo: 1 });
+    assert.strictEqual(formattedIssue, 'at foo: expected string, but got number');
+});
+
+test('returns a fallback labelled by origin when invalid_element has no inner issues', () => {
     const formattedIssue = formatIssue({
         code: 'invalid_element',
         origin: 'map',
@@ -126,10 +144,29 @@ test('returns the formatted issue when an invalid_element issue is given', () =>
         input: {},
         key: ''
     }, '');
-    assert.strictEqual(formattedIssue, 'at foo: invalid element');
+    assert.strictEqual(formattedIssue, 'at foo: invalid map element');
 });
 
-test('returns the formatted issue when a custom issue is given', () => {
+test('surfaces inner issues for invalid_element instead of the fallback', () => {
+    const formattedIssue = formatIssue({
+        code: 'invalid_element',
+        origin: 'set',
+        path: ['foo', 0],
+        message: '',
+        key: 0,
+        input: 1,
+        issues: [{
+            code: 'invalid_type',
+            path: ['foo', 0],
+            message: '',
+            expected: 'string',
+            input: 1
+        }]
+    }, { foo: [1] });
+    assert.strictEqual(formattedIssue, 'at foo[0]: expected string, but got number');
+});
+
+test('returns the fallback when a custom issue carries no message', () => {
     const formattedIssue = formatIssue({
         code: 'custom',
         path: ['foo'],

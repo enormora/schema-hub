@@ -1,12 +1,22 @@
-import type { $ZodIssue, $ZodIssueInvalidUnion } from 'zod/v4/core';
-import { formatInvalidStringIssueMessage } from './issue-specific/invalid-string.js';
-import { formatInvalidTypeIssueMessage } from './issue-specific/invalid-type.js';
-import { formatInvalidUnionIssueMessage } from './issue-specific/invalid-union.js';
-import { formatInvalidValueIssueMessage } from './issue-specific/invalid-value.js';
-import { formatNotMultipleOfIssueMessage } from './issue-specific/not-multiple-of.js';
-import { formatTooBigIssueMessage } from './issue-specific/too-big.js';
-import { formatTooSmallIssueMessage } from './issue-specific/too-small.js';
-import { formatUnrecognizedKeysIssueMessage } from './issue-specific/unrecognized-keys.js';
+import type {
+    $ZodIssue,
+    $ZodIssueCustom,
+    $ZodIssueInvalidElement,
+    $ZodIssueInvalidKey,
+    $ZodIssueInvalidUnion
+} from 'zod/v4/core';
+import {
+    formatInvalidElementIssueMessage,
+    formatInvalidKeyIssueMessage,
+    formatInvalidStringIssueMessage,
+    formatInvalidTypeIssueMessage,
+    formatInvalidUnionIssueMessage,
+    formatInvalidValueIssueMessage,
+    formatNotMultipleOfIssueMessage,
+    formatTooBigIssueMessage,
+    formatTooSmallIssueMessage,
+    formatUnrecognizedKeysIssueMessage
+} from './issue-specific/entry-point.js';
 import { formatPath, isNonEmptyPath } from './path.js';
 
 type ZodIssueCode = Exclude<$ZodIssue['code'], undefined>;
@@ -20,18 +30,32 @@ type FormatterMap = {
     readonly [Key in ZodIssueCode]: FormatterForCode<Key>;
 };
 
-function formatSimpleMessage(message: string): (issue: $ZodIssue) => string {
-    return () => {
-        return message;
-    };
+// Codes whose formatters handle their own "at <path>:" prefix because they
+// either render a multi-issue block (invalid_union) or delegate to child
+// formatters whose absolute paths would otherwise be doubled (invalid_key,
+// invalid_element).
+const selfPrefixingCodes: ReadonlySet<ZodIssueCode> = new Set(['invalid_union', 'invalid_key', 'invalid_element']);
+
+function formatCustom(issue: $ZodIssueCustom): string {
+    if (issue.message.length > 0) {
+        return issue.message;
+    }
+    return 'invalid input';
 }
 
 function formatUnion(issue: $ZodIssueInvalidUnion, input: unknown): string {
-    // formatInvalidUnionIssueMessage embeds its own "at <path>:" prefix so it
-    // can extend it to a deeper common path or wrap a multi-line enumeration;
-    // formatIssue therefore skips the generic prefix step for invalid_union.
     // eslint-disable-next-line @typescript-eslint/no-use-before-define -- formatIssue is hoisted; closure resolves at call time
     return formatInvalidUnionIssueMessage(issue, input, formatIssue);
+}
+
+function formatInvalidKey(issue: $ZodIssueInvalidKey, input: unknown): string {
+    // eslint-disable-next-line @typescript-eslint/no-use-before-define -- formatIssue is hoisted; closure resolves at call time
+    return formatInvalidKeyIssueMessage(issue, input, formatIssue);
+}
+
+function formatInvalidElement(issue: $ZodIssueInvalidElement, input: unknown): string {
+    // eslint-disable-next-line @typescript-eslint/no-use-before-define -- formatIssue is hoisted; closure resolves at call time
+    return formatInvalidElementIssueMessage(issue, input, formatIssue);
 }
 
 const issueCodeToFormatterMap: FormatterMap = {
@@ -43,9 +67,9 @@ const issueCodeToFormatterMap: FormatterMap = {
     not_multiple_of: formatNotMultipleOfIssueMessage,
     invalid_format: formatInvalidStringIssueMessage,
     invalid_union: formatUnion,
-    custom: formatSimpleMessage('invalid input'),
-    invalid_key: formatSimpleMessage('invalid key'),
-    invalid_element: formatSimpleMessage('invalid element')
+    custom: formatCustom,
+    invalid_key: formatInvalidKey,
+    invalid_element: formatInvalidElement
 };
 
 export function formatIssue(issue: $ZodIssue, input: unknown): string {
@@ -57,7 +81,7 @@ export function formatIssue(issue: $ZodIssue, input: unknown): string {
     ) => string;
     const message = formatter(issue, input);
 
-    if (code === 'invalid_union') {
+    if (selfPrefixingCodes.has(code)) {
         return message;
     }
 

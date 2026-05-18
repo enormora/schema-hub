@@ -1,5 +1,5 @@
 import { type $ZodIssueInvalidValue, util } from 'zod/v4/core';
-import { formatList, formatOneOfList } from '../list.js';
+import { formatOneOfList } from '../list.js';
 import { findValueByPath } from '../path.js';
 
 export function formatInvalidValueIssueMessage(
@@ -10,8 +10,8 @@ export function formatInvalidValueIssueMessage(
 
     if (result.found) {
         const received = util.getParsedType(result.value);
-        const expected = formatList(issue.values, ',');
-        return `invalid literal: expected ${expected}, but got ${received}`;
+        const expected = formatOneOfList(issue.values);
+        return `invalid value: expected ${expected}, but got ${received}`;
     }
 
     return `missing ${result.pathItemKind}; expected ${formatOneOfList(issue.values)}`;
