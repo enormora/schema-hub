@@ -2,6 +2,7 @@ import { type GraphqlEnumValue, isEnumValue } from './enum.js';
 import { isValidGraphqlName } from './name.js';
 import { isRecord } from './record.js';
 import { type GraphqlVariablePlaceholder, isVariablePlaceholder } from './variable-placeholder.js';
+import { mergeVariables } from './variable-set.js';
 
 type GraphqlObjectValue = { [Key: string]: GraphqlValue; };
 
@@ -43,7 +44,7 @@ function normalizeObjectValue(value: GraphqlObjectValue): NormalizedGraphqlValue
         // eslint-disable-next-line @typescript-eslint/no-use-before-define -- mutual recursion
         const normalizedFieldValue = normalizeGraphqlValue(fieldValue);
         serializedFields.push(`${fieldName}: ${normalizedFieldValue.serializedValue}`);
-        referencedVariables = new Set([...referencedVariables, ...normalizedFieldValue.referencedVariables]);
+        referencedVariables = mergeVariables(referencedVariables, normalizedFieldValue.referencedVariables);
     }
 
     return {
@@ -60,7 +61,7 @@ function normalizeListValue(value: GraphqlValue[]): NormalizedGraphqlValue {
         // eslint-disable-next-line @typescript-eslint/no-use-before-define -- mutual recursion
         const normalizedItem = normalizeGraphqlValue(item);
         serializedItems.push(normalizedItem.serializedValue);
-        referencedVariables = new Set([...referencedVariables, ...normalizedItem.referencedVariables]);
+        referencedVariables = mergeVariables(referencedVariables, normalizedItem.referencedVariables);
     }
 
     return {

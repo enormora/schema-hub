@@ -28,6 +28,7 @@ import {
 } from './query-schema.js';
 import { normalizeParameterList } from './values/parameter-list.js';
 import type { GraphqlValue, NormalizedGraphqlValue } from './values/value.js';
+import { mergeVariables } from './values/variable-set.js';
 import { ensureValidVariableCorrelations } from './variable-correlations.js';
 import { serializeVariableDefinitions, type VariableDefinitions } from './variable-definition.js';
 
@@ -153,7 +154,7 @@ export function createQueryBuilder(): QueryBuilder {
         for (const [fieldName, fieldSchema] of entries) {
             // eslint-disable-next-line @typescript-eslint/no-use-before-define -- recursion
             const serializedField = serializeFieldSchema(fieldName, fieldSchema);
-            referencedVariables = new Set([...referencedVariables, ...serializedField.referencedVariables]);
+            referencedVariables = mergeVariables(referencedVariables, serializedField.referencedVariables);
             serializedEntries.push(serializedField.serializedValue);
         }
 
@@ -181,7 +182,7 @@ export function createQueryBuilder(): QueryBuilder {
                 );
             }
             const serializedFragment = serializeObjectSchema(fragmentSchema);
-            referencedVariables = new Set([...referencedVariables, ...serializedFragment.referencedVariables]);
+            referencedVariables = mergeVariables(referencedVariables, serializedFragment.referencedVariables);
             serializedFragments.push(`... on ${fragmentName.toString()}${serializedFragment.serializedValue}`);
         }
         return {
@@ -196,10 +197,7 @@ export function createQueryBuilder(): QueryBuilder {
     ): NormalizedGraphqlValue {
         return {
             serializedValue: `${fieldSelector.serializedValue}${fieldBody.serializedValue}`,
-            referencedVariables: new Set([
-                ...fieldSelector.referencedVariables,
-                ...fieldBody.referencedVariables
-            ])
+            referencedVariables: mergeVariables(fieldSelector.referencedVariables, fieldBody.referencedVariables)
         };
     }
 
