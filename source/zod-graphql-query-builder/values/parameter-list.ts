@@ -1,5 +1,6 @@
 import { isValidGraphqlName } from './name.js';
 import { type GraphqlValue, type NormalizedGraphqlValue, normalizeGraphqlValue } from './value.js';
+import { mergeVariables } from './variable-set.js';
 
 export function normalizeParameterList(parameters: Record<string, GraphqlValue>): NormalizedGraphqlValue {
     let referencedVariables = new Set<string>();
@@ -12,7 +13,7 @@ export function normalizeParameterList(parameters: Record<string, GraphqlValue>)
 
         const normalizedParameterValue = normalizeGraphqlValue(parameterValue);
         serializedParameters.push(`${parameterName}: ${normalizedParameterValue.serializedValue}`);
-        referencedVariables = new Set([...referencedVariables, ...normalizedParameterValue.referencedVariables]);
+        referencedVariables = mergeVariables(referencedVariables, normalizedParameterValue.referencedVariables);
     }
 
     return {
