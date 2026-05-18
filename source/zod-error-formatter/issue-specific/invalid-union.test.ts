@@ -211,7 +211,8 @@ test('enumerates each alternative when one is supported and another is custom', 
     );
     assert.strictEqual(
         message,
-        'no union alternative matched: alternative 1: expected string, but got string | alternative 2: invalid input'
+        // eslint-disable-next-line @stylistic/max-len -- expected enumeration is intentionally explicit
+        'no union alternative matched: alternative 1: expected string, but got string | alternative 2: must satisfy something'
     );
 });
 
@@ -303,7 +304,7 @@ test('enumerates instead of collapsing when an alternative has multiple issues',
     assert.strictEqual(
         message,
         // eslint-disable-next-line @stylistic/max-len -- test expectation must match the produced multi-issue string exactly
-        'no union alternative matched: alternative 1: at a: invalid literal: expected "X", but got string; at b: expected number, but got boolean | alternative 2: at a: invalid literal: expected "Y", but got string; at b: expected string, but got boolean'
+        'no union alternative matched: alternative 1: at a: invalid value: expected "X", but got string; at b: expected number, but got boolean | alternative 2: at a: invalid value: expected "Y", but got string; at b: expected string, but got boolean'
     );
 });
 

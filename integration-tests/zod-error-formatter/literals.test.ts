@@ -9,7 +9,7 @@ test('formats messages for invalid string literals correctly', () => {
 
     assert.strictEqual(result.success, false);
     assert.deepStrictEqual(result.error.issues, [
-        'invalid literal: expected "foo", but got string'
+        'invalid value: expected "foo", but got string'
     ]);
 });
 

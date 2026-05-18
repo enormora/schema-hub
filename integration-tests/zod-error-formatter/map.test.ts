@@ -9,7 +9,7 @@ test('formats messages for invalid keys in map schemas correctly', () => {
 
     assert.strictEqual(result.success, false);
     assert.deepStrictEqual(result.error.issues, [
-        'at b: invalid literal: expected "a", but got string'
+        'at b: invalid value: expected "a", but got string'
     ]);
 });
 

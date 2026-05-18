@@ -10,7 +10,7 @@ test('formats the issue by using the expected value as is and only the type of t
         values: [1],
         input: { foo: 'bar' }
     }, { foo: 'bar' });
-    assert.strictEqual(message, 'invalid literal: expected 1, but got object');
+    assert.strictEqual(message, 'invalid value: expected 1, but got object');
 });
 
 test('wraps the expected value in double quotes when it is a string', () => {
@@ -21,7 +21,7 @@ test('wraps the expected value in double quotes when it is a string', () => {
         values: ['foo'],
         input: null
     }, null);
-    assert.strictEqual(message, 'invalid literal: expected "foo", but got null');
+    assert.strictEqual(message, 'invalid value: expected "foo", but got null');
 });
 
 test('correctly works with undefined as expected value', () => {
@@ -32,7 +32,7 @@ test('correctly works with undefined as expected value', () => {
         values: [undefined],
         input: null
     }, null);
-    assert.strictEqual(message, 'invalid literal: expected undefined, but got null');
+    assert.strictEqual(message, 'invalid value: expected undefined, but got null');
 });
 
 test('correctly works with bigint as expected value', () => {
@@ -44,7 +44,7 @@ test('correctly works with bigint as expected value', () => {
         values: [9_007_199_254_740_993n],
         input: null
     }, null);
-    assert.strictEqual(message, 'invalid literal: expected 9007199254740993, but got null');
+    assert.strictEqual(message, 'invalid value: expected 9007199254740993, but got null');
 });
 
 test('formats the issue as missing property when the path doesn’t exist in the given object', () => {

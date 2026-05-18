@@ -9,7 +9,7 @@ test('formats messages for invalid items in tuple schemas correctly', () => {
 
     assert.strictEqual(result.success, false);
     assert.deepStrictEqual(result.error.issues, [
-        'at [0]: invalid literal: expected "a", but got string'
+        'at [0]: invalid value: expected "a", but got string'
     ]);
 });
 

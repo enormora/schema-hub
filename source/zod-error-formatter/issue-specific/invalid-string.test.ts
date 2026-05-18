@@ -2,15 +2,16 @@ import { test } from '@sondr3/minitest';
 import assert from 'node:assert';
 import { formatInvalidStringIssueMessage } from './invalid-string.js';
 
-test('formats the invalid string issue correctly when validation is "regex"', () => {
+test('formats the invalid string issue correctly when validation is "regex" with a pattern', () => {
     const message = formatInvalidStringIssueMessage({
         code: 'invalid_format',
         path: [],
         message: '',
         input: '',
-        format: 'regex'
+        format: 'regex',
+        pattern: '/^foo$/i'
     });
-    assert.strictEqual(message, 'string doesn’t match expected pattern');
+    assert.strictEqual(message, 'string doesn’t match expected pattern /^foo$/i');
 });
 
 test('formats the invalid string issue correctly when validation is "email"', () => {
@@ -110,6 +111,29 @@ test('formats the invalid string issue correctly when validation is "ip"', () =>
         format: 'ip'
     });
     assert.strictEqual(message, 'invalid ip');
+});
+
+test('formats the invalid string issue correctly when validation is "jwt" without an algorithm', () => {
+    const message = formatInvalidStringIssueMessage({
+        code: 'invalid_format',
+        path: [],
+        message: '',
+        input: '',
+        format: 'jwt'
+    });
+    assert.strictEqual(message, 'invalid jwt');
+});
+
+test('formats the invalid string issue correctly when validation is "jwt" with an algorithm', () => {
+    const message = formatInvalidStringIssueMessage({
+        code: 'invalid_format',
+        path: [],
+        message: '',
+        input: '',
+        format: 'jwt',
+        algorithm: 'RS256'
+    });
+    assert.strictEqual(message, 'invalid jwt (expected algorithm RS256)');
 });
 
 test('formats the invalid string issue correctly when validation is requires an includes term without position', () => {
