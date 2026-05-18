@@ -49,7 +49,7 @@ test('formats messages for invalid union schemas with only objects correctly', (
 
     assert.strictEqual(result.success, false);
     assert.deepStrictEqual(result.error.issues, [
-        'invalid value doesn’t match expected union'
+        'no union alternative matched: alternative 1: at a: missing property | alternative 2: at b: missing property'
     ]);
 });
 
