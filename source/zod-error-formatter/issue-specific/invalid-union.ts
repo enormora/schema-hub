@@ -3,7 +3,6 @@ import {
     type $ZodIssueInvalidType,
     type $ZodIssueInvalidUnion,
     type $ZodIssueInvalidValue,
-    type $ZodType,
     util
 } from 'zod/v4/core';
 import { formatOneOfList, isParsedType, type ListValue } from '../list.js';
@@ -47,7 +46,7 @@ function prependPath(path: readonly PropertyKey[], message: string): string {
 
 function determineExpectedValue(issue: SupportedIssueType): ListValue {
     if (issue.code === 'invalid_type') {
-        return { type: issue.expected as $ZodType['_zod']['def']['type'] };
+        return { type: issue.expected };
     }
 
     if (isPrimitive(issue.values[0])) {
