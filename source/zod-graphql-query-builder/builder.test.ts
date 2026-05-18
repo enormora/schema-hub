@@ -58,19 +58,6 @@ function checkQuery(testCase: QueryTestCase): TestFn {
     };
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any -- recursive schema escapes the static type
-function createRecursiveUserSchema(): any {
-    const holder: { value: unknown; } = { value: null };
-    const userSchema = z.strictObject({
-        id: z.string(),
-        friends: z.array(z.lazy(() => {
-            return holder.value as never;
-        }))
-    });
-    holder.value = userSchema;
-    return userSchema;
-}
-
 (['query', 'mutation'] as const).forEach((operationType) => {
     test(
         `throws building the ${operationType} when a referenced variable is not defined`,
@@ -996,11 +983,16 @@ function createRecursiveUserSchema(): any {
         checkQuery({
             type: operationType,
             buildSchema(builder) {
-                /* eslint-disable @typescript-eslint/no-unsafe-assignment -- recursive schema escapes the static type */
-                const baseUserSchema = createRecursiveUserSchema();
+                const holder: { value: unknown; } = { value: null };
+                const baseUserSchema = z.strictObject({
+                    id: z.string(),
+                    friends: z.array(z.lazy(() => {
+                        return holder.value as never;
+                    }))
+                });
+                holder.value = baseUserSchema;
                 const userSchema = builder.registerFieldOptions(baseUserSchema, { typeName: 'User' });
                 return z.strictObject({ me: userSchema });
-                /* eslint-enable @typescript-eslint/no-unsafe-assignment -- end of recursive schema setup */
             },
             expectedQuery: `${operationType} { me { ...User_1 } } fragment User_1 on User { id, friends { ...User_1 } }`
         })
@@ -1011,10 +1003,15 @@ function createRecursiveUserSchema(): any {
         checkError({
             type: operationType,
             buildSchema() {
-                /* eslint-disable @typescript-eslint/no-unsafe-assignment -- recursive schema escapes the static type */
-                const userSchema = createRecursiveUserSchema();
+                const holder: { value: unknown; } = { value: null };
+                const userSchema = z.strictObject({
+                    id: z.string(),
+                    friends: z.array(z.lazy(() => {
+                        return holder.value as never;
+                    }))
+                });
+                holder.value = userSchema;
                 return z.strictObject({ me: userSchema });
-                /* eslint-enable @typescript-eslint/no-unsafe-assignment -- end of recursive schema setup */
             },
             expectedError: 'Cyclic schema detected without a resolvable GraphQL type name. ' +
                 "Register it with graphqlFieldOptions(schema, { typeName: '...' }) " +
