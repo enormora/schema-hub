@@ -4,8 +4,15 @@ import { safeParse } from '../zod-error-formatter/formatter.js';
 import type { QuerySchema } from '../zod-graphql-query-builder/entry-point.js';
 import { parseGraphqlResponse } from './graphql-response.js';
 import { GraphqlOperationError } from './operation-error.js';
-import { buildOperationPayload, type OperationOptions } from './operation-payload.js';
+import {
+    buildOperationPayload,
+    type BuiltOperationPayload,
+    type GraphqlOverHttpOperationRequestPayload,
+    type OperationOptions,
+    toPersistedQueryPayload
+} from './operation-payload.js';
 import type { OperationFailureResult, OperationResult, OperationResultForType } from './operation-result.js';
+import { detectPersistedQueryRetryReason } from './persisted-query.js';
 
 export type { OperationOptions } from './operation-payload.js';
 
@@ -13,6 +20,7 @@ export type ClientOptions = {
     endpoint: string;
     headers?: Record<string, string | undefined>;
     timeout?: number;
+    persistedQueries?: boolean;
 };
 
 export type GraphqlClient = {
@@ -48,6 +56,59 @@ export function extractDataOrThrow<Data>(result: OperationResultForType<Data>): 
         return result.data;
     }
     throw new GraphqlOperationError(result.errorDetails);
+}
+
+async function parseServerResponse(response: Response): Promise<OperationResultForType<unknown>> {
+    try {
+        const responseBody = await response.json() as unknown;
+        return {
+            success: true,
+            data: responseBody
+        };
+    } catch (error: unknown) {
+        const causedByMessage = error instanceof Error ? `: ${error.message}` : '';
+
+        return {
+            success: false,
+            errorDetails: {
+                type: 'server',
+                statusCode: response.status,
+                message: `Failed to parse response body${causedByMessage}`
+            }
+        };
+    }
+}
+
+function parseResponseData<Schema extends QuerySchema>(schema: Schema, data: unknown): OperationResult<Schema> {
+    const dataParseResult = safeParse(schema, data);
+
+    if (dataParseResult.success) {
+        return {
+            success: true,
+            data: dataParseResult.data as TypeOf<Schema>
+        };
+    }
+
+    return {
+        success: false,
+        errorDetails: {
+            type: 'validation',
+            message: 'GraphQL response data doesn’t match the expected schema',
+            issues: dataParseResult.error.issues
+        }
+    };
+}
+
+function parseAndValidate<Schema extends QuerySchema>(
+    schema: Schema,
+    rawResponse: unknown
+): OperationResult<Schema> {
+    const graphqlResponseParseResult = parseGraphqlResponse(rawResponse);
+
+    if (graphqlResponseParseResult.success) {
+        return parseResponseData(schema, graphqlResponseParseResult.data);
+    }
+    return graphqlResponseParseResult;
 }
 
 function mapUnknownNetworkErrorToFailureResult(error: unknown, timeout: number): OperationFailureResult {
@@ -95,47 +156,6 @@ export function createClientFactory(dependencies: CreateClientDependencies): Cre
             };
         }
 
-        async function parseServerResponse(response: Response): Promise<OperationResultForType<unknown>> {
-            try {
-                const responseBody = await response.json() as unknown;
-                return {
-                    success: true,
-                    data: responseBody
-                };
-            } catch (error: unknown) {
-                const causedByMessage = error instanceof Error ? `: ${error.message}` : '';
-
-                return {
-                    success: false,
-                    errorDetails: {
-                        type: 'server',
-                        statusCode: response.status,
-                        message: `Failed to parse response body${causedByMessage}`
-                    }
-                };
-            }
-        }
-
-        function parseResponseData<Schema extends QuerySchema>(schema: Schema, data: unknown): OperationResult<Schema> {
-            const dataParseResult = safeParse(schema, data);
-
-            if (dataParseResult.success) {
-                return {
-                    success: true,
-                    data: dataParseResult.data as TypeOf<Schema>
-                };
-            }
-
-            return {
-                success: false,
-                errorDetails: {
-                    type: 'validation',
-                    message: 'GraphQL response data doesn’t match the expected schema',
-                    issues: dataParseResult.error.issues
-                }
-            };
-        }
-
         async function fetchGraphqlEndpoint(
             options: OperationOptions,
             payload: unknown
@@ -164,6 +184,41 @@ export function createClientFactory(dependencies: CreateClientDependencies): Cre
             }
         }
 
+        async function fetchAndParse<Schema extends QuerySchema>(
+            schema: Schema,
+            options: OperationOptions,
+            payload: GraphqlOverHttpOperationRequestPayload
+        ): Promise<OperationResult<Schema>> {
+            const serverResponseParseResult = await fetchGraphqlEndpoint(options, payload);
+            if (!serverResponseParseResult.success) {
+                return serverResponseParseResult;
+            }
+            return parseAndValidate(schema, serverResponseParseResult.data);
+        }
+
+        async function performPersistedQueryOperation<Schema extends QuerySchema>(
+            schema: Schema,
+            options: OperationOptions,
+            basePayload: BuiltOperationPayload
+        ): Promise<OperationResult<Schema>> {
+            const hashOnlyPayload = toPersistedQueryPayload(basePayload, 'hash-only');
+            const firstAttempt = await fetchGraphqlEndpoint(options, hashOnlyPayload);
+
+            if (!firstAttempt.success) {
+                return firstAttempt;
+            }
+
+            const retryReason = detectPersistedQueryRetryReason(firstAttempt.data);
+            if (retryReason === undefined) {
+                return parseAndValidate(schema, firstAttempt.data);
+            }
+
+            const retryPayload = retryReason === 'not-supported' ?
+                basePayload :
+                toPersistedQueryPayload(basePayload, 'hash-and-query');
+            return fetchAndParse(schema, options, retryPayload);
+        }
+
         async function performOperation<Schema extends QuerySchema>(
             schema: Schema,
             operationType: 'mutation' | 'query',
@@ -171,18 +226,11 @@ export function createClientFactory(dependencies: CreateClientDependencies): Cre
         ): Promise<OperationResult<Schema>> {
             const payload = buildOperationPayload(schema, operationType, options);
 
-            const serverResponseParseResult = await fetchGraphqlEndpoint(options, payload);
-
-            if (serverResponseParseResult.success) {
-                const graphqlResponseParseResult = parseGraphqlResponse(serverResponseParseResult.data);
-
-                if (graphqlResponseParseResult.success) {
-                    return parseResponseData(schema, graphqlResponseParseResult.data);
-                }
-                return graphqlResponseParseResult;
+            if (clientOptions.persistedQueries === true) {
+                return performPersistedQueryOperation(schema, options, payload);
             }
 
-            return serverResponseParseResult;
+            return fetchAndParse(schema, options, payload);
         }
 
         async function query<Schema extends QuerySchema>(

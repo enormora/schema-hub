@@ -59,6 +59,7 @@ You can further customize the client by providing additional options:
 - `headers` (optional): A key-value map of additional headers that should be sent with every request. This can be useful for passing authentication tokens or other metadata to the server.
 - `timeout` (optional): The request timeout in milliseconds. This determines how long the client will wait for a response before considering the request failed. If not specified, a default timeout of 10 seconds (10,000 milliseconds) will be used.
 - `fetch` (optional): Allows you to inject a custom `fetch` function instead of using the global `fetch`. This can be useful in environments where the global `fetch` function is not available, or if you need to customize the behavior of the HTTP requests.
+- `persistedQueries` (optional): Enables [Automatic Persisted Queries (APQ)](#automatic-persisted-queries-apq) for every operation. Defaults to `false`.
 
 ### Sending a Query
 
@@ -183,6 +184,39 @@ Errors are distinguishable based on the `type` property within the `errorDetails
 ### `queryOrThrow()` and `mutateOrThrow()`
 
 The `queryOrThrow()` and `mutateOrThrow()` functions behaves similarly to `query()` and `mutate()`, but with one key difference in its return type. If the operation execution is successful, the function returns the operation result data directly. However, if an error occurs during the operation execution, it throws an instance of `GraphqlOperationError`. This custom error contains detailed information about the encountered error in its `details` property, which aligns with the `errorDetails` structure returned by the `operation()` function.
+
+### Automatic Persisted Queries (APQ)
+
+When `persistedQueries` is enabled on the client, every operation is first sent as the SHA-256 hash of the serialized query (no `query` body), following Apollo’s [Automatic Persisted Queries](https://www.apollographql.com/docs/apollo-server/performance/apq/) protocol:
+
+```typescript
+const client = createGraphqlClient({
+    endpoint: 'https://example.com/graphql',
+    persistedQueries: true
+});
+```
+
+The request payload sent to the server uses the standard APQ extension format:
+
+```json
+{
+    "operationName": "YourQueryName",
+    "variables": {},
+    "extensions": {
+        "persistedQuery": {
+            "version": 1,
+            "sha256Hash": "<sha256 of the serialized query>"
+        }
+    }
+}
+```
+
+The client automatically handles the two well-known APQ error responses:
+
+- **`PersistedQueryNotFound`**: The server doesn’t yet know this query. The client retries the same operation, this time including both the `query` text and the `extensions.persistedQuery` envelope, so the server can register the query under its hash for future requests.
+- **`PersistedQueryNotSupported`**: The server does not support APQ at all. The client retries the operation as a plain GraphQL request (no `extensions` field). Subsequent operations still attempt APQ — the client does not remember that the server doesn’t support it.
+
+Detection of these error responses is resilient: the client matches both on `errors[].message` (`PersistedQueryNotFound` / `PersistedQueryNotSupported`) and on `errors[].extensions.code` (`PERSISTED_QUERY_NOT_FOUND` / `PERSISTED_QUERY_NOT_SUPPORTED`).
 
 ### Re-exported Functions
 
