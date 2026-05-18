@@ -129,6 +129,84 @@ const query = buildGraphqlQuery(mySchema);
 query { foo { ... on A { __typename, valueA }, ... on B { __typename, valueB } } }
 ```
 
+### Named Fragments / Reusing Schemas
+
+When the same object schema reference is used in more than one place in a single operation, the builder
+automatically hoists its body into a named fragment to keep the produced query small. Two ways to opt in
+to this behavior — both rely on the builder being able to resolve a GraphQL type name for the schema.
+
+1. Register a `typeName` explicitly via `graphqlFieldOptions`, or
+2. Include `__typename: z.literal('TheTypeName')` in the strict-object's shape.
+
+If both are present and disagree the build throws. Schemas without a resolvable type name stay inlined at
+every use site exactly as before, so this feature is purely additive.
+
+**Input (explicit `typeName`):**
+
+```typescript
+import { buildGraphqlQuery, graphqlFieldOptions } from '@schema-hub/zod-graphql-query-builder';
+import { z } from 'zod';
+
+const userSchema = graphqlFieldOptions(
+    z.strictObject({ id: z.string(), name: z.string() }),
+    { typeName: 'User' }
+);
+const mySchema = z.strictObject({ me: userSchema, you: userSchema });
+const query = buildGraphqlQuery(mySchema);
+```
+
+**Built query:**
+
+```graphql
+query { me { ...User_1 }, you { ...User_1 } } fragment User_1 on User { id, name }
+```
+
+**Input (`typeName` inferred from `__typename` literal):**
+
+```typescript
+const userSchema = z.strictObject({
+    __typename: z.literal('User'),
+    id: z.string()
+});
+const mySchema = z.strictObject({ me: userSchema, you: userSchema });
+const query = buildGraphqlQuery(mySchema);
+```
+
+**Built query:**
+
+```graphql
+query { me { ...User_1 }, you { ...User_1 } } fragment User_1 on User { __typename, id }
+```
+
+Fragment names follow the pattern `<TypeName>_<index>`, where the index is a counter scoped to one
+`buildGraphqlQuery` / `buildGraphqlMutation` call. Two distinct schemas registered with the same `typeName`
+are disambiguated by the counter (`User_1`, `User_2`).
+
+**Cyclic schemas.** Self-referential schemas — which would otherwise be inexpressible as a finite inline
+selection — work as long as a type name is resolvable for them. The cyclic reference is emitted as a
+self-recursive fragment:
+
+```typescript
+type User = { id: string; friends: User[]; };
+const userSchema: z.ZodMiniType<User> = graphqlFieldOptions(
+    z.strictObject({
+        id: z.string(),
+        friends: z.array(z.lazy(() => userSchema))
+    }),
+    { typeName: 'User' }
+);
+const query = buildGraphqlQuery(z.strictObject({ me: userSchema }));
+```
+
+**Built query:**
+
+```graphql
+query { me { ...User_1 } } fragment User_1 on User { id, friends { ...User_1 } }
+```
+
+A cyclic schema without a resolvable type name is rejected at build time with an explicit error so the
+builder never enters an infinite recursion.
+
 ### Working with custom scalars
 
 **Input:**

@@ -2,6 +2,7 @@
 import {
     $ZodArray,
     $ZodDiscriminatedUnion,
+    $ZodLiteral,
     $ZodReadonly,
     $ZodUndefined,
     type util
@@ -26,6 +27,7 @@ import {
     unwrapFieldSchema,
     unwrapFieldSchemaChain
 } from './query-schema.js';
+import { isValidGraphqlName } from './values/name.js';
 import { normalizeParameterList } from './values/parameter-list.js';
 import type { GraphqlValue, NormalizedGraphqlValue } from './values/value.js';
 import { mergeVariables } from './values/variable-set.js';
@@ -39,9 +41,14 @@ function withTrailingSpace(value: string): string {
     return `${value} `;
 }
 
+const cyclicSchemaErrorMessage = 'Cyclic schema detected without a resolvable GraphQL type name. ' +
+    "Register it with graphqlFieldOptions(schema, { typeName: '...' }) " +
+    "or add `__typename: z.literal('...')` to its shape so the builder can emit a named fragment.";
+
 type GraphqlFieldOptions = {
     aliasFor?: string;
     parameters?: Record<string, GraphqlValue>;
+    typeName?: string;
 };
 
 export type OperationOptions = {
@@ -56,6 +63,21 @@ export type QueryBuilder = {
     ) => Schema;
     buildQuery: (schema: QuerySchema, options?: OperationOptions) => string;
     buildMutation: (schema: QuerySchema, options?: OperationOptions) => string;
+};
+
+type FragmentDefinition = {
+    typeName: string;
+    body: string;
+    referencedVariables: Set<string>;
+};
+
+// StrictObjectSchema<FieldShape> as a Map key triggers TS2589 (excessively deep). The shape
+// of the schema is irrelevant for identity-based lookups, so we widen to FieldSchema here.
+type BuildContext = {
+    counts: Map<FieldSchema, number>;
+    nameForSchema: Map<FieldSchema, string>;
+    counterPerTypeName: Map<string, number>;
+    definitions: Map<string, FragmentDefinition>;
 };
 
 function unwrapFromArraySchema<SchemaType extends NonWrappedFieldSchema>(
@@ -106,6 +128,28 @@ function getUnionSchema(
     return unwrapFromTupleSchema(isFragmentsSchema, schema);
 }
 
+// eslint-disable-next-line max-statements -- each guard returns early; flattening would obscure intent
+function inferTypeNameFromShape(schema: StrictObjectSchema<FieldShape>): string | null {
+    const typenameField = schema._zod.def.shape.__typename;
+    if (typenameField === undefined) {
+        return null;
+    }
+    const unwrapped = unwrapFieldSchema(typenameField);
+    if (!(unwrapped instanceof $ZodLiteral)) {
+        return null;
+    }
+    const { values } = unwrapped._zod.def;
+    if (values.length !== 1) {
+        return null;
+    }
+    const [value] = values;
+    if (typeof value !== 'string' || !isValidGraphqlName(value)) {
+        return null;
+    }
+    return value;
+}
+
+// eslint-disable-next-line max-statements -- each nested helper is small; flattening would lose grouping
 export function createQueryBuilder(): QueryBuilder {
     const fieldOptionsRegistry = new WeakMap<FieldSchema, GraphqlFieldOptions>();
 
@@ -122,6 +166,20 @@ export function createQueryBuilder(): QueryBuilder {
         }
 
         return {};
+    }
+
+    // eslint-disable-next-line complexity -- guard for conflict detection requires multiple conditions
+    function resolveTypeName(schema: StrictObjectSchema<FieldShape>): string | null {
+        const explicit = fieldOptionsRegistry.get(schema)?.typeName ?? null;
+        const inferred = inferTypeNameFromShape(schema);
+
+        if (explicit !== null && inferred !== null && explicit !== inferred) {
+            const prefix = `Conflicting GraphQL type name for schema: registered as "${explicit}" but `;
+            const suffix = `\`__typename\` literal is "${inferred}".`;
+            throw new Error(prefix + suffix);
+        }
+
+        return explicit ?? inferred;
     }
 
     function serializedFieldSelector(fieldName: string, fieldSchema: FieldSchema): NormalizedGraphqlValue {
@@ -144,8 +202,101 @@ export function createQueryBuilder(): QueryBuilder {
         };
     }
 
-    function serializeObjectSchema(
-        objectSchema: FragmentUnionOptionSchema | StrictObjectSchema<FieldShape>
+    function collectSchemaReferences(rootShape: FieldShape): Map<FieldSchema, number> {
+        const counts = new Map<FieldSchema, number>();
+        const visiting = new Set<FieldSchema>();
+
+        function visitObject(objectSchema: StrictObjectSchema<FieldShape>): void {
+            counts.set(objectSchema, (counts.get(objectSchema) ?? 0) + 1);
+            if (visiting.has(objectSchema)) {
+                if (resolveTypeName(objectSchema) === null) {
+                    throw new Error(cyclicSchemaErrorMessage);
+                }
+                return;
+            }
+            visiting.add(objectSchema);
+            for (const childSchema of Object.values(objectSchema._zod.def.shape)) {
+                // eslint-disable-next-line @typescript-eslint/no-use-before-define -- mutual recursion
+                visitField(childSchema);
+            }
+            visiting.delete(objectSchema);
+        }
+
+        // eslint-disable-next-line max-statements, complexity -- each branch mirrors the serializer
+        function visitField(fieldSchema: FieldSchema): void {
+            if (isCustomScalarSchema(fieldSchema)) {
+                return;
+            }
+            const unwrapped = unwrapFieldSchema(fieldSchema);
+            if (unwrapped instanceof $ZodUndefined) {
+                return;
+            }
+
+            if (isObjectOrListSchema(unwrapped)) {
+                const objectSchema = getObjectSchema(unwrapped);
+                if (objectSchema !== null) {
+                    visitObject(objectSchema);
+                    return;
+                }
+            }
+
+            if (isUnionOrListSchema(unwrapped)) {
+                const unionSchema = getUnionSchema(unwrapped);
+                if (unionSchema !== null) {
+                    for (const option of unionSchema._zod.def.options) {
+                        visitObject(option);
+                    }
+                }
+            }
+        }
+
+        for (const fieldSchema of Object.values(rootShape)) {
+            visitField(fieldSchema);
+        }
+
+        return counts;
+    }
+
+    // eslint-disable-next-line max-statements -- guard chain reads top-to-bottom; collapsing would obscure intent
+    function maybeAssignFragmentName(
+        objectSchema: StrictObjectSchema<FieldShape>,
+        ctx: BuildContext
+    ): string | null {
+        const existing = ctx.nameForSchema.get(objectSchema);
+        if (existing !== undefined) {
+            return existing;
+        }
+
+        const count = ctx.counts.get(objectSchema) ?? 0;
+        const minReuseForFragment = 2;
+        if (count < minReuseForFragment) {
+            return null;
+        }
+
+        const typeName = resolveTypeName(objectSchema);
+        if (typeName === null) {
+            return null;
+        }
+
+        const nextIndex = (ctx.counterPerTypeName.get(typeName) ?? 0) + 1;
+        ctx.counterPerTypeName.set(typeName, nextIndex);
+        const fragmentName = `${typeName}_${nextIndex}`;
+        ctx.nameForSchema.set(objectSchema, fragmentName);
+
+        // eslint-disable-next-line @typescript-eslint/no-use-before-define -- mutual recursion
+        const body = serializeObjectSchemaInline(objectSchema, ctx);
+        ctx.definitions.set(fragmentName, {
+            typeName,
+            body: body.serializedValue,
+            referencedVariables: body.referencedVariables
+        });
+
+        return fragmentName;
+    }
+
+    function serializeObjectSchemaInline(
+        objectSchema: FragmentUnionOptionSchema | StrictObjectSchema<FieldShape>,
+        ctx: BuildContext
     ): NormalizedGraphqlValue {
         const entries = Object.entries(objectSchema._zod.def.shape);
         let referencedVariables = new Set<string>();
@@ -153,7 +304,7 @@ export function createQueryBuilder(): QueryBuilder {
 
         for (const [fieldName, fieldSchema] of entries) {
             // eslint-disable-next-line @typescript-eslint/no-use-before-define -- recursion
-            const serializedField = serializeFieldSchema(fieldName, fieldSchema);
+            const serializedField = serializeFieldSchema(fieldName, fieldSchema, ctx);
             referencedVariables = mergeVariables(referencedVariables, serializedField.referencedVariables);
             serializedEntries.push(serializedField.serializedValue);
         }
@@ -164,26 +315,37 @@ export function createQueryBuilder(): QueryBuilder {
         };
     }
 
-    // eslint-disable-next-line max-statements -- no good idea how to refactor at the moment
+    // eslint-disable-next-line max-statements, complexity -- no good idea how to refactor at the moment
     function serializeFragments(
         discriminatorMap: util.PropValues,
-        unionOptions: FragmentUnionOptionSchema[]
+        unionOptions: FragmentUnionOptionSchema[],
+        ctx: BuildContext
     ): NormalizedGraphqlValue {
         let referencedVariables = new Set<string>();
         const serializedFragments: string[] = [];
         const typeNameDiscriminator = discriminatorMap.__typename;
-        const fragmentNames = Array.from(typeNameDiscriminator ?? []);
+        const discriminatorNames = Array.from(typeNameDiscriminator ?? []);
 
         for (const [index, fragmentSchema] of unionOptions.entries()) {
-            const fragmentName = fragmentNames[index];
-            if (fragmentName === undefined || fragmentName === null) {
+            const discriminatorName = discriminatorNames[index];
+            if (discriminatorName === undefined || discriminatorName === null) {
                 throw new Error(
                     `Fragment name for index ${index} is undefined`
                 );
             }
-            const serializedFragment = serializeObjectSchema(fragmentSchema);
-            referencedVariables = mergeVariables(referencedVariables, serializedFragment.referencedVariables);
-            serializedFragments.push(`... on ${fragmentName.toString()}${serializedFragment.serializedValue}`);
+
+            const assignedName = maybeAssignFragmentName(fragmentSchema, ctx);
+            if (assignedName === null) {
+                const serializedFragment = serializeObjectSchemaInline(fragmentSchema, ctx);
+                referencedVariables = mergeVariables(referencedVariables, serializedFragment.referencedVariables);
+                serializedFragments.push(`... on ${discriminatorName.toString()}${serializedFragment.serializedValue}`);
+            } else {
+                const definition = ctx.definitions.get(assignedName);
+                if (definition !== undefined) {
+                    referencedVariables = mergeVariables(referencedVariables, definition.referencedVariables);
+                }
+                serializedFragments.push(`...${assignedName}`);
+            }
         }
         return {
             serializedValue: ` { ${serializedFragments.join(', ')} }`,
@@ -204,7 +366,8 @@ export function createQueryBuilder(): QueryBuilder {
     // eslint-disable-next-line max-statements, complexity -- no good idea how to refactor at the moment
     function serializeFieldSchema(
         fieldName: string,
-        fieldSchema: FieldSchema
+        fieldSchema: FieldSchema,
+        ctx: BuildContext
     ): NormalizedGraphqlValue {
         const fieldSelector = serializedFieldSelector(fieldName, fieldSchema);
 
@@ -222,7 +385,18 @@ export function createQueryBuilder(): QueryBuilder {
             const objectSchema = getObjectSchema(unwrappedSchema);
 
             if (objectSchema !== null) {
-                return combineFieldSelectorAndFieldBody(fieldSelector, serializeObjectSchema(objectSchema));
+                const assignedName = maybeAssignFragmentName(objectSchema, ctx);
+                if (assignedName !== null) {
+                    const definition = ctx.definitions.get(assignedName);
+                    return combineFieldSelectorAndFieldBody(fieldSelector, {
+                        serializedValue: ` { ...${assignedName} }`,
+                        referencedVariables: definition?.referencedVariables ?? new Set()
+                    });
+                }
+                return combineFieldSelectorAndFieldBody(
+                    fieldSelector,
+                    serializeObjectSchemaInline(objectSchema, ctx)
+                );
             }
         }
 
@@ -233,7 +407,8 @@ export function createQueryBuilder(): QueryBuilder {
                     fieldSelector,
                     serializeFragments(
                         unionSchema._zod.propValues,
-                        unionSchema._zod.def.options
+                        unionSchema._zod.def.options,
+                        ctx
                     )
                 );
             }
@@ -242,7 +417,7 @@ export function createQueryBuilder(): QueryBuilder {
         return fieldSelector;
     }
 
-    // eslint-disable-next-line max-statements -- no idea right now to make this smaller
+    // eslint-disable-next-line max-statements, complexity -- no idea right now to make this smaller
     function buildDocument(
         documentType: 'mutation' | 'query',
         schema: QuerySchema,
@@ -255,16 +430,20 @@ export function createQueryBuilder(): QueryBuilder {
             (schema._zod.def.innerType as StrictObjectSchema<FieldShape>)._zod.def.shape :
             schema._zod.def.shape;
 
+        const ctx: BuildContext = {
+            counts: collectSchemaReferences(shape),
+            nameForSchema: new Map(),
+            counterPerTypeName: new Map(),
+            definitions: new Map()
+        };
+
         for (const [fieldName, fieldSchema] of Object.entries(shape)) {
-            const serializedField = serializeFieldSchema(fieldName, fieldSchema);
+            const serializedField = serializeFieldSchema(fieldName, fieldSchema, ctx);
 
             if (serializedField.serializedValue.length > 0) {
                 bodyEntries.push(serializedField.serializedValue);
             }
-            referencedVariables = new Set([
-                ...referencedVariables,
-                ...serializedField.referencedVariables
-            ]);
+            referencedVariables = mergeVariables(referencedVariables, serializedField.referencedVariables);
         }
 
         ensureValidVariableCorrelations(variableDefinitions, referencedVariables);
@@ -272,7 +451,20 @@ export function createQueryBuilder(): QueryBuilder {
             `${operationName}${serializeVariableDefinitions(variableDefinitions)}`
         );
 
-        return `${documentType} ${operationNameAndParams}{ ${bodyEntries.join(', ')} }`;
+        const operationOutput = `${documentType} ${operationNameAndParams}{ ${bodyEntries.join(', ')} }`;
+
+        if (ctx.definitions.size === 0) {
+            return operationOutput;
+        }
+
+        // eslint-disable-next-line unicorn/no-array-sort -- target is ES2022; Array#toSorted is unavailable
+        const sortedNames = Array.from(ctx.definitions.keys()).sort();
+        const fragmentOutputs = sortedNames.map((name) => {
+            const definition = ctx.definitions.get(name) as FragmentDefinition;
+            return `fragment ${name} on ${definition.typeName}${definition.body}`;
+        });
+
+        return `${operationOutput} ${fragmentOutputs.join(' ')}`;
     }
 
     return {
@@ -280,6 +472,11 @@ export function createQueryBuilder(): QueryBuilder {
             schema: Schema,
             options: GraphqlFieldOptions
         ): Schema {
+            if (options.typeName !== undefined && !isValidGraphqlName(options.typeName)) {
+                throw new Error(
+                    `Invalid GraphQL type name: "${options.typeName}". A type name must match /^[A-Z_a-z]\\w*$/.`
+                );
+            }
             fieldOptionsRegistry.set(schema, options);
 
             return schema;
