@@ -39,6 +39,6 @@ test('formats messages for missing object properties within map values correctly
 
     assert.strictEqual(result.success, false);
     assert.deepStrictEqual(result.error.issues, [
-        'at foo.a.bar: missing property'
+        'at foo.a.bar: missing property; expected number'
     ]);
 });

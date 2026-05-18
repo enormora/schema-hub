@@ -49,7 +49,8 @@ test('formats messages for invalid union schemas with only objects correctly', (
 
     assert.strictEqual(result.success, false);
     assert.deepStrictEqual(result.error.issues, [
-        'no union alternative matched: alternative 1: at a: missing property | alternative 2: at b: missing property'
+        // eslint-disable-next-line @stylistic/max-len -- expected enumeration string is intentionally explicit
+        'no union alternative matched: alternative 1: at a: missing property; expected string | alternative 2: at b: missing property; expected number'
     ]);
 });
 

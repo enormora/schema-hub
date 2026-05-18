@@ -19,7 +19,7 @@ test('formats messages for invalid string literals if they are missing from a pr
 
     assert.strictEqual(result.success, false);
     assert.deepStrictEqual(result.error.issues, [
-        'at foo: missing property'
+        'at foo: missing property; expected "bar"'
     ]);
 });
 
@@ -30,6 +30,6 @@ test('formats messages for invalid string literals if they are missing from a ke
 
     assert.strictEqual(result.success, false);
     assert.deepStrictEqual(result.error.issues, [
-        'at [1]: missing key'
+        'at [1]: missing key; expected "foo"'
     ]);
 });

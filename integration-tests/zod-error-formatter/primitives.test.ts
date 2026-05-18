@@ -39,7 +39,7 @@ test('formats messages for invalid object schemas correctly', () => {
 
     assert.strictEqual(result.success, false);
     assert.deepStrictEqual(result.error.issues, [
-        'at foo: missing property'
+        'at foo: missing property; expected string'
     ]);
 });
 
@@ -49,6 +49,6 @@ test('formats messages for missing object properties correctly', () => {
 
     assert.strictEqual(result.success, false);
     assert.deepStrictEqual(result.error.issues, [
-        'at foo: missing property'
+        'at foo: missing property; expected string'
     ]);
 });
