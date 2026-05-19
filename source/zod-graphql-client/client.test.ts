@@ -213,25 +213,27 @@ test('query() sends the query variables when given', async () => {
 });
 
 test('query() returns a network failure result when the request times out', async () => {
-    const post = createFakeKyMethod({ error: new TimeoutError({} as unknown as Request) });
+    const timeoutError = new TimeoutError({} as unknown as Request);
+    const post = createFakeKyMethod({ error: timeoutError });
     const client = clientFactory({ post });
     // @ts-expect-error -- https://github.com/colinhacks/zod/issues/4611
     const result = await client.query(simpleQuerySchema);
 
     assert.deepStrictEqual(result, {
         success: false,
-        errorDetails: { message: 'Request timed out after 10000ms', type: 'network' }
+        errorDetails: { message: 'Request timed out after 10000ms', type: 'network', cause: timeoutError }
     });
 });
 
 test('query() returns a network failure result when the request errors', async () => {
-    const post = createFakeKyMethod({ error: new Error('foo') });
+    const networkError = new Error('foo');
+    const post = createFakeKyMethod({ error: networkError });
     const client = clientFactory({ post });
     const result = await client.query(simpleQuerySchema);
 
     assert.deepStrictEqual(result, {
         success: false,
-        errorDetails: { message: 'foo', type: 'network' }
+        errorDetails: { message: 'foo', type: 'network', cause: networkError }
     });
 });
 
@@ -245,7 +247,7 @@ test('query() returns a unknown failure result when the request rejects with a n
 
     assert.deepStrictEqual(result, {
         success: false,
-        errorDetails: { message: 'Unknown error occurred', type: 'unknown' }
+        errorDetails: { message: 'Unknown error occurred', type: 'unknown', cause: 'not-an-error' }
     });
 });
 
@@ -265,7 +267,8 @@ test('query() returns a server failure result when the response status code is n
 });
 
 test('query() returns a server failure result when response fails to be parsed as json', async () => {
-    const post = createFakeKyMethod({ jsonParseError: new Error('foo'), responseStatus: 200 });
+    const jsonParseError = new Error('foo');
+    const post = createFakeKyMethod({ jsonParseError, responseStatus: 200 });
     const client = clientFactory({ post });
     const result = await client.query(simpleQuerySchema);
 
@@ -274,7 +277,8 @@ test('query() returns a server failure result when response fails to be parsed a
         errorDetails: {
             message: 'Failed to parse response body: foo',
             type: 'server',
-            statusCode: 200
+            statusCode: 200,
+            cause: jsonParseError
         }
     });
 });
@@ -295,7 +299,8 @@ test('query() returns a server failure when json parsing fails but a non-error w
         errorDetails: {
             message: 'Failed to parse response body',
             type: 'server',
-            statusCode: 200
+            statusCode: 200,
+            cause: 'not-an-error'
         }
     });
 });
@@ -316,7 +321,8 @@ test('query() returns a server failure when json parsing fails but a non-error w
         errorDetails: {
             message: 'Failed to parse response body',
             type: 'server',
-            statusCode: 200
+            statusCode: 200,
+            cause: 'not-an-error'
         }
     });
 });
@@ -433,6 +439,20 @@ test('mutateOrThrow() rejects an error when there is a failure', async () => {
             type: 'validation',
             issues: ['at foo: missing property; expected string']
         });
+    }
+});
+
+test('queryOrThrow() forwards the underlying network error as cause', async () => {
+    const networkError = new Error('boom');
+    const post = createFakeKyMethod({ error: networkError });
+    const client = clientFactory({ post });
+
+    try {
+        await client.queryOrThrow(simpleQuerySchema);
+        assert.fail('Expected queryOrThrow() to fail but it did not');
+    } catch (error: unknown) {
+        assert.strictEqual(error instanceof GraphqlOperationError, true);
+        assert.strictEqual((error as GraphqlOperationError).cause, networkError);
     }
 });
 
@@ -583,7 +603,8 @@ test('query() with persistedQueries does not retry past one attempt on persisten
 });
 
 test('query() with persistedQueries returns the network failure when the first attempt errors', async () => {
-    const post = createFakeKyMethod({ error: new Error('network down') });
+    const networkError = new Error('network down');
+    const post = createFakeKyMethod({ error: networkError });
     const client = clientFactory({ post, options: persistedQueryOptions });
 
     const result = await client.query(simpleQuerySchema);
@@ -591,7 +612,7 @@ test('query() with persistedQueries returns the network failure when the first a
     assert.strictEqual(post.secondCall, null);
     assert.deepStrictEqual(result, {
         success: false,
-        errorDetails: { type: 'network', message: 'network down' }
+        errorDetails: { type: 'network', message: 'network down', cause: networkError }
     });
 });
 

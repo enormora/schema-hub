@@ -12,6 +12,7 @@ type GraphqlResponseError = BaseError & {
 type ServerError = BaseError & {
     type: 'server';
     statusCode: number;
+    cause?: unknown;
 };
 
 type ValidationError = BaseError & {
@@ -21,10 +22,12 @@ type ValidationError = BaseError & {
 
 type NetworkError = BaseError & {
     type: 'network';
+    cause?: unknown;
 };
 
 type UnknownError = BaseError & {
     type: 'unknown';
+    cause?: unknown;
 };
 
 export type OperationErrorDetails = GraphqlResponseError | NetworkError | ServerError | UnknownError | ValidationError;
@@ -35,7 +38,8 @@ export class GraphqlOperationError extends Error {
 
     constructor(details: OperationErrorDetails) {
         const { message, ...remainingDetails } = details;
-        super(message);
+        const cause = 'cause' in remainingDetails ? remainingDetails.cause : undefined;
+        super(message, cause === undefined ? undefined : { cause });
         // eslint-disable-next-line functional/no-this-expressions -- sub-classing errors is ok
         this.details = remainingDetails;
     }
