@@ -73,7 +73,8 @@ async function parseServerResponse(response: Response): Promise<OperationResultF
             errorDetails: {
                 type: 'server',
                 statusCode: response.status,
-                message: `Failed to parse response body${causedByMessage}`
+                message: `Failed to parse response body${causedByMessage}`,
+                cause: error
             }
         };
     }
@@ -117,7 +118,8 @@ function mapUnknownNetworkErrorToFailureResult(error: unknown, timeout: number):
             success: false,
             errorDetails: {
                 type: 'network',
-                message: `Request timed out after ${timeout}ms`
+                message: `Request timed out after ${timeout}ms`,
+                cause: error
             }
         };
     }
@@ -126,7 +128,8 @@ function mapUnknownNetworkErrorToFailureResult(error: unknown, timeout: number):
             success: false,
             errorDetails: {
                 type: 'network',
-                message: error.message
+                message: error.message,
+                cause: error
             }
         };
     }
@@ -134,7 +137,8 @@ function mapUnknownNetworkErrorToFailureResult(error: unknown, timeout: number):
         success: false,
         errorDetails: {
             type: 'unknown',
-            message: 'Unknown error occurred'
+            message: 'Unknown error occurred',
+            cause: error
         }
     };
 }
