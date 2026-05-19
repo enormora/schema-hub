@@ -5,6 +5,7 @@ import {
     $ZodUndefined,
     type util
 } from 'zod/v4/core';
+import type { BuildContext } from './build-context.js';
 import { isCustomScalarSchema } from './custom-scalar.js';
 import {
     type FieldArray,
@@ -34,21 +35,6 @@ import type { NormalizedGraphqlValue } from './values/value.js';
 import { mergeVariables } from './values/variable-set.js';
 
 export type { FieldOptionsRegistry, GraphqlFieldOptions } from './type-name.js';
-
-export type FragmentDefinition = {
-    typeName: string;
-    body: string;
-    referencedVariables: Set<string>;
-};
-
-// StrictObjectSchema<FieldShape> as a Map key triggers TS2589 (excessively deep). The shape
-// of the schema is irrelevant for identity-based lookups, so we widen to FieldSchema here.
-export type BuildContext = {
-    counts: Map<FieldSchema, number>;
-    nameForSchema: Map<FieldSchema, string>;
-    counterPerTypeName: Map<string, number>;
-    definitions: Map<string, FragmentDefinition>;
-};
 
 export type SerializedRootShape = {
     bodyEntries: readonly string[];
