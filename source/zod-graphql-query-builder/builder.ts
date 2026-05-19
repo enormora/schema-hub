@@ -1,11 +1,9 @@
-/* eslint-disable no-underscore-dangle -- we need to access _zod */
-import { $ZodReadonly } from 'zod/v4/core';
-import type { FieldSchema, FieldShape, QuerySchema, StrictObjectSchema } from './query-schema.js';
+import { createBuildContext } from './build-context.js';
+import { formatFragmentDefinitions } from './fragment-definitions.js';
+import type { FieldSchema, QuerySchema } from './query-schema.js';
+import { extractRootShape } from './root-shape.js';
 import {
-    type BuildContext,
-    collectSchemaReferences,
     type FieldOptionsRegistry,
-    type FragmentDefinition,
     type GraphqlFieldOptions,
     serializeRootShape
 } from './serializer.js';
@@ -32,37 +30,6 @@ function withTrailingSpace(value: string): string {
         return value;
     }
     return `${value} `;
-}
-
-function extractRootShape(schema: QuerySchema): FieldShape {
-    if (schema instanceof $ZodReadonly) {
-        return (schema._zod.def.innerType as StrictObjectSchema<FieldShape>)._zod.def.shape;
-    }
-    return schema._zod.def.shape;
-}
-
-function createBuildContext(registry: FieldOptionsRegistry, rootShape: FieldShape): BuildContext {
-    return {
-        counts: collectSchemaReferences(registry, rootShape),
-        nameForSchema: new Map(),
-        counterPerTypeName: new Map(),
-        definitions: new Map()
-    };
-}
-
-function formatFragmentDefinitions(definitions: Map<string, FragmentDefinition>): string {
-    if (definitions.size === 0) {
-        return '';
-    }
-    const sortedEntries = Array
-        .from(definitions.entries())
-        .toSorted(([nameA], [nameB]) => {
-            return nameA.localeCompare(nameB);
-        });
-    const formatted = sortedEntries.map(([name, definition]) => {
-        return `fragment ${name} on ${definition.typeName}${definition.body}`;
-    });
-    return ` ${formatted.join(' ')}`;
 }
 
 function buildDocument(
