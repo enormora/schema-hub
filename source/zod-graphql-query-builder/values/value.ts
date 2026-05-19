@@ -37,7 +37,13 @@ function normalizeObjectValue(value: GraphqlObjectValue): NormalizedGraphqlValue
     let referencedVariables = new Set<string>();
     const serializedFields: string[] = [];
 
-    for (const [fieldName, fieldValue] of Object.entries(value)) {
+    const sortedEntries = Object
+        .entries(value)
+        .toSorted(([nameA], [nameB]) => {
+            return nameA.localeCompare(nameB);
+        });
+
+    for (const [fieldName, fieldValue] of sortedEntries) {
         if (!isValidGraphqlName(fieldName)) {
             throw new Error(`Field name "${fieldName}" is not a valid GraphQL field name`);
         }

@@ -164,7 +164,7 @@ import { createCustomScalarSchema } from './custom-scalar.js';
                     });
                 return schema;
             },
-            expectedQuery: `${operationType} { foo, bar }`
+            expectedQuery: `${operationType} { bar, foo }`
         })
     );
 

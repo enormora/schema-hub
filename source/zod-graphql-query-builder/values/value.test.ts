@@ -103,7 +103,7 @@ test('normalizes an array of variable placeholders correctly', () => {
 test('normalizes an object of primitives correctly', () => {
     const result = normalizeGraphqlValue({ foo: 'bar', bar: 1, qux: null });
     assert.deepStrictEqual(result, {
-        serializedValue: '{foo: "bar", bar: 1, qux: null}',
+        serializedValue: '{bar: 1, foo: "bar", qux: null}',
         referencedVariables: new Set()
     });
 });
@@ -131,7 +131,7 @@ test('normalizes a nested object with multiple variable placeholders correctly',
         bar: [[variablePlaceholder('$baz')], null]
     });
     assert.deepStrictEqual(result, {
-        serializedValue: '{foo: $bar, bar: [[$baz], null]}',
+        serializedValue: '{bar: [[$baz], null], foo: $bar}',
         referencedVariables: new Set(['$bar', '$baz'])
     });
 });

@@ -189,8 +189,8 @@ import { variablePlaceholder } from './values/variable-placeholder.js';
             },
             expectedQuery: oneLine`
                 ${operationType} { me { ...User_1 }, you { ...User_1 } }
-                fragment Address_1 on Address { street, city }
-                fragment User_1 on User { id, address { ...Address_1 } }
+                fragment Address_1 on Address { city, street }
+                fragment User_1 on User { address { ...Address_1 }, id }
             `
         })
     );
@@ -212,7 +212,7 @@ import { variablePlaceholder } from './values/variable-placeholder.js';
             operationOptions: { variableDefinitions: { $size: 'Int!' } },
             expectedQuery: oneLine`
                 ${operationType} ($size: Int!) { me { ...User_1 }, you { ...User_1 } }
-                fragment User_1 on User { id, avatar(size: $size) }
+                fragment User_1 on User { avatar(size: $size), id }
             `
         })
     );
@@ -294,7 +294,7 @@ import { variablePlaceholder } from './values/variable-placeholder.js';
                 const userSchema = builder.registerFieldOptions(baseUserSchema, { typeName: 'User' });
                 return z.strictObject({ me: userSchema });
             },
-            expectedQuery: `${operationType} { me { ...User_1 } } fragment User_1 on User { id, friends { ...User_1 } }`
+            expectedQuery: `${operationType} { me { ...User_1 } } fragment User_1 on User { friends { ...User_1 }, id }`
         })
     );
 

@@ -284,7 +284,11 @@ function serializeObjectSchemaInline(
     objectSchema: FragmentUnionOptionSchema | StrictObjectSchema<FieldShape>,
     context: BuildContext
 ): NormalizedGraphqlValue {
-    const entries = Object.entries(objectSchema._zod.def.shape);
+    const entries = Object
+        .entries(objectSchema._zod.def.shape)
+        .toSorted(([nameA], [nameB]) => {
+            return nameA.localeCompare(nameB);
+        });
     let referencedVariables = new Set<string>();
     const serializedEntries: string[] = [];
     for (const [fieldName, fieldSchema] of entries) {
@@ -367,8 +371,13 @@ function serializeFragments(
     let referencedVariables = new Set<string>();
     const serializedFragments: string[] = [];
     const discriminatorNames = Array.from(discriminatorMap.__typename ?? []);
-    for (const [index, fragmentSchema] of unionOptions.entries()) {
-        const discriminatorName = lookupDiscriminatorName(discriminatorNames, index);
+    const pairedOptions = unionOptions.map((fragmentSchema, index) => {
+        return { discriminatorName: lookupDiscriminatorName(discriminatorNames, index), fragmentSchema };
+    });
+    const sortedOptions = pairedOptions.toSorted((optionA, optionB) => {
+        return optionA.discriminatorName.toString().localeCompare(optionB.discriminatorName.toString());
+    });
+    for (const { discriminatorName, fragmentSchema } of sortedOptions) {
         const optionResult = serializeFragmentUnionOption(registry, discriminatorName, fragmentSchema, context);
         referencedVariables = mergeVariables(referencedVariables, optionResult.referencedVariables);
         serializedFragments.push(optionResult.serializedValue);
@@ -476,7 +485,10 @@ export function serializeRootShape(
 ): SerializedRootShape {
     let referencedVariables = new Set<string>();
     const bodyEntries: string[] = [];
-    for (const [fieldName, fieldSchema] of Object.entries(rootShape)) {
+    const sortedEntries = Object.entries(rootShape).toSorted(([nameA], [nameB]) => {
+        return nameA.localeCompare(nameB);
+    });
+    for (const [fieldName, fieldSchema] of sortedEntries) {
         const serializedField = serializeFieldSchema(registry, fieldName, fieldSchema, context);
         if (serializedField.serializedValue.length > 0) {
             bodyEntries.push(serializedField.serializedValue);
