@@ -3,14 +3,20 @@ import { TimeoutError } from 'ky';
 import assert from 'node:assert';
 import { fake, type SinonSpy, stub } from 'sinon';
 import { z } from 'zod/v4';
-import { graphqlFieldOptions, variablePlaceholder } from '../zod-graphql-query-builder/entry-point.js';
+import { variablePlaceholder } from '../zod-graphql-query-builder/entry-point.js';
 import {
     type ClientOptions,
     type CreateClientDependencies,
     createClientFactory,
     type GraphqlClient
 } from './client.js';
-import { GraphqlOperationError } from './operation-error.js';
+import {
+    defineQuery,
+    defineVariables,
+    graphqlFieldOptions,
+    GraphqlOperationError,
+    variable
+} from './entry-point.js';
 import { computePersistedQueryHash } from './persisted-query.js';
 
 type KyOverrides = {
@@ -53,8 +59,16 @@ function createKyMethodReturningResponses(responseBodies: readonly unknown[]): S
 }
 
 const simpleQuerySchema = z.strictObject({ foo: z.string() });
+const numericValueForTypeMismatch = 22;
+
+const variablesForQuery = defineVariables({ bar: variable('Foo!', z.string()) });
 const queryWithVariablesSchema = z
     .strictObject({ foo: graphqlFieldOptions(z.string(), { parameters: { bar: variablePlaceholder('$bar') } }) });
+// @ts-expect-error -- defineQuery's schema/variables co-inference hits the TS depth limit
+const queryWithVariables = defineQuery({
+    variables: variablesForQuery,
+    schema: queryWithVariablesSchema
+});
 
 test('query() sends the query derived from the given schema to the configured endpoint', async () => {
     const post = createFakeKyMethod();
@@ -86,10 +100,11 @@ test('mutate() sends the mutation derived from the given schema to the configure
     }]);
 });
 
-test('query() sets the given operationName', async () => {
+test('query() with a handle that has an operationName sends the named query', async () => {
     const post = createFakeKyMethod();
     const client = clientFactory({ post, options: { endpoint: 'http://example/the-endpoint' } });
-    await client.query(simpleQuerySchema, { operationName: 'theQuery' });
+    const namedQuery = defineQuery({ schema: simpleQuerySchema, operationName: 'theQuery' });
+    await client.query(namedQuery);
 
     assert.strictEqual(post.callCount, 1);
     assert.deepStrictEqual(post.firstCall.args, ['http://example/the-endpoint', {
@@ -197,10 +212,10 @@ test('query() merges the headers from the query options into the headers from th
     }]);
 });
 
-test('query() sends the query variables when given', async () => {
+test('query() with a handle sends the variable definitions and values', async () => {
     const post = createFakeKyMethod();
     const client = clientFactory({ post, options: { endpoint: 'http://example/the-endpoint' } });
-    await client.query(queryWithVariablesSchema, { variables: { bar: { type: 'Foo!', value: 'foo' } } });
+    await client.query(queryWithVariables, { bar: 'foo' });
 
     assert.strictEqual(post.callCount, 1);
     assert.deepStrictEqual(post.firstCall.args, ['http://example/the-endpoint', {
@@ -212,11 +227,42 @@ test('query() sends the query variables when given', async () => {
     }]);
 });
 
+test('query() with a handle returns a validation failure when values don’t match the variable schema', async () => {
+    const post = createFakeKyMethod();
+    const client = clientFactory({ post, options: { endpoint: 'http://example/the-endpoint' } });
+    const result = await client.query(queryWithVariables, { bar: numericValueForTypeMismatch as unknown as string });
+
+    assert.strictEqual(post.callCount, 0);
+    assert.deepStrictEqual(result, {
+        success: false,
+        errorDetails: {
+            type: 'validation',
+            message: 'GraphQL variable values don’t match the expected schema',
+            issues: ['at bar: expected string, but got number']
+        }
+    });
+});
+
+test('query() with a handle that has no variables behaves like a bare schema', async () => {
+    const post = createFakeKyMethod();
+    const client = clientFactory({ post, options: { endpoint: 'http://example/the-endpoint' } });
+    const handle = defineQuery({ schema: simpleQuerySchema });
+    await client.query(handle);
+
+    assert.strictEqual(post.callCount, 1);
+    assert.deepStrictEqual(post.firstCall.args, ['http://example/the-endpoint', {
+        headers: {},
+        json: { operationName: undefined, query: 'query { foo }', variables: {} },
+        retry: 0,
+        throwHttpErrors: false,
+        timeout: 10_000
+    }]);
+});
+
 test('query() returns a network failure result when the request times out', async () => {
     const timeoutError = new TimeoutError({} as unknown as Request);
     const post = createFakeKyMethod({ error: timeoutError });
     const client = clientFactory({ post });
-    // @ts-expect-error -- https://github.com/colinhacks/zod/issues/4611
     const result = await client.query(simpleQuerySchema);
 
     assert.deepStrictEqual(result, {
