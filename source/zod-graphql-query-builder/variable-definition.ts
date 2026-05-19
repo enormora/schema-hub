@@ -29,7 +29,10 @@ export function serializeVariableDefinitions(definitions: VariableDefinitions): 
     }
 
     entries.forEach(ensureValidVariableDefinition);
-    const serializedEntries = entries.map(serializeVariableDefinitionPair);
+    const sortedEntries = entries.toSorted(([nameA], [nameB]) => {
+        return nameA.localeCompare(nameB);
+    });
+    const serializedEntries = sortedEntries.map(serializeVariableDefinitionPair);
 
     return `(${serializedEntries.join(', ')})`;
 }

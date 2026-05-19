@@ -140,7 +140,7 @@ import { variablePlaceholder } from './values/variable-placeholder.js';
             buildSchema() {
                 return z.strictObject({ foo: z.string(), bar: z.number() });
             },
-            expectedQuery: `${operationType} { foo, bar }`
+            expectedQuery: `${operationType} { bar, foo }`
         })
     );
 

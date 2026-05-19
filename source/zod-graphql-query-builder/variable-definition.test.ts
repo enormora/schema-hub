@@ -32,5 +32,5 @@ test('serializes one variable definition correctly', () => {
 
 test('serializes multiple variable definitions correctly', () => {
     const result = serializeVariableDefinitions({ $foo: 'bar', $bar: '[String!]!' });
-    assert.strictEqual(result, '($foo: bar, $bar: [String!]!)');
+    assert.strictEqual(result, '($bar: [String!]!, $foo: bar)');
 });

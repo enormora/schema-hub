@@ -22,7 +22,7 @@ test('normalizes one parameter correctly', () => {
 test('normalizes multiple parameters correctly', () => {
     const result = normalizeParameterList({ foo: 'bar', bar: true });
     assert.deepStrictEqual(result, {
-        serializedValue: '(foo: "bar", bar: true)',
+        serializedValue: '(bar: true, foo: "bar")',
         referencedVariables: new Set()
     });
 });
@@ -33,7 +33,7 @@ test('normalizes multiple parameters with multiple variable placeholders correct
         bar: { baz: variablePlaceholder('$baz') }
     });
     assert.deepStrictEqual(result, {
-        serializedValue: '(foo: $foo, bar: {baz: $baz})',
+        serializedValue: '(bar: {baz: $baz}, foo: $foo)',
         referencedVariables: new Set(['$foo', '$baz'])
     });
 });

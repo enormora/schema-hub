@@ -6,7 +6,13 @@ export function normalizeParameterList(parameters: Record<string, GraphqlValue>)
     let referencedVariables = new Set<string>();
     const serializedParameters: string[] = [];
 
-    for (const [parameterName, parameterValue] of Object.entries(parameters)) {
+    const sortedEntries = Object
+        .entries(parameters)
+        .toSorted(([nameA], [nameB]) => {
+            return nameA.localeCompare(nameB);
+        });
+
+    for (const [parameterName, parameterValue] of sortedEntries) {
         if (!isValidGraphqlName(parameterName)) {
             throw new Error(`Parameter name "${parameterName}" is not a valid GraphQL parameter name`);
         }

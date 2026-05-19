@@ -101,7 +101,7 @@ const query = buildGraphqlQuery(mySchema, { variableDefinitions: { $var: 'String
 **Built query:**
 
 ```graphql
-query ($var: String!) { foo(anyParameterAssignedToPlainValue: "plain-string", anyParameterAssignedToEnumValue: foo, anyParameterReferencingAVariable: $var) }
+query ($var: String!) { foo(anyParameterAssignedToEnumValue: foo, anyParameterAssignedToPlainValue: "plain-string", anyParameterReferencingAVariable: $var) }
 ```
 
 ### Defining Fragments
@@ -201,7 +201,7 @@ const query = buildGraphqlQuery(z.strictObject({ me: userSchema }));
 **Built query:**
 
 ```graphql
-query { me { ...User_1 } } fragment User_1 on User { id, friends { ...User_1 } }
+query { me { ...User_1 } } fragment User_1 on User { friends { ...User_1 }, id }
 ```
 
 A cyclic schema without a resolvable type name is rejected at build time with an explicit error so the
@@ -303,5 +303,5 @@ const mutation = buildGraphqlMutation(mySchema, { variableDefinitions: { $var: '
 **Built mutation:**
 
 ```graphql
-mutation ($var: String!) { foo(anyParameterAssignedToPlainValue: "plain-string", anyParameterAssignedToEnumValue: foo, anyParameterReferencingAVariable: $var) }
+mutation ($var: String!) { foo(anyParameterAssignedToEnumValue: foo, anyParameterAssignedToPlainValue: "plain-string", anyParameterReferencingAVariable: $var) }
 ```
