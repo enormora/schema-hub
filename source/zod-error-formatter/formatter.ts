@@ -21,17 +21,17 @@ export function parse<Schema extends $ZodType>(schema: Schema, value: unknown): 
     throw formatZodError(result.error, value);
 }
 
-type SafeParseSuccessResult<Output> = {
+export type SafeParseSuccessResult<Output> = {
     success: true;
     data: Output;
 };
 
-type SafeParseErrorResult = {
+export type SafeParseErrorResult = {
     success: false;
     error: FormattedZodError;
 };
 
-type SafeParseResult<Output> = SafeParseErrorResult | SafeParseSuccessResult<Output>;
+export type SafeParseResult<Output> = SafeParseErrorResult | SafeParseSuccessResult<Output>;
 
 export function safeParse<Schema extends $ZodType>(
     schema: Schema,

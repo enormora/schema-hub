@@ -63,74 +63,123 @@ You can further customize the client by providing additional options:
 
 ### Sending a Query
 
+Bare-schema queries with no variables can be sent directly:
+
 ```typescript
-import { createGraphqlClient, graphqlFieldOptions, variablePlaceholder } from '@schema-hub/zod-graphql-client';
+import { createGraphqlClient } from '@schema-hub/zod-graphql-client';
 import { z } from 'zod';
 
-// Define your query schema using Zod
-const schema = z
-    .object({
-        // Provide graphql-specific metadata to your zod schema
-        foo: graphqlFieldOptions(z.string(), {
-            parameters: {
-                bar: variablePlaceholder('$bar')
-            }
-        })
-    })
-    .strict();
-
-// Send the query using the client
+const schema = z.object({ foo: z.string() }).strict();
 const client = createGraphqlClient({ endpoint: 'https://example.com/graphql' });
-const result = await client.query(schema, {
-    operationName: 'YourQueryName', // Optional query name
-    variables: {
-        bar: {
-            type: 'String!',
-            value: 'the-actual-value-for-bar'
-        }
-    }
+const result = await client.query(schema);
+
+console.log(result);
+```
+
+For queries that take variables — or for queries that need a named operation — use `defineVariables` and `defineQuery` to bundle the schema, variable definitions, and operation name into a single typed operation handle. Variable values passed to `client.query` are then type-checked against the variable definitions:
+
+```typescript
+import {
+    createGraphqlClient,
+    defineQuery,
+    defineVariables,
+    graphqlFieldOptions
+} from '@schema-hub/zod-graphql-client';
+import { z } from 'zod';
+
+const vars = defineVariables({ bar: z.string() });
+
+const getFoo = defineQuery({
+    operationName: 'YourQueryName',
+    variables: vars,
+    schema: z
+        .object({
+            foo: graphqlFieldOptions(z.string(), { parameters: { bar: vars.bar } })
+        })
+        .strict()
 });
+
+const client = createGraphqlClient({ endpoint: 'https://example.com/graphql' });
+const result = await client.query(getFoo, { bar: 'the-actual-value-for-bar' });
 
 console.log(result);
 ```
 
 ### Sending a Mutation
 
+Mirror the query API with `defineMutation` and `client.mutate`:
+
 ```typescript
-import { createGraphqlClient, graphqlFieldOptions, variablePlaceholder } from '@schema-hub/zod-graphql-client';
+import {
+    createGraphqlClient,
+    defineMutation,
+    defineVariables,
+    graphqlFieldOptions
+} from '@schema-hub/zod-graphql-client';
 import { z } from 'zod';
 
-// Define your mutation schema using Zod
-const schema = z
-    .object({
-        // Provide graphql-specific metadata to your zod schema
-        foo: graphqlFieldOptions(z.string(), {
-            parameters: {
-                bar: variablePlaceholder('$bar')
-            }
-        })
-    })
-    .strict();
+const vars = defineVariables({ bar: z.string() });
 
-// Send the mutation using the client
-const client = createGraphqlClient({ endpoint: 'https://example.com/graphql' });
-const result = await client.mutate(schema, {
-    operationName: 'YourMutationName', // Optional mutation name
-    variables: {
-        bar: {
-            type: 'String!',
-            value: 'the-actual-value-for-bar'
-        }
-    }
+const sendFoo = defineMutation({
+    operationName: 'YourMutationName',
+    variables: vars,
+    schema: z
+        .object({
+            foo: graphqlFieldOptions(z.string(), { parameters: { bar: vars.bar } })
+        })
+        .strict()
 });
+
+const client = createGraphqlClient({ endpoint: 'https://example.com/graphql' });
+const result = await client.mutate(sendFoo, { bar: 'the-actual-value-for-bar' });
 
 console.log(result);
 ```
 
+### Defining Variables
+
+`defineVariables` accepts a map of variable names to either:
+
+1. A Zod schema for a primitive, in which case the GraphQL type is **inferred** from the schema; or
+2. A `variable(type, schema)` entry that declares the GraphQL type explicitly (use this for input objects, enums, custom scalars, and any non-primitive types).
+
+Both forms produce typed placeholders that you reference from `graphqlFieldOptions.parameters`, and a `parse` step that **runtime-validates** the values you pass to `client.query`/`client.mutate` against the Zod schemas before sending the request.
+
+Primitive inference rules:
+
+| Zod schema                     | Inferred GraphQL type   |
+| ------------------------------ | ----------------------- |
+| `z.string()`                   | `String!`               |
+| `z.number()`                   | `Float!`                |
+| `z.int()` / `z.number().int()` | `Int!`                  |
+| `z.boolean()`                  | `Boolean!`              |
+| `z.array(inner)`               | `[<inner>]!`            |
+| `.nullable()` / `.nullish()`   | strips the trailing `!` |
+
+Anything outside this set (enums, objects, literals, unions, custom scalars, `ID`, …) cannot be inferred and must use the explicit form:
+
+```typescript
+import { defineVariables, variable } from '@schema-hub/zod-graphql-client';
+import { z } from 'zod';
+
+const vars = defineVariables({
+    bar: z.string(), // inferred: String!
+    count: z.int().nullable(), // inferred: Int
+    filter: variable('FilterInput!', z.object({ query: z.string() })) // explicit type
+});
+```
+
+### Operation Handles
+
+`defineQuery` and `defineMutation` return an opaque `OperationHandle` that bundles the schema, variable map (if any), and operation name into a single artifact. `client.query` and `client.mutate` are overloaded so that:
+
+- `client.query(schema)` / `client.query(handle)` — no values, used for variable-free operations.
+- `client.query(handle, values)` — pass values for a handle that declares variables. `values` is statically type-checked against the variable map.
+
+`operationName` lives on the handle, not on call-time options. To send the same schema under two different operation names, define two handles.
+
 ### Options for Queries and Mutations
 
-- `operationName` (optional): The name of the query or mutation. This is useful for debugging and introspection purposes.
-- `variables` (optional): A record of all variable values and types that should be included in the query or mutation. This allows you to parameterize your operations and provide dynamic values at runtime.
 - `headers` (optional): A key-value map of additional headers that should be sent with the request. These headers will be merged with any headers specified when creating the client.
 - `timeout` (optional): The request timeout in milliseconds. This determines how long the client will wait for a response before considering the request failed. If not specified, the default timeout specified when creating the client will be used.
 
@@ -224,7 +273,6 @@ Some functions from `@schema-hub/zod-graphql-query-builder` are re-exported for 
 
 - `graphqlFieldOptions()`
 - `enumValue()`
-- `variablePlaceholder()`
 - `customScalar()`
 
 For more details, see the [`@schema-hub/zod-graphql-query-builder` documentation](../zod-graphql-query-builder/readme.md).

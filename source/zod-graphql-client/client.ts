@@ -2,13 +2,20 @@ import { type KyInstance, type Options as KyRequestOptions, TimeoutError } from 
 import type { output as TypeOf } from 'zod/v4/core';
 import { safeParse } from '../zod-error-formatter/formatter.js';
 import type { QuerySchema } from '../zod-graphql-query-builder/entry-point.js';
+import type { AnyVariableMapHandle, ValuesOfVariableMapHandle } from './define-variables.js';
 import { parseGraphqlResponse } from './graphql-response.js';
 import { GraphqlOperationError } from './operation-error.js';
 import {
     buildOperationPayload,
+    type BuildOperationPayloadInput,
     type BuiltOperationPayload,
     type GraphqlOverHttpOperationRequestPayload,
+    type OperationHandle,
     type OperationOptions,
+    type OperationTarget,
+    type OperationType,
+    type ResolvedOperationInputs,
+    resolveOperationInputs,
     toPersistedQueryPayload
 } from './operation-payload.js';
 import type { OperationFailureResult, OperationResult, OperationResultForType } from './operation-result.js';
@@ -24,22 +31,50 @@ export type ClientOptions = {
 };
 
 export type GraphqlClient = {
-    readonly query: <Schema extends QuerySchema>(
-        schema: Schema,
-        options?: OperationOptions
-    ) => Promise<OperationResult<Schema>>;
-    readonly queryOrThrow: <Schema extends QuerySchema>(
-        schema: Schema,
-        options?: OperationOptions
-    ) => Promise<TypeOf<Schema>>;
-    readonly mutate: <Schema extends QuerySchema>(
-        schema: Schema,
-        options?: OperationOptions
-    ) => Promise<OperationResult<Schema>>;
-    readonly mutateOrThrow: <Schema extends QuerySchema>(
-        schema: Schema,
-        options?: OperationOptions
-    ) => Promise<TypeOf<Schema>>;
+    readonly query: {
+        <Schema extends QuerySchema>(
+            target: OperationHandle<Schema, undefined> | Schema,
+            options?: OperationOptions
+        ): Promise<OperationResult<Schema>>;
+        <Schema extends QuerySchema, Variables extends AnyVariableMapHandle>(
+            handle: OperationHandle<Schema, Variables>,
+            values: ValuesOfVariableMapHandle<Variables>,
+            options?: OperationOptions
+        ): Promise<OperationResult<Schema>>;
+    };
+    readonly queryOrThrow: {
+        <Schema extends QuerySchema>(
+            target: OperationHandle<Schema, undefined> | Schema,
+            options?: OperationOptions
+        ): Promise<TypeOf<Schema>>;
+        <Schema extends QuerySchema, Variables extends AnyVariableMapHandle>(
+            handle: OperationHandle<Schema, Variables>,
+            values: ValuesOfVariableMapHandle<Variables>,
+            options?: OperationOptions
+        ): Promise<TypeOf<Schema>>;
+    };
+    readonly mutate: {
+        <Schema extends QuerySchema>(
+            target: OperationHandle<Schema, undefined> | Schema,
+            options?: OperationOptions
+        ): Promise<OperationResult<Schema>>;
+        <Schema extends QuerySchema, Variables extends AnyVariableMapHandle>(
+            handle: OperationHandle<Schema, Variables>,
+            values: ValuesOfVariableMapHandle<Variables>,
+            options?: OperationOptions
+        ): Promise<OperationResult<Schema>>;
+    };
+    readonly mutateOrThrow: {
+        <Schema extends QuerySchema>(
+            target: OperationHandle<Schema, undefined> | Schema,
+            options?: OperationOptions
+        ): Promise<TypeOf<Schema>>;
+        <Schema extends QuerySchema, Variables extends AnyVariableMapHandle>(
+            handle: OperationHandle<Schema, Variables>,
+            values: ValuesOfVariableMapHandle<Variables>,
+            options?: OperationOptions
+        ): Promise<TypeOf<Schema>>;
+    };
 };
 
 type CreateClientFn = (clientOptions: ClientOptions) => GraphqlClient;
@@ -143,6 +178,19 @@ function mapUnknownNetworkErrorToFailureResult(error: unknown, timeout: number):
     };
 }
 
+function toBuildPayloadInput(
+    operationType: OperationType,
+    inputs: ResolvedOperationInputs
+): BuildOperationPayloadInput {
+    return {
+        schema: inputs.schema,
+        operationType,
+        operationName: inputs.operationName,
+        variableDefinitions: inputs.variableDefinitions,
+        variableValues: inputs.variableValues
+    };
+}
+
 export function createClientFactory(dependencies: CreateClientDependencies): CreateClientFn {
     const { ky } = dependencies;
 
@@ -224,45 +272,63 @@ export function createClientFactory(dependencies: CreateClientDependencies): Cre
         }
 
         async function performOperation<Schema extends QuerySchema>(
-            schema: Schema,
-            operationType: 'mutation' | 'query',
-            options: OperationOptions = {}
+            operationType: OperationType,
+            target: OperationTarget,
+            valuesOrOptions: unknown,
+            maybeOptions: OperationOptions | undefined
         ): Promise<OperationResult<Schema>> {
-            const payload = buildOperationPayload(schema, operationType, options);
-
-            if (clientOptions.persistedQueries === true) {
-                return performPersistedQueryOperation(schema, options, payload);
+            const resolution = resolveOperationInputs(target, valuesOrOptions, maybeOptions);
+            if (!resolution.success) {
+                return resolution;
             }
 
-            return fetchAndParse(schema, options, payload);
+            const inputs = resolution.data;
+            const payload = buildOperationPayload(toBuildPayloadInput(operationType, inputs));
+
+            if (clientOptions.persistedQueries === true) {
+                return performPersistedQueryOperation(inputs.schema as Schema, inputs.options, payload);
+            }
+
+            return fetchAndParse(inputs.schema as Schema, inputs.options, payload);
         }
 
-        async function query<Schema extends QuerySchema>(
-            schema: Schema,
-            options: OperationOptions = {}
-        ): Promise<OperationResult<Schema>> {
-            return performOperation(schema, 'query', options);
+        async function queryImpl(
+            target: OperationTarget,
+            valuesOrOptions?: unknown,
+            maybeOptions?: OperationOptions
+        ): Promise<OperationResult<QuerySchema>> {
+            return performOperation('query', target, valuesOrOptions, maybeOptions);
         }
 
-        async function mutate<Schema extends QuerySchema>(
-            schema: Schema,
-            options: OperationOptions = {}
-        ): Promise<OperationResult<Schema>> {
-            return performOperation(schema, 'mutation', options);
+        async function mutateImpl(
+            target: OperationTarget,
+            valuesOrOptions?: unknown,
+            maybeOptions?: OperationOptions
+        ): Promise<OperationResult<QuerySchema>> {
+            return performOperation('mutation', target, valuesOrOptions, maybeOptions);
+        }
+
+        async function queryOrThrowImpl(
+            target: OperationTarget,
+            valuesOrOptions?: unknown,
+            maybeOptions?: OperationOptions
+        ): Promise<unknown> {
+            return extractDataOrThrow(await queryImpl(target, valuesOrOptions, maybeOptions));
+        }
+
+        async function mutateOrThrowImpl(
+            target: OperationTarget,
+            valuesOrOptions?: unknown,
+            maybeOptions?: OperationOptions
+        ): Promise<unknown> {
+            return extractDataOrThrow(await mutateImpl(target, valuesOrOptions, maybeOptions));
         }
 
         return {
-            query,
-
-            async queryOrThrow(schema, options) {
-                return extractDataOrThrow(await query(schema, options));
-            },
-
-            mutate,
-
-            async mutateOrThrow(schema, options) {
-                return extractDataOrThrow(await mutate(schema, options));
-            }
+            query: queryImpl as GraphqlClient['query'],
+            queryOrThrow: queryOrThrowImpl as GraphqlClient['queryOrThrow'],
+            mutate: mutateImpl as GraphqlClient['mutate'],
+            mutateOrThrow: mutateOrThrowImpl as GraphqlClient['mutateOrThrow']
         };
     };
 }

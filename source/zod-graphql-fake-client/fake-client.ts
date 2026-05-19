@@ -10,13 +10,17 @@ import {
     buildOperationPayload,
     type GraphqlOverHttpOperationRequestPayload,
     type OperationOptions,
-    type OperationType
+    type OperationTarget,
+    type OperationType,
+    resolveOperationInputs
 } from '../zod-graphql-client/operation-payload.js';
 
 export type RecordedOperation = {
     readonly type: OperationType;
     readonly schema: QuerySchema;
     readonly payload: GraphqlOverHttpOperationRequestPayload;
+    readonly operationName: string | undefined;
+    readonly values: Record<string, unknown>;
     readonly options: OperationOptions;
 };
 
@@ -31,8 +35,8 @@ export type OperationMatcher = OperationMatcherObject | ((recorded: RecordedOper
 export type FakeGraphqlClient = GraphqlClient & {
     readonly inspectOperationPayload: (index: number) => GraphqlOverHttpOperationRequestPayload;
     readonly inspectFirstOperationPayload: () => GraphqlOverHttpOperationRequestPayload;
-    readonly inspectOperationOptions: (index: number) => OperationOptions;
-    readonly inspectFirstOperationOptions: () => OperationOptions;
+    readonly inspectOperation: (index: number) => RecordedOperation;
+    readonly inspectFirstOperation: () => RecordedOperation;
     readonly findOperation: (matcher: OperationMatcher) => RecordedOperation | undefined;
     readonly findOperationOrThrow: (matcher: OperationMatcher) => RecordedOperation;
     readonly findAllOperations: (matcher: OperationMatcher) => readonly RecordedOperation[];
@@ -56,7 +60,7 @@ type FakeClientOptions = {
 
 function operationMatchesObject(matcher: OperationMatcherObject, recorded: RecordedOperation): boolean {
     const nameMatches = matcher.operationName === undefined ||
-        recorded.options.operationName === matcher.operationName;
+        recorded.operationName === matcher.operationName;
     const typeMatches = matcher.type === undefined || recorded.type === matcher.type;
     const schemaMatches = matcher.schema === undefined || recorded.schema === matcher.schema;
     return nameMatches && typeMatches && schemaMatches;
@@ -117,85 +121,124 @@ function buildOperationFinders(recordedOperations: readonly RecordedOperation[])
     return { findOperation, findAllOperations, findOperationOrThrow };
 }
 
-export function createFakeGraphqlClient(clientOptions: FakeClientOptions = {}): FakeGraphqlClient {
-    const { results = [] } = clientOptions;
-    const recordedOperations: RecordedOperation[] = [];
-    const defaultResult: FakeResult = { data: {} };
+type FakeClientState = {
+    readonly results: readonly FakeResult[];
+    readonly recordedOperations: RecordedOperation[];
+};
 
-    async function collectOperation<Schema extends QuerySchema>(
-        schema: Schema,
-        type: OperationType,
-        options: OperationOptions = {}
-    ): Promise<OperationResult<Schema>> {
-        const payload = buildOperationPayload(schema, type, options);
-        const result = results[recordedOperations.length] ?? defaultResult;
+const defaultResult: FakeResult = { data: {} };
 
-        recordedOperations.push({ type, schema, payload, options });
+type OperationInvocation = {
+    readonly type: OperationType;
+    readonly target: OperationTarget;
+    readonly valuesOrOptions: unknown;
+    readonly maybeOptions: OperationOptions | undefined;
+};
 
-        if (result.error !== undefined) {
-            return { success: false, errorDetails: result.error };
-        }
-        return { success: true, data: result.data as TypeOf<Schema> };
+function recordAndRespond<Schema extends QuerySchema>(
+    state: FakeClientState,
+    invocation: OperationInvocation
+): OperationResult<Schema> {
+    const resolution = resolveOperationInputs(invocation.target, invocation.valuesOrOptions, invocation.maybeOptions);
+    if (!resolution.success) {
+        return resolution;
     }
 
-    async function query<Schema extends QuerySchema>(
-        schema: Schema,
-        options: OperationOptions = {}
-    ): Promise<OperationResult<Schema>> {
-        return collectOperation(schema, 'query', options);
-    }
+    const inputs = resolution.data;
+    const payload = buildOperationPayload({
+        schema: inputs.schema,
+        operationType: invocation.type,
+        operationName: inputs.operationName,
+        variableDefinitions: inputs.variableDefinitions,
+        variableValues: inputs.variableValues
+    });
+    const result = state.results[state.recordedOperations.length] ?? defaultResult;
 
-    async function mutate<Schema extends QuerySchema>(
-        schema: Schema,
-        options: OperationOptions = {}
-    ): Promise<OperationResult<Schema>> {
-        return collectOperation(schema, 'mutation', options);
-    }
+    state.recordedOperations.push({
+        type: invocation.type,
+        schema: inputs.schema,
+        payload,
+        operationName: inputs.operationName,
+        values: inputs.variableValues,
+        options: inputs.options
+    });
 
+    if (result.error !== undefined) {
+        return { success: false, errorDetails: result.error };
+    }
+    return { success: true, data: result.data as TypeOf<Schema> };
+}
+
+function buildClientMethods(state: FakeClientState): GraphqlClient {
+    async function queryImpl(
+        target: OperationTarget,
+        valuesOrOptions?: unknown,
+        maybeOptions?: OperationOptions
+    ): Promise<OperationResult<QuerySchema>> {
+        return recordAndRespond(state, { type: 'query', target, valuesOrOptions, maybeOptions });
+    }
+    async function mutateImpl(
+        target: OperationTarget,
+        valuesOrOptions?: unknown,
+        maybeOptions?: OperationOptions
+    ): Promise<OperationResult<QuerySchema>> {
+        return recordAndRespond(state, { type: 'mutation', target, valuesOrOptions, maybeOptions });
+    }
+    return {
+        query: queryImpl as GraphqlClient['query'],
+        queryOrThrow: (async (target, valuesOrOptions, maybeOptions) => {
+            return extractDataOrThrow(await queryImpl(target, valuesOrOptions, maybeOptions));
+        }) as GraphqlClient['queryOrThrow'],
+        mutate: mutateImpl as GraphqlClient['mutate'],
+        mutateOrThrow: (async (target, valuesOrOptions, maybeOptions) => {
+            return extractDataOrThrow(await mutateImpl(target, valuesOrOptions, maybeOptions));
+        }) as GraphqlClient['mutateOrThrow']
+    };
+}
+
+function buildInspectors(recordedOperations: readonly RecordedOperation[]): {
+    readonly inspectOperationPayload: (index: number) => GraphqlOverHttpOperationRequestPayload;
+    readonly inspectFirstOperationPayload: () => GraphqlOverHttpOperationRequestPayload;
+    readonly inspectOperation: (index: number) => RecordedOperation;
+    readonly inspectFirstOperation: () => RecordedOperation;
+} {
     function inspectOperationPayload(index: number): GraphqlOverHttpOperationRequestPayload {
         const recorded = recordedOperations[index];
         if (recorded === undefined) {
             throw new Error(`No query payload at index ${index} recorded`);
         }
-
         return recorded.payload;
     }
-
-    function inspectOperationOptions(index: number): OperationOptions {
+    function inspectOperation(index: number): RecordedOperation {
         const recorded = recordedOperations[index];
         if (recorded === undefined) {
-            throw new Error(`No operationOption at index ${index} recorded`);
+            throw new Error(`No operation at index ${index} recorded`);
         }
-
-        return recorded.options;
+        return recorded;
     }
-
-    const { findOperation, findAllOperations, findOperationOrThrow } = buildOperationFinders(recordedOperations);
-
     return {
-        query,
-
-        async queryOrThrow(schema, options) {
-            return extractDataOrThrow(await query(schema, options));
-        },
-
-        mutate,
-
-        async mutateOrThrow(schema, options) {
-            return extractDataOrThrow(await mutate(schema, options));
-        },
-
         inspectOperationPayload,
-
-        inspectFirstOperationPayload() {
+        inspectFirstOperationPayload: () => {
             return inspectOperationPayload(0);
         },
-        inspectOperationOptions,
-        inspectFirstOperationOptions() {
-            return inspectOperationOptions(0);
-        },
-        findOperation,
-        findOperationOrThrow,
-        findAllOperations
+        inspectOperation,
+        inspectFirstOperation: () => {
+            return inspectOperation(0);
+        }
+    };
+}
+
+export function createFakeGraphqlClient(clientOptions: FakeClientOptions = {}): FakeGraphqlClient {
+    const { results = [] } = clientOptions;
+    const recordedOperations: RecordedOperation[] = [];
+    const state: FakeClientState = { results, recordedOperations };
+    const clientMethods = buildClientMethods(state);
+    const inspectors = buildInspectors(recordedOperations);
+    const finders = buildOperationFinders(recordedOperations);
+
+    return {
+        ...clientMethods,
+        ...inspectors,
+        ...finders
     };
 }
