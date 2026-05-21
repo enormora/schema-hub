@@ -64,7 +64,6 @@ const numericValueForTypeMismatch = 22;
 const variablesForQuery = defineVariables({ bar: variable('Foo!', z.string()) });
 const queryWithVariablesSchema = z
     .strictObject({ foo: graphqlFieldOptions(z.string(), { parameters: { bar: variablePlaceholder('$bar') } }) });
-// @ts-expect-error -- defineQuery's schema/variables co-inference hits the TS depth limit
 const queryWithVariables = defineQuery({
     variables: variablesForQuery,
     schema: queryWithVariablesSchema
