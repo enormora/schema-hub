@@ -6,22 +6,60 @@ import {
     type $ZodBoolean,
     $ZodDiscriminatedUnion,
     $ZodLazy,
+    type $ZodLazyDef,
     type $ZodLiteral,
     type $ZodNull,
     $ZodNullable,
+    type $ZodNullableDef,
     type $ZodNumber,
     $ZodObject,
     $ZodPipe,
     $ZodReadonly,
+    type $ZodReadonlyDef,
     type $ZodShape,
     type $ZodString,
     type $ZodTransform,
     $ZodTuple,
     type $ZodType,
+    type $ZodTypeInternals,
     type $ZodUndefined,
     type $ZodUnion
 } from 'zod/v4/core';
 import { type CustomScalarSchema, isCustomScalarSchema } from './custom-scalar.js';
+
+/*
+ * Drop-in replacements for the four zod-v4 wrapper schema types whose
+ * `_zod.{optin,optout,values,pattern,propValues}` bubble through their inner
+ * generic and blow the TypeScript instantiation depth when used in a recursive
+ * union (see colinhacks/zod#4611 and enormora/schema-hub#285).
+ *
+ * Each interface only models the slice of `_zod.def` the builder reads at
+ * runtime, which is enough for structural assignability from the real
+ * `$ZodLazy`/`$ZodNullable`/`$ZodReadonly`/`$ZodPipe`. When the upstream zod
+ * issue is fixed, search for `Gh4611` and swap these back to the original
+ * `$Zod*<...>` types — the deletion is mechanical.
+ */
+/* eslint-disable @typescript-eslint/no-explicit-any -- the inferred output/input
+ * types of the wrapped schema are intentionally widened to `any` so the workaround
+ * stays bivariant with concrete schemas while avoiding the recursive evaluation
+ * (`output<FieldSchema>` / `input<FieldSchema>`) that would re-trigger the depth
+ * blow-up we're working around. */
+interface ZodLazyGh4611IssueWorkaround<T extends $ZodType = $ZodType> extends $ZodType<any, any> {
+    readonly _zod: $ZodTypeInternals<any, any> & { readonly def: $ZodLazyDef<T>; };
+}
+interface ZodNullableGh4611IssueWorkaround<T extends $ZodType = $ZodType> extends $ZodType<any, any> {
+    readonly _zod: $ZodTypeInternals<any, any> & { readonly def: $ZodNullableDef<T>; };
+}
+interface ZodReadonlyGh4611IssueWorkaround<T extends $ZodType = $ZodType> extends $ZodType<any, any> {
+    readonly _zod: $ZodTypeInternals<any, any> & { readonly def: $ZodReadonlyDef<T>; };
+}
+interface ZodPipeGh4611IssueWorkaround<A extends $ZodType = $ZodType, B extends $ZodType = $ZodType>
+    extends $ZodType<any, any> {
+    readonly _zod: $ZodTypeInternals<any, any> & {
+        readonly def: { readonly type: 'pipe'; readonly in: A; readonly out: B; };
+    };
+}
+/* eslint-enable @typescript-eslint/no-explicit-any -- end of Gh4611 workaround */
 
 export interface StrictObjectSchema<Shape extends $ZodShape> extends $ZodObject<Shape, $strict> {}
 
@@ -55,10 +93,10 @@ export type NonWrappedFieldSchema =
     | FieldUnion
     | PrimitiveSchema
     | StrictObjectSchema<FieldShape>;
-interface FieldLazy extends $ZodLazy<FieldSchema> {}
-interface FieldNullable extends $ZodNullable<FieldSchema> {}
-interface FieldReadonly extends $ZodReadonly<FieldSchema> {}
-interface FieldPipe extends $ZodPipe<FieldSchema, $ZodTransform> {}
+interface FieldLazy extends ZodLazyGh4611IssueWorkaround<FieldSchema> {}
+interface FieldNullable extends ZodNullableGh4611IssueWorkaround<FieldSchema> {}
+interface FieldReadonly extends ZodReadonlyGh4611IssueWorkaround<FieldSchema> {}
+interface FieldPipe extends ZodPipeGh4611IssueWorkaround<FieldSchema, $ZodTransform> {}
 export type WrappedFieldSchema =
     | FieldLazy
     | FieldNullable

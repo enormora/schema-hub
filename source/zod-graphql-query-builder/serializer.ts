@@ -69,8 +69,6 @@ function unwrapFromTupleSchema<SchemaType extends NonWrappedFieldSchema>(
     predicate: (schema: NonWrappedFieldSchema) => schema is SchemaType,
     schema: FieldSchemaTuple
 ): SchemaType | null {
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment -- ts-expect-error doesn’t work reliably here
-    // @ts-ignore -  Type instantiation is not infinite
     const { items } = schema._zod.def;
     const [firstElementSchema] = items;
     const unwrappedElementSchema = unwrapFieldSchema(firstElementSchema);
