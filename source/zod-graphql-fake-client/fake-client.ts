@@ -184,15 +184,25 @@ function buildClientMethods(state: FakeClientState): GraphqlClient {
     ): Promise<OperationResult<QuerySchema>> {
         return recordAndRespond(state, { type: 'mutation', target, valuesOrOptions, maybeOptions });
     }
+    async function queryOrThrowImpl(
+        target: OperationTarget,
+        valuesOrOptions?: unknown,
+        maybeOptions?: OperationOptions
+    ): Promise<unknown> {
+        return extractDataOrThrow(await queryImpl(target, valuesOrOptions, maybeOptions));
+    }
+    async function mutateOrThrowImpl(
+        target: OperationTarget,
+        valuesOrOptions?: unknown,
+        maybeOptions?: OperationOptions
+    ): Promise<unknown> {
+        return extractDataOrThrow(await mutateImpl(target, valuesOrOptions, maybeOptions));
+    }
     return {
         query: queryImpl as GraphqlClient['query'],
-        queryOrThrow: (async (target, valuesOrOptions, maybeOptions) => {
-            return extractDataOrThrow(await queryImpl(target, valuesOrOptions, maybeOptions));
-        }) as GraphqlClient['queryOrThrow'],
+        queryOrThrow: queryOrThrowImpl as GraphqlClient['queryOrThrow'],
         mutate: mutateImpl as GraphqlClient['mutate'],
-        mutateOrThrow: (async (target, valuesOrOptions, maybeOptions) => {
-            return extractDataOrThrow(await mutateImpl(target, valuesOrOptions, maybeOptions));
-        }) as GraphqlClient['mutateOrThrow']
+        mutateOrThrow: mutateOrThrowImpl as GraphqlClient['mutateOrThrow']
     };
 }
 
