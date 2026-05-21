@@ -34,17 +34,24 @@ import {
 import { type CustomScalarSchema, isCustomScalarSchema } from './custom-scalar.js';
 
 /*
- * Drop-in replacements for the zod-v4 schema types that bubble their inner
- * generic through `_zod` properties like `output`/`input`/`optin`/`optout`/
- * `values`/`pattern`/`propValues`, which blow the TypeScript instantiation
- * depth when used in a recursive union (see colinhacks/zod#4611 and
- * enormora/schema-hub#285).
+ * Drop-in replacements for the zod-v4 schema types whose `_zod` derivations
+ * blow the TypeScript instantiation depth when used in a recursive union (see
+ * enormora/schema-hub#285). Two upstream bugs are involved:
+ *
+ *   - colinhacks/zod#4611 — the wrappers $ZodLazy/$ZodNullable/$ZodReadonly/
+ *     $ZodPipe bubble `optin`/`optout`/`values`/`pattern`/`propValues` from
+ *     their inner generic. The maintainer is "not planning to pursue a fix."
+ *
+ *   - colinhacks/zod#6015 — $ZodObject/$ZodArray/$ZodUnion/$ZodTuple/
+ *     $ZodDiscriminatedUnion derive their `_zod.output`/`_zod.input` from
+ *     their inner generic, which cycles in recursive unions once
+ *     materialization is forced.
  *
  * Each interface only models the slice of `_zod.def` the builder reads at
  * runtime, which is enough for structural assignability from the real
- * `$ZodLazy`/`$ZodNullable`/`$ZodReadonly`/`$ZodPipe`/`$ZodObject`. When the
- * upstream zod issue is fixed, search for `Gh4611` and swap these back to the
- * original `$Zod*<...>` types — the deletion is mechanical.
+ * `$Zod*` class. When the matching upstream issue is fixed, search for
+ * `Gh4611` / `Gh6015` and swap that group back to the original `$Zod*<...>`
+ * types — the deletion is mechanical.
  */
 /* eslint-disable @typescript-eslint/no-explicit-any -- the inferred output/input
  * types of the wrapped schema are intentionally widened to `any` so the workaround
@@ -66,20 +73,20 @@ interface ZodPipeGh4611IssueWorkaround<A extends $ZodType = $ZodType, B extends 
         readonly def: { readonly type: 'pipe'; readonly in: A; readonly out: B; };
     };
 }
-interface ZodObjectGh4611IssueWorkaround<
+interface ZodObjectGh6015IssueWorkaround<
     Shape extends $ZodShape = $ZodShape,
     Config extends $ZodObjectConfig = $ZodObjectConfig
 > extends $ZodType<any, any> {
     readonly _zod: $ZodTypeInternals<any, any> & { readonly def: $ZodObjectDef<Shape>; readonly config: Config; };
 }
-interface ZodArrayGh4611IssueWorkaround<T extends $ZodType = $ZodType> extends $ZodType<any, any> {
+interface ZodArrayGh6015IssueWorkaround<T extends $ZodType = $ZodType> extends $ZodType<any, any> {
     readonly _zod: $ZodTypeInternals<any, any> & { readonly def: $ZodArrayDef<T>; };
 }
-interface ZodUnionGh4611IssueWorkaround<T extends readonly $ZodType[] = readonly $ZodType[]>
+interface ZodUnionGh6015IssueWorkaround<T extends readonly $ZodType[] = readonly $ZodType[]>
     extends $ZodType<any, any> {
     readonly _zod: $ZodTypeInternals<any, any> & { readonly def: $ZodUnionDef<T>; };
 }
-interface ZodDiscriminatedUnionGh4611IssueWorkaround<
+interface ZodDiscriminatedUnionGh6015IssueWorkaround<
     Options extends readonly $ZodType[] = readonly $ZodType[],
     Disc extends string = string
 > extends $ZodType<any, any> {
@@ -88,15 +95,15 @@ interface ZodDiscriminatedUnionGh4611IssueWorkaround<
         readonly propValues: zodUtil.PropValues;
     };
 }
-interface ZodTupleGh4611IssueWorkaround<
+interface ZodTupleGh6015IssueWorkaround<
     T extends zodUtil.TupleItems = readonly $ZodType[],
     Rest extends $ZodType | null = $ZodType | null
 > extends $ZodType<any, any> {
     readonly _zod: $ZodTypeInternals<any, any> & { readonly def: $ZodTupleDef<T, Rest>; };
 }
-/* eslint-enable @typescript-eslint/no-explicit-any -- end of Gh4611 workaround */
+/* eslint-enable @typescript-eslint/no-explicit-any -- end of Gh4611/Gh6015 workarounds */
 
-export interface StrictObjectSchema<Shape extends $ZodShape> extends ZodObjectGh4611IssueWorkaround<Shape, $strict> {}
+export interface StrictObjectSchema<Shape extends $ZodShape> extends ZodObjectGh6015IssueWorkaround<Shape, $strict> {}
 
 export function isStrictObjectSchema(schema: unknown): schema is StrictObjectSchema<FieldShape> {
     return schema instanceof $ZodObject;
@@ -115,11 +122,11 @@ export interface FragmentUnionOptionSchema extends
         }
     > {}
 
-interface FieldTuple extends ZodTupleGh4611IssueWorkaround<readonly [FieldSchema, ...(readonly FieldSchema[])]> {}
-export interface FieldArray extends ZodArrayGh4611IssueWorkaround<FieldSchema> {}
-interface FieldDiscriminatedUnion extends ZodDiscriminatedUnionGh4611IssueWorkaround<FragmentUnionOptionSchema[]> {}
+interface FieldTuple extends ZodTupleGh6015IssueWorkaround<readonly [FieldSchema, ...(readonly FieldSchema[])]> {}
+export interface FieldArray extends ZodArrayGh6015IssueWorkaround<FieldSchema> {}
+interface FieldDiscriminatedUnion extends ZodDiscriminatedUnionGh6015IssueWorkaround<FragmentUnionOptionSchema[]> {}
 interface FieldUnion
-    extends ZodUnionGh4611IssueWorkaround<readonly [PrimitiveSchema, ...(readonly PrimitiveSchema[])]> {}
+    extends ZodUnionGh6015IssueWorkaround<readonly [PrimitiveSchema, ...(readonly PrimitiveSchema[])]> {}
 export type NonWrappedFieldSchema =
     | CustomScalarSchema<$ZodType>
     | FieldArray
@@ -204,7 +211,7 @@ export type QuerySchema =
     | ZodReadonlyGh4611IssueWorkaround<StrictObjectSchema<FieldShape>>;
 
 type FieldSchemaTupleItems = readonly [FieldSchema, ...FieldSchema[]];
-export type FieldSchemaTuple = ZodTupleGh4611IssueWorkaround<FieldSchemaTupleItems, FieldSchema | null>;
+export type FieldSchemaTuple = ZodTupleGh6015IssueWorkaround<FieldSchemaTupleItems, FieldSchema | null>;
 
 export type ObjectOrListSchema =
     | FieldArray
@@ -223,7 +230,7 @@ export function isObjectOrListSchema(schema: FieldSchema): schema is ObjectOrLis
     return isStrictObjectSchema(schema) || isFieldArraySchema(schema) || isFieldTupleSchema(schema);
 }
 
-export type FragmentsSchema = ZodDiscriminatedUnionGh4611IssueWorkaround<FragmentUnionOptionSchema[]>;
+export type FragmentsSchema = ZodDiscriminatedUnionGh6015IssueWorkaround<FragmentUnionOptionSchema[]>;
 
 export function isFragmentsSchema(schema: FieldSchema): schema is FragmentsSchema {
     return schema instanceof $ZodDiscriminatedUnion;
