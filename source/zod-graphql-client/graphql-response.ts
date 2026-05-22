@@ -1,7 +1,7 @@
 import { z } from 'zod/v4';
 import { isNonEmptyArray } from '../tuple/non-empty-array.js';
 import { safeParse } from '../zod-error-formatter/formatter.js';
-import { formatAllErrors, graphqlErrorSchema } from './graphql-error.js';
+import { graphqlErrorSchema } from './graphql-error.js';
 import type { OperationResultForType } from './operation-result.js';
 
 const graphqlResponseSchema = z
@@ -23,7 +23,7 @@ export function parseGraphqlResponse(responseBody: unknown): OperationResultForT
                 errorDetails: {
                     type: 'graphql',
                     message: 'GraphQL response contains errors',
-                    errors: formatAllErrors(errors)
+                    errors
                 }
             };
         }

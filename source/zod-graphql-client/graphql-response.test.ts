@@ -35,14 +35,28 @@ test('returns a failure result when an errors item is invalid', () => {
     });
 });
 
-test('returns a failure result with the formatted errors when there is at least one error', () => {
+test('returns a failure result with the structured errors when there is at least one error', () => {
     const result = parseGraphqlResponse({ errors: [{ message: 'foo', path: ['bar'] }] });
     assert.deepStrictEqual(result, {
         success: false,
         errorDetails: {
             type: 'graphql',
             message: 'GraphQL response contains errors',
-            errors: ['Error at bar - foo']
+            errors: [{ message: 'foo', path: ['bar'] }]
+        }
+    });
+});
+
+test('returns a failure result preserving extensions on each error', () => {
+    const result = parseGraphqlResponse({
+        errors: [{ message: 'forbidden', extensions: { code: 'FORBIDDEN', traceId: 'abc' } }]
+    });
+    assert.deepStrictEqual(result, {
+        success: false,
+        errorDetails: {
+            type: 'graphql',
+            message: 'GraphQL response contains errors',
+            errors: [{ message: 'forbidden', extensions: { code: 'FORBIDDEN', traceId: 'abc' } }]
         }
     });
 });
