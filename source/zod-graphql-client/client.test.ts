@@ -11,6 +11,7 @@ import {
     type GraphqlClient
 } from './client.js';
 import {
+    defineMutation,
     defineQuery,
     defineVariables,
     graphqlFieldOptions,
@@ -59,6 +60,8 @@ function createKyMethodReturningResponses(responseBodies: readonly unknown[]): S
 }
 
 const simpleQuerySchema = z.strictObject({ foo: z.string() });
+const simpleQueryHandle = defineQuery({ schema: simpleQuerySchema });
+const simpleMutationHandle = defineMutation({ schema: simpleQuerySchema });
 const numericValueForTypeMismatch = 22;
 
 const variablesForQuery = defineVariables({ bar: variable('Foo!', z.string()) });
@@ -72,7 +75,7 @@ const queryWithVariables = defineQuery({
 test('query() sends the query derived from the given schema to the configured endpoint', async () => {
     const post = createFakeKyMethod();
     const client = clientFactory({ post, options: { endpoint: 'http://example/the-endpoint' } });
-    await client.query(simpleQuerySchema);
+    await client.query(simpleQueryHandle);
 
     assert.strictEqual(post.callCount, 1);
     assert.deepStrictEqual(post.firstCall.args, ['http://example/the-endpoint', {
@@ -87,7 +90,7 @@ test('query() sends the query derived from the given schema to the configured en
 test('mutate() sends the mutation derived from the given schema to the configured endpoint', async () => {
     const post = createFakeKyMethod();
     const client = clientFactory({ post, options: { endpoint: 'http://example/the-endpoint' } });
-    await client.mutate(simpleQuerySchema);
+    await client.mutate(simpleMutationHandle);
 
     assert.strictEqual(post.callCount, 1);
     assert.deepStrictEqual(post.firstCall.args, ['http://example/the-endpoint', {
@@ -118,7 +121,7 @@ test('query() with a handle that has an operationName sends the named query', as
 test('query() sets the given timeout from the client options', async () => {
     const post = createFakeKyMethod();
     const client = clientFactory({ post, options: { endpoint: 'http://example/the-endpoint', timeout: 1 } });
-    await client.query(simpleQuerySchema);
+    await client.query(simpleQueryHandle);
 
     assert.strictEqual(post.callCount, 1);
     assert.deepStrictEqual(post.firstCall.args, ['http://example/the-endpoint', {
@@ -133,7 +136,7 @@ test('query() sets the given timeout from the client options', async () => {
 test('query() sets the given timeout from the query options', async () => {
     const post = createFakeKyMethod();
     const client = clientFactory({ post, options: { endpoint: 'http://example/the-endpoint' } });
-    await client.query(simpleQuerySchema, { timeout: 2 });
+    await client.query(simpleQueryHandle, { timeout: 2 });
 
     assert.strictEqual(post.callCount, 1);
     assert.deepStrictEqual(post.firstCall.args, ['http://example/the-endpoint', {
@@ -148,7 +151,7 @@ test('query() sets the given timeout from the query options', async () => {
 test('query() uses the timeout from query options when it is also configured per client options', async () => {
     const post = createFakeKyMethod();
     const client = clientFactory({ post, options: { endpoint: 'http://example/the-endpoint', timeout: 1 } });
-    await client.query(simpleQuerySchema, { timeout: 2 });
+    await client.query(simpleQueryHandle, { timeout: 2 });
 
     assert.strictEqual(post.callCount, 1);
     assert.deepStrictEqual(post.firstCall.args, ['http://example/the-endpoint', {
@@ -166,7 +169,7 @@ test('query() sets the given headers from the client options', async () => {
         post,
         options: { endpoint: 'http://example/the-endpoint', headers: { foo: 'bar' } }
     });
-    await client.query(simpleQuerySchema);
+    await client.query(simpleQueryHandle);
 
     assert.strictEqual(post.callCount, 1);
     assert.deepStrictEqual(post.firstCall.args, ['http://example/the-endpoint', {
@@ -181,7 +184,7 @@ test('query() sets the given headers from the client options', async () => {
 test('query() sets the given headers from the query options', async () => {
     const post = createFakeKyMethod();
     const client = clientFactory({ post, options: { endpoint: 'http://example/the-endpoint' } });
-    await client.query(simpleQuerySchema, { headers: { foo: 'bar' } });
+    await client.query(simpleQueryHandle, { headers: { foo: 'bar' } });
 
     assert.strictEqual(post.callCount, 1);
     assert.deepStrictEqual(post.firstCall.args, ['http://example/the-endpoint', {
@@ -199,7 +202,7 @@ test('query() merges the headers from the query options into the headers from th
         post,
         options: { endpoint: 'http://example/the-endpoint', headers: { foo: 'bar', bar: 'baz' } }
     });
-    await client.query(simpleQuerySchema, { headers: { bar: 'qux', qux: 'quux' } });
+    await client.query(simpleQueryHandle, { headers: { bar: 'qux', qux: 'quux' } });
 
     assert.strictEqual(post.callCount, 1);
     assert.deepStrictEqual(post.firstCall.args, ['http://example/the-endpoint', {
@@ -242,27 +245,11 @@ test('query() with a handle returns a validation failure when values don’t mat
     });
 });
 
-test('query() with a handle that has no variables behaves like a bare schema', async () => {
-    const post = createFakeKyMethod();
-    const client = clientFactory({ post, options: { endpoint: 'http://example/the-endpoint' } });
-    const handle = defineQuery({ schema: simpleQuerySchema });
-    await client.query(handle);
-
-    assert.strictEqual(post.callCount, 1);
-    assert.deepStrictEqual(post.firstCall.args, ['http://example/the-endpoint', {
-        headers: {},
-        json: { operationName: undefined, query: 'query { foo }', variables: {} },
-        retry: 0,
-        throwHttpErrors: false,
-        timeout: 10_000
-    }]);
-});
-
 test('query() returns a network failure result when the request times out', async () => {
     const timeoutError = new TimeoutError({} as unknown as Request);
     const post = createFakeKyMethod({ error: timeoutError });
     const client = clientFactory({ post });
-    const result = await client.query(simpleQuerySchema);
+    const result = await client.query(simpleQueryHandle);
 
     assert.deepStrictEqual(result, {
         success: false,
@@ -274,7 +261,7 @@ test('query() returns a network failure result when the request errors', async (
     const networkError = new Error('foo');
     const post = createFakeKyMethod({ error: networkError });
     const client = clientFactory({ post });
-    const result = await client.query(simpleQuerySchema);
+    const result = await client.query(simpleQueryHandle);
 
     assert.deepStrictEqual(result, {
         success: false,
@@ -288,7 +275,7 @@ test('query() returns a unknown failure result when the request rejects with a n
         throw 'not-an-error';
     });
     const client = clientFactory({ post });
-    const result = await client.query(simpleQuerySchema);
+    const result = await client.query(simpleQueryHandle);
 
     assert.deepStrictEqual(result, {
         success: false,
@@ -299,7 +286,7 @@ test('query() returns a unknown failure result when the request rejects with a n
 test('query() returns a server failure result when the response status code is not 200', async () => {
     const post = createFakeKyMethod({ responseStatus: 418 });
     const client = clientFactory({ post });
-    const result = await client.query(simpleQuerySchema);
+    const result = await client.query(simpleQueryHandle);
 
     assert.deepStrictEqual(result, {
         success: false,
@@ -315,7 +302,7 @@ test('query() returns a server failure result when response fails to be parsed a
     const jsonParseError = new Error('foo');
     const post = createFakeKyMethod({ jsonParseError, responseStatus: 200 });
     const client = clientFactory({ post });
-    const result = await client.query(simpleQuerySchema);
+    const result = await client.query(simpleQueryHandle);
 
     assert.deepStrictEqual(result, {
         success: false,
@@ -337,7 +324,7 @@ test('query() returns a server failure when json parsing fails but a non-error w
         })
     });
     const client = clientFactory({ post });
-    const result = await client.query(simpleQuerySchema);
+    const result = await client.query(simpleQueryHandle);
 
     assert.deepStrictEqual(result, {
         success: false,
@@ -359,7 +346,7 @@ test('query() returns a server failure when json parsing fails but a non-error w
         })
     });
     const client = clientFactory({ post });
-    const result = await client.query(simpleQuerySchema);
+    const result = await client.query(simpleQueryHandle);
 
     assert.deepStrictEqual(result, {
         success: false,
@@ -375,7 +362,7 @@ test('query() returns a server failure when json parsing fails but a non-error w
 test('query() returns a unknown failure when response is not a valid graphql data structure', async () => {
     const post = createFakeKyMethod({ responseJsonBody: [] });
     const client = clientFactory({ post });
-    const result = await client.query(simpleQuerySchema);
+    const result = await client.query(simpleQueryHandle);
 
     assert.deepStrictEqual(result, {
         success: false,
@@ -389,7 +376,7 @@ test('query() returns a unknown failure when response is not a valid graphql dat
 test('query() returns a graphql failure when response contains errors', async () => {
     const post = createFakeKyMethod({ responseJsonBody: { errors: [{ message: 'foo' }] } });
     const client = clientFactory({ post });
-    const result = await client.query(simpleQuerySchema);
+    const result = await client.query(simpleQueryHandle);
 
     assert.deepStrictEqual(result, {
         success: false,
@@ -404,7 +391,7 @@ test('query() returns a graphql failure when response contains errors', async ()
 test('query() returns a validation failure when response data doesn’t match the given schema', async () => {
     const post = createFakeKyMethod({ responseJsonBody: { data: 'foo' } });
     const client = clientFactory({ post });
-    const result = await client.query(simpleQuerySchema);
+    const result = await client.query(simpleQueryHandle);
 
     assert.deepStrictEqual(result, {
         success: false,
@@ -419,7 +406,7 @@ test('query() returns a validation failure when response data doesn’t match th
 test('query() returns a success result with the data when it matches the given schema', async () => {
     const post = createFakeKyMethod({ responseJsonBody: { data: { foo: 'bar' } } });
     const client = clientFactory({ post });
-    const result = await client.query(simpleQuerySchema);
+    const result = await client.query(simpleQueryHandle);
 
     assert.deepStrictEqual(result, {
         success: true,
@@ -430,7 +417,7 @@ test('query() returns a success result with the data when it matches the given s
 test('queryOrThrow() returns the data when it matches the given schema', async () => {
     const post = createFakeKyMethod({ responseJsonBody: { data: { foo: 'bar' } } });
     const client = clientFactory({ post });
-    const result = await client.queryOrThrow(simpleQuerySchema);
+    const result = await client.queryOrThrow(simpleQueryHandle);
 
     assert.deepStrictEqual(result, {
         foo: 'bar'
@@ -440,7 +427,7 @@ test('queryOrThrow() returns the data when it matches the given schema', async (
 test('mutateOrThrow() returns the data when it matches the given schema', async () => {
     const post = createFakeKyMethod({ responseJsonBody: { data: { foo: 'bar' } } });
     const client = clientFactory({ post });
-    const result = await client.mutateOrThrow(simpleQuerySchema);
+    const result = await client.mutateOrThrow(simpleMutationHandle);
 
     assert.deepStrictEqual(result, {
         foo: 'bar'
@@ -452,7 +439,7 @@ test('queryOrThrow() rejects an error when there is a failure', async () => {
     const client = clientFactory({ post });
 
     try {
-        await client.queryOrThrow(simpleQuerySchema);
+        await client.queryOrThrow(simpleQueryHandle);
         assert.fail('Expected queryOrThrow() to fail but it did not');
     } catch (error: unknown) {
         assert.strictEqual(error instanceof GraphqlOperationError, true);
@@ -472,7 +459,7 @@ test('mutateOrThrow() rejects an error when there is a failure', async () => {
     const client = clientFactory({ post });
 
     try {
-        await client.mutateOrThrow(simpleQuerySchema);
+        await client.mutateOrThrow(simpleMutationHandle);
         assert.fail('Expected mutateOrThrow() to fail but it did not');
     } catch (error: unknown) {
         assert.strictEqual(error instanceof GraphqlOperationError, true);
@@ -493,7 +480,7 @@ test('queryOrThrow() forwards the underlying network error as cause', async () =
     const client = clientFactory({ post });
 
     try {
-        await client.queryOrThrow(simpleQuerySchema);
+        await client.queryOrThrow(simpleQueryHandle);
         assert.fail('Expected queryOrThrow() to fail but it did not');
     } catch (error: unknown) {
         assert.strictEqual(error instanceof GraphqlOperationError, true);
@@ -520,7 +507,7 @@ test('query() with persistedQueries sends only the hash on the first attempt', a
     const post = createKyMethodReturningResponses([{ data: { foo: 'bar' } }]);
     const client = clientFactory({ post, options: persistedQueryOptions });
 
-    const result = await client.query(simpleQuerySchema);
+    const result = await client.query(simpleQueryHandle);
 
     assert.deepStrictEqual(
         post.firstCall.args,
@@ -541,7 +528,7 @@ test('query() with persistedQueries retries with the full query on PersistedQuer
     ]);
     const client = clientFactory({ post, options: persistedQueryOptions });
 
-    const result = await client.query(simpleQuerySchema);
+    const result = await client.query(simpleQueryHandle);
 
     assert.deepStrictEqual(
         post.firstCall.args,
@@ -571,7 +558,7 @@ test('query() with persistedQueries retries with the plain query on PersistedQue
     ]);
     const client = clientFactory({ post, options: persistedQueryOptions });
 
-    const result = await client.query(simpleQuerySchema);
+    const result = await client.query(simpleQueryHandle);
 
     assert.deepStrictEqual(
         post.secondCall.args,
@@ -589,7 +576,7 @@ test('query() with persistedQueries surfaces unrelated GraphQL errors without re
     const post = createKyMethodReturningResponses([{ errors: [{ message: 'real failure' }] }]);
     const client = clientFactory({ post, options: persistedQueryOptions });
 
-    const result = await client.query(simpleQuerySchema);
+    const result = await client.query(simpleQueryHandle);
 
     assert.strictEqual(post.callCount, 1);
     assert.deepStrictEqual(result, {
@@ -605,7 +592,7 @@ test('mutate() with persistedQueries follows the same retry-on-not-found behavio
     ]);
     const client = clientFactory({ post, options: persistedQueryOptions });
 
-    const result = await client.mutate(simpleQuerySchema);
+    const result = await client.mutate(simpleMutationHandle);
 
     assert.deepStrictEqual(
         post.firstCall.args,
@@ -634,7 +621,7 @@ test('query() with persistedQueries does not retry past one attempt on persisten
     ]);
     const client = clientFactory({ post, options: persistedQueryOptions });
 
-    const result = await client.query(simpleQuerySchema);
+    const result = await client.query(simpleQueryHandle);
 
     assert.strictEqual(post.thirdCall, null);
     assert.deepStrictEqual(result, {
@@ -652,7 +639,7 @@ test('query() with persistedQueries returns the network failure when the first a
     const post = createFakeKyMethod({ error: networkError });
     const client = clientFactory({ post, options: persistedQueryOptions });
 
-    const result = await client.query(simpleQuerySchema);
+    const result = await client.query(simpleQueryHandle);
 
     assert.strictEqual(post.secondCall, null);
     assert.deepStrictEqual(result, {
@@ -665,7 +652,7 @@ test('query() without persistedQueries never includes the extensions field', asy
     const post = createFakeKyMethod({ responseJsonBody: { data: { foo: 'bar' } } });
     const client = clientFactory({ post, options: { endpoint: persistedQueryEndpoint } });
 
-    await client.query(simpleQuerySchema);
+    await client.query(simpleQueryHandle);
 
     assert.deepStrictEqual(
         post.firstCall.args,

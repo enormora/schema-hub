@@ -1,5 +1,6 @@
 import type { output as TypeOf } from 'zod/v4/core';
 import { extractDataOrThrow } from '../zod-graphql-client/client.js';
+import type { MaybeVariables } from '../zod-graphql-client/define-variables.js';
 import type {
     GraphqlClient,
     OperationErrorDetails,
@@ -9,6 +10,8 @@ import type {
 import {
     buildOperationPayload,
     type GraphqlOverHttpOperationRequestPayload,
+    type OperationCallArgs,
+    type OperationHandle,
     type OperationOptions,
     type OperationTarget,
     type OperationType,
@@ -170,40 +173,55 @@ function recordAndRespond<Schema extends QuerySchema>(
 }
 
 function buildClientMethods(state: FakeClientState): GraphqlClient {
-    async function queryImpl(
-        target: OperationTarget,
-        valuesOrOptions?: unknown,
-        maybeOptions?: OperationOptions
-    ): Promise<OperationResult<QuerySchema>> {
-        return recordAndRespond(state, { type: 'query', target, valuesOrOptions, maybeOptions });
+    async function query<
+        Schema extends QuerySchema,
+        Variables extends MaybeVariables = undefined
+    >(
+        handle: OperationHandle<Schema, Variables>,
+        ...rest: OperationCallArgs<Variables>
+    ): Promise<OperationResult<Schema>> {
+        return recordAndRespond(state, {
+            type: 'query',
+            target: handle,
+            valuesOrOptions: rest[0],
+            maybeOptions: rest[1]
+        });
     }
-    async function mutateImpl(
-        target: OperationTarget,
-        valuesOrOptions?: unknown,
-        maybeOptions?: OperationOptions
-    ): Promise<OperationResult<QuerySchema>> {
-        return recordAndRespond(state, { type: 'mutation', target, valuesOrOptions, maybeOptions });
+    async function mutate<
+        Schema extends QuerySchema,
+        Variables extends MaybeVariables = undefined
+    >(
+        handle: OperationHandle<Schema, Variables>,
+        ...rest: OperationCallArgs<Variables>
+    ): Promise<OperationResult<Schema>> {
+        return recordAndRespond(state, {
+            type: 'mutation',
+            target: handle,
+            valuesOrOptions: rest[0],
+            maybeOptions: rest[1]
+        });
     }
-    async function queryOrThrowImpl(
-        target: OperationTarget,
-        valuesOrOptions?: unknown,
-        maybeOptions?: OperationOptions
-    ): Promise<unknown> {
-        return extractDataOrThrow(await queryImpl(target, valuesOrOptions, maybeOptions));
+    async function queryOrThrow<
+        Schema extends QuerySchema,
+        Variables extends MaybeVariables = undefined
+    >(
+        handle: OperationHandle<Schema, Variables>,
+        ...rest: OperationCallArgs<Variables>
+    ): Promise<TypeOf<Schema>> {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-return -- TypeOf<Schema> evaluates to `any` here because the Gh6015 workaround widens QuerySchema's inferred output to break the recursive instantiation; concrete call sites see the precise type
+        return extractDataOrThrow(await query(handle, ...rest));
     }
-    async function mutateOrThrowImpl(
-        target: OperationTarget,
-        valuesOrOptions?: unknown,
-        maybeOptions?: OperationOptions
-    ): Promise<unknown> {
-        return extractDataOrThrow(await mutateImpl(target, valuesOrOptions, maybeOptions));
+    async function mutateOrThrow<
+        Schema extends QuerySchema,
+        Variables extends MaybeVariables = undefined
+    >(
+        handle: OperationHandle<Schema, Variables>,
+        ...rest: OperationCallArgs<Variables>
+    ): Promise<TypeOf<Schema>> {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-return -- TypeOf<Schema> evaluates to `any` here because the Gh6015 workaround widens QuerySchema's inferred output to break the recursive instantiation; concrete call sites see the precise type
+        return extractDataOrThrow(await mutate(handle, ...rest));
     }
-    return {
-        query: queryImpl as GraphqlClient['query'],
-        queryOrThrow: queryOrThrowImpl as GraphqlClient['queryOrThrow'],
-        mutate: mutateImpl as GraphqlClient['mutate'],
-        mutateOrThrow: mutateOrThrowImpl as GraphqlClient['mutateOrThrow']
-    };
+    return { query, queryOrThrow, mutate, mutateOrThrow };
 }
 
 function buildInspectors(recordedOperations: readonly RecordedOperation[]): {

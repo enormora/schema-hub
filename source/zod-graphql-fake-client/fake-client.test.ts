@@ -12,6 +12,8 @@ import type { GraphqlOperationError } from '../zod-graphql-client/operation-erro
 import { createFakeGraphqlClient } from './fake-client.js';
 
 const simpleSchema = z.object({ foo: z.string() }).strict();
+const simpleQueryHandle = defineQuery({ schema: simpleSchema });
+const simpleMutationHandle = defineMutation({ schema: simpleSchema });
 
 type SimpleHandle = OperationHandle<typeof simpleSchema, undefined>;
 
@@ -48,50 +50,50 @@ test('throws when inspecting an operation that doesn’t exist', () => {
 test('query() returns the default result when no result is configured', async () => {
     const client = createFakeGraphqlClient();
 
-    const result = await client.query(simpleSchema);
+    const result = await client.query(simpleQueryHandle);
     assert.deepStrictEqual(result, { success: true, data: {} });
 });
 
 test('mutate() returns the default result when no result is configured', async () => {
     const client = createFakeGraphqlClient();
 
-    const result = await client.mutate(simpleSchema);
+    const result = await client.mutate(simpleMutationHandle);
     assert.deepStrictEqual(result, { success: true, data: {} });
 });
 
 test('query() returns the default result when some results are configured but not for that call', async () => {
     const client = createFakeGraphqlClient({ results: [{ data: 'foo' }] });
 
-    await client.query(simpleSchema);
-    const result = await client.query(simpleSchema);
+    await client.query(simpleQueryHandle);
+    const result = await client.query(simpleQueryHandle);
     assert.deepStrictEqual(result, { success: true, data: {} });
 });
 
 test('query() returns the configured success result', async () => {
     const client = createFakeGraphqlClient({ results: [{ data: 'foo' }] });
 
-    const result = await client.query(simpleSchema);
+    const result = await client.query(simpleQueryHandle);
     assert.deepStrictEqual(result, { success: true, data: 'foo' });
 });
 
 test('query() returns the configured error result', async () => {
     const client = createFakeGraphqlClient({ results: [{ error: { type: 'unknown', message: 'foo' } }] });
 
-    const result = await client.query(simpleSchema);
+    const result = await client.query(simpleQueryHandle);
     assert.deepStrictEqual(result, { success: false, errorDetails: { type: 'unknown', message: 'foo' } });
 });
 
 test('queryOrThrow() returns the configured success data', async () => {
     const client = createFakeGraphqlClient({ results: [{ data: 'foo' }] });
 
-    const result = await client.queryOrThrow(simpleSchema);
+    const result = await client.queryOrThrow(simpleQueryHandle);
     assert.strictEqual(result, 'foo');
 });
 
 test('mutateOrThrow() returns the configured success data', async () => {
     const client = createFakeGraphqlClient({ results: [{ data: 'foo' }] });
 
-    const result = await client.mutateOrThrow(simpleSchema);
+    const result = await client.mutateOrThrow(simpleMutationHandle);
     assert.strictEqual(result, 'foo');
 });
 
@@ -99,7 +101,7 @@ test('queryOrThrow() throws the configured error', async () => {
     const client = createFakeGraphqlClient({ results: [{ error: { type: 'unknown', message: 'foo' } }] });
 
     try {
-        await client.queryOrThrow(simpleSchema);
+        await client.queryOrThrow(simpleQueryHandle);
         assert.fail('Expected queryOrThrow() to throw but it did not');
     } catch (error: unknown) {
         assert.strictEqual((error as GraphqlOperationError).message, 'foo');
@@ -111,7 +113,7 @@ test('mutateOrThrow() throws the configured error', async () => {
     const client = createFakeGraphqlClient({ results: [{ error: { type: 'unknown', message: 'foo' } }] });
 
     try {
-        await client.mutateOrThrow(simpleSchema);
+        await client.mutateOrThrow(simpleMutationHandle);
         assert.fail('Expected mutateOrThrow() to throw but it did not');
     } catch (error: unknown) {
         assert.strictEqual((error as GraphqlOperationError).message, 'foo');
