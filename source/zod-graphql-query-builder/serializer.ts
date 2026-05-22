@@ -1,7 +1,5 @@
 /* eslint-disable no-underscore-dangle -- we need to access _zod */
 import {
-    $ZodArray,
-    $ZodDiscriminatedUnion,
     $ZodUndefined,
     type util
 } from 'zod/v4/core';
@@ -14,6 +12,7 @@ import {
     type FieldShape,
     type FragmentsSchema,
     type FragmentUnionOptionSchema,
+    isFieldArraySchema,
     isFragmentsSchema,
     isObjectOrListSchema,
     isStrictObjectSchema,
@@ -69,8 +68,6 @@ function unwrapFromTupleSchema<SchemaType extends NonWrappedFieldSchema>(
     predicate: (schema: NonWrappedFieldSchema) => schema is SchemaType,
     schema: FieldSchemaTuple
 ): SchemaType | null {
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment -- ts-expect-error doesn’t work reliably here
-    // @ts-ignore -  Type instantiation is not infinite
     const { items } = schema._zod.def;
     const [firstElementSchema] = items;
     const unwrappedElementSchema = unwrapFieldSchema(firstElementSchema);
@@ -84,17 +81,17 @@ function getObjectSchema(schema: ObjectOrListSchema): StrictObjectSchema<FieldSh
     if (isStrictObjectSchema(schema)) {
         return schema;
     }
-    if (schema instanceof $ZodArray) {
+    if (isFieldArraySchema(schema)) {
         return unwrapFromArraySchema(isStrictObjectSchema, schema);
     }
     return unwrapFromTupleSchema(isStrictObjectSchema, schema);
 }
 
 function getUnionSchema(schema: UnionOrListSchema): FragmentsSchema | null {
-    if (schema instanceof $ZodDiscriminatedUnion) {
+    if (isFragmentsSchema(schema)) {
         return schema;
     }
-    if (schema instanceof $ZodArray) {
+    if (isFieldArraySchema(schema)) {
         return unwrapFromArraySchema(isFragmentsSchema, schema);
     }
     return unwrapFromTupleSchema(isFragmentsSchema, schema);

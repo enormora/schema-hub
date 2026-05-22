@@ -1,6 +1,11 @@
 import { buildGraphqlMutation, buildGraphqlQuery, type QuerySchema } from '../zod-graphql-query-builder/entry-point.js';
-import { type AnyVariableMapHandle, getVariableMapMetadata } from './define-variables.js';
-import { isOperationHandle, type OperationHandle } from './operation-handle.js';
+import {
+    type AnyVariableMapHandle,
+    getVariableMapMetadata,
+    type MaybeVariables,
+    type ValuesOfVariableMapHandle
+} from './define-variables.js';
+import type { OperationHandle } from './operation-handle.js';
 import type { OperationFailureResult } from './operation-result.js';
 import { buildPersistedQueryExtensions, type PersistedQueryExtensions } from './persisted-query.js';
 
@@ -50,7 +55,16 @@ export function buildOperationPayload(input: BuildOperationPayloadInput): BuiltO
     };
 }
 
-export type OperationTarget = OperationHandle<QuerySchema, AnyVariableMapHandle | undefined> | QuerySchema;
+export type OperationTarget = OperationHandle<QuerySchema, MaybeVariables>;
+
+type WithVariables<Variables extends AnyVariableMapHandle> = readonly [
+    values: ValuesOfVariableMapHandle<Variables>,
+    options?: OperationOptions
+];
+type WithoutVariables = readonly [options?: OperationOptions];
+
+export type OperationCallArgs<V extends MaybeVariables> = V extends AnyVariableMapHandle ? WithVariables<V> :
+    WithoutVariables;
 
 export type ResolvedOperationInputs = {
     readonly schema: QuerySchema;
@@ -64,8 +78,8 @@ export type ResolveOperationInputsResult =
     | OperationFailureResult
     | { success: true; data: ResolvedOperationInputs; };
 
-function resolveHandleInputs(
-    handle: OperationHandle<QuerySchema, AnyVariableMapHandle | undefined>,
+export function resolveOperationInputs(
+    handle: OperationTarget,
     valuesOrOptions: unknown,
     maybeOptions: OperationOptions | undefined
 ): ResolveOperationInputsResult {
@@ -103,27 +117,6 @@ function resolveHandleInputs(
             variableDefinitions: { ...metadata.definitions },
             variableValues: parsed.data,
             options: maybeOptions ?? {}
-        }
-    };
-}
-
-export function resolveOperationInputs(
-    target: OperationTarget,
-    valuesOrOptions: unknown,
-    maybeOptions: OperationOptions | undefined
-): ResolveOperationInputsResult {
-    if (isOperationHandle(target)) {
-        return resolveHandleInputs(target, valuesOrOptions, maybeOptions);
-    }
-
-    return {
-        success: true,
-        data: {
-            schema: target,
-            operationName: undefined,
-            variableDefinitions: {},
-            variableValues: {},
-            options: (valuesOrOptions as OperationOptions | undefined) ?? {}
         }
     };
 }
