@@ -7,5 +7,5 @@
         "skipLibCheck": true
     },
     "include": ["./**/*.ts"],
-    "exclude": ["./**/*.test.ts", "./test-libraries/**/*.ts"]
+    "exclude": ["./**/*.test.ts", "./**/*.type-test.ts", "./test-libraries/**/*.ts"]
 }
