@@ -171,4 +171,20 @@ import { variablePlaceholder } from './values/variable-placeholder.js';
             expectedQuery: `${operationType} { foo { bar { baz } }, qux }`
         })
     );
+
+    test(
+        oneLine`builds a ${operationType} from an object schema extended via z.extend so the
+            extension's field shape replaces overlapping keys`,
+        checkQuery({
+            type: operationType,
+            buildSchema() {
+                const base = z.strictObject({ foo: z.strictObject({ bar: z.string() }) });
+                const extension = z.strictObject({
+                    foo: z.strictObject({ bar: z.string(), buzz: z.string() })
+                });
+                return z.extend(base, extension.shape);
+            },
+            expectedQuery: `${operationType} { foo { bar, buzz } }`
+        })
+    );
 });
