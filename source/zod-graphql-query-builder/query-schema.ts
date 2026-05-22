@@ -53,44 +53,37 @@ import { type CustomScalarSchema, isCustomScalarSchema } from './custom-scalar.j
  * `Gh4611` / `Gh6015` and swap that group back to the original `$Zod*<...>`
  * types — the deletion is mechanical.
  */
-/* eslint-disable @typescript-eslint/no-explicit-any -- the inferred output/input
- * types of the wrapped schema are intentionally widened to `any` so the workaround
- * stays bivariant with concrete schemas while avoiding the recursive evaluation
- * (`output<FieldSchema>` / `input<FieldSchema>`) that would re-trigger the depth
- * blow-up we're working around. */
-interface ZodLazyGh4611IssueWorkaround<T extends $ZodType = $ZodType> extends $ZodType<any, any> {
-    readonly _zod: $ZodTypeInternals<any, any> & { readonly def: $ZodLazyDef<T>; };
+interface ZodLazyGh4611IssueWorkaround<T extends $ZodType = $ZodType> extends $ZodType {
+    readonly _zod: $ZodTypeInternals & { readonly def: $ZodLazyDef<T>; };
 }
-interface ZodNullableGh4611IssueWorkaround<T extends $ZodType = $ZodType> extends $ZodType<any, any> {
-    readonly _zod: $ZodTypeInternals<any, any> & { readonly def: $ZodNullableDef<T>; };
+interface ZodNullableGh4611IssueWorkaround<T extends $ZodType = $ZodType> extends $ZodType {
+    readonly _zod: $ZodTypeInternals & { readonly def: $ZodNullableDef<T>; };
 }
-interface ZodReadonlyGh4611IssueWorkaround<T extends $ZodType = $ZodType> extends $ZodType<any, any> {
-    readonly _zod: $ZodTypeInternals<any, any> & { readonly def: $ZodReadonlyDef<T>; };
+interface ZodReadonlyGh4611IssueWorkaround<T extends $ZodType = $ZodType> extends $ZodType {
+    readonly _zod: $ZodTypeInternals & { readonly def: $ZodReadonlyDef<T>; };
 }
-interface ZodPipeGh4611IssueWorkaround<A extends $ZodType = $ZodType, B extends $ZodType = $ZodType>
-    extends $ZodType<any, any> {
-    readonly _zod: $ZodTypeInternals<any, any> & {
+interface ZodPipeGh4611IssueWorkaround<A extends $ZodType = $ZodType, B extends $ZodType = $ZodType> extends $ZodType {
+    readonly _zod: $ZodTypeInternals & {
         readonly def: { readonly type: 'pipe'; readonly in: A; readonly out: B; };
     };
 }
 interface ZodObjectGh6015IssueWorkaround<
     Shape extends $ZodShape = $ZodShape,
     Config extends $ZodObjectConfig = $ZodObjectConfig
-> extends $ZodType<any, any> {
-    readonly _zod: $ZodTypeInternals<any, any> & { readonly def: $ZodObjectDef<Shape>; readonly config: Config; };
+> extends $ZodType {
+    readonly _zod: $ZodTypeInternals & { readonly def: $ZodObjectDef<Shape>; readonly config: Config; };
 }
-interface ZodArrayGh6015IssueWorkaround<T extends $ZodType = $ZodType> extends $ZodType<any, any> {
-    readonly _zod: $ZodTypeInternals<any, any> & { readonly def: $ZodArrayDef<T>; };
+interface ZodArrayGh6015IssueWorkaround<T extends $ZodType = $ZodType> extends $ZodType {
+    readonly _zod: $ZodTypeInternals & { readonly def: $ZodArrayDef<T>; };
 }
-interface ZodUnionGh6015IssueWorkaround<T extends readonly $ZodType[] = readonly $ZodType[]>
-    extends $ZodType<any, any> {
-    readonly _zod: $ZodTypeInternals<any, any> & { readonly def: $ZodUnionDef<T>; };
+interface ZodUnionGh6015IssueWorkaround<T extends readonly $ZodType[] = readonly $ZodType[]> extends $ZodType {
+    readonly _zod: $ZodTypeInternals & { readonly def: $ZodUnionDef<T>; };
 }
 interface ZodDiscriminatedUnionGh6015IssueWorkaround<
     Options extends readonly $ZodType[] = readonly $ZodType[],
     Disc extends string = string
-> extends $ZodType<any, any> {
-    readonly _zod: $ZodTypeInternals<any, any> & {
+> extends $ZodType {
+    readonly _zod: $ZodTypeInternals & {
         readonly def: $ZodDiscriminatedUnionDef<Options, Disc>;
         readonly propValues: zodUtil.PropValues;
     };
@@ -98,10 +91,9 @@ interface ZodDiscriminatedUnionGh6015IssueWorkaround<
 interface ZodTupleGh6015IssueWorkaround<
     T extends zodUtil.TupleItems = readonly $ZodType[],
     Rest extends $ZodType | null = $ZodType | null
-> extends $ZodType<any, any> {
-    readonly _zod: $ZodTypeInternals<any, any> & { readonly def: $ZodTupleDef<T, Rest>; };
+> extends $ZodType {
+    readonly _zod: $ZodTypeInternals & { readonly def: $ZodTupleDef<T, Rest>; };
 }
-/* eslint-enable @typescript-eslint/no-explicit-any -- end of Gh4611/Gh6015 workarounds */
 
 export interface StrictObjectSchema<Shape extends $ZodShape> extends ZodObjectGh6015IssueWorkaround<Shape, $strict> {}
 

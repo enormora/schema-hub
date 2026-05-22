@@ -292,7 +292,6 @@ export function createClientFactory(dependencies: CreateClientDependencies): Cre
             handle: OperationHandle<Schema, Variables>,
             ...rest: OperationCallArgs<Variables>
         ): Promise<TypeOf<Schema>> {
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-return -- TypeOf<Schema> evaluates to `any` here because the Gh6015 workaround widens QuerySchema's inferred output to break the recursive instantiation; concrete call sites see the precise type
             return extractDataOrThrow(await query(handle, ...rest));
         }
 
@@ -303,7 +302,6 @@ export function createClientFactory(dependencies: CreateClientDependencies): Cre
             handle: OperationHandle<Schema, Variables>,
             ...rest: OperationCallArgs<Variables>
         ): Promise<TypeOf<Schema>> {
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-return -- TypeOf<Schema> evaluates to `any` here because the Gh6015 workaround widens QuerySchema's inferred output to break the recursive instantiation; concrete call sites see the precise type
             return extractDataOrThrow(await mutate(handle, ...rest));
         }
 
