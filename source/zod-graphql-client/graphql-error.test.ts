@@ -1,7 +1,7 @@
 import { test } from '@sondr3/minitest';
 import assert from 'node:assert';
 import { safeParse } from '../zod-error-formatter/formatter.js';
-import { formatAllErrors, graphqlErrorSchema } from './graphql-error.js';
+import { graphqlErrorSchema } from './graphql-error.js';
 
 test('graphqlErrorSchema: validation fails when a non-object is given', () => {
     const result = safeParse(graphqlErrorSchema, '');
@@ -110,6 +110,12 @@ test('graphqlErrorSchema: validation fails when a locations item has additional 
     assert.deepStrictEqual(result.error.issues, ['at locations[0]: unexpected additional property: "foo"']);
 });
 
+test('graphqlErrorSchema: validation fails when extensions is not an object', () => {
+    const result = safeParse(graphqlErrorSchema, { message: '', extensions: 'foo' });
+    assert.strictEqual(result.success, false);
+    assert.deepStrictEqual(result.error.issues, ['at extensions: expected record, but got string']);
+});
+
 test('graphqlErrorSchema: validation succeeds when locations is an empty array', () => {
     const result = safeParse(graphqlErrorSchema, { message: '', locations: [] });
     assert.strictEqual(result.success, true);
@@ -141,41 +147,31 @@ test('graphqlErrorSchema: validation succeeds when additional properties are giv
     assert.deepStrictEqual(result.data, { message: '' });
 });
 
+test('graphqlErrorSchema: validation succeeds when extensions is an empty object', () => {
+    const result = safeParse(graphqlErrorSchema, { message: '', extensions: {} });
+    assert.strictEqual(result.success, true);
+    assert.deepStrictEqual(result.data, { message: '', extensions: {} });
+});
+
+test('graphqlErrorSchema: validation succeeds and preserves arbitrary extension values', () => {
+    const result = safeParse(graphqlErrorSchema, {
+        message: '',
+        extensions: { code: 'BAD_USER_INPUT', details: { field: 'email' }, count: 3 }
+    });
+    assert.strictEqual(result.success, true);
+    assert.deepStrictEqual(result.data, {
+        message: '',
+        extensions: { code: 'BAD_USER_INPUT', details: { field: 'email' }, count: 3 }
+    });
+});
+
 test('graphqlErrorSchema: validation succeeds when a full error is given', () => {
     const result = safeParse(graphqlErrorSchema, {
         message: 'the-message',
         foo: 'bar',
         path: ['a', 'b', 1],
-        locations: [{ column: 1, line: 2 }, { line: 3, column: 4 }]
+        locations: [{ column: 1, line: 2 }, { line: 3, column: 4 }],
+        extensions: { code: 'INTERNAL_ERROR' }
     });
     assert.strictEqual(result.success, true);
-});
-
-test('formatAllErrors(): formats errors without path and locations', () => {
-    const formattedErrors = formatAllErrors([{ message: 'Foo' }]);
-    assert.deepStrictEqual(formattedErrors, ['Foo']);
-});
-
-test('formatAllErrors(): formats errors without path and locations is empty', () => {
-    const formattedErrors = formatAllErrors([{ message: 'Foo', locations: [] }]);
-    assert.deepStrictEqual(formattedErrors, ['Foo']);
-});
-
-test('formatAllErrors(): formats errors with path but without locations', () => {
-    const formattedErrors = formatAllErrors([{ message: 'Foo', path: ['bar'] }]);
-    assert.deepStrictEqual(formattedErrors, ['Error at bar - Foo']);
-});
-
-test('formatAllErrors(): formats errors with locations but without path', () => {
-    const formattedErrors = formatAllErrors([{ message: 'Foo', locations: [{ line: 1, column: 2 }] }]);
-    assert.deepStrictEqual(formattedErrors, ['Error at 1:2 - Foo']);
-});
-
-test('formatAllErrors(): formats errors with path and locations', () => {
-    const formattedErrors = formatAllErrors([{
-        message: 'Foo',
-        path: ['bar', 'baz'],
-        locations: [{ line: 1, column: 2 }]
-    }]);
-    assert.deepStrictEqual(formattedErrors, ['Error at bar.baz:1:2 - Foo']);
 });

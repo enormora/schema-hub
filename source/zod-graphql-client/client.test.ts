@@ -383,7 +383,7 @@ test('query() returns a graphql failure when response contains errors', async ()
         errorDetails: {
             message: 'GraphQL response contains errors',
             type: 'graphql',
-            errors: ['foo']
+            errors: [{ message: 'foo' }]
         }
     });
 });
@@ -581,7 +581,11 @@ test('query() with persistedQueries surfaces unrelated GraphQL errors without re
     assert.strictEqual(post.callCount, 1);
     assert.deepStrictEqual(result, {
         success: false,
-        errorDetails: { type: 'graphql', message: 'GraphQL response contains errors', errors: ['real failure'] }
+        errorDetails: {
+            type: 'graphql',
+            message: 'GraphQL response contains errors',
+            errors: [{ message: 'real failure' }]
+        }
     });
 });
 
@@ -629,7 +633,7 @@ test('query() with persistedQueries does not retry past one attempt on persisten
         errorDetails: {
             type: 'graphql',
             message: 'GraphQL response contains errors',
-            errors: ['PersistedQueryNotFound']
+            errors: [{ message: 'PersistedQueryNotFound' }]
         }
     });
 });

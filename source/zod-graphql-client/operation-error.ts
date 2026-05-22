@@ -1,4 +1,7 @@
 import type { NonEmptyArray } from '../tuple/non-empty-array.js';
+import type { GraphqlError } from './graphql-error.js';
+
+export type { GraphqlError } from './graphql-error.js';
 
 type BaseError = {
     message: string;
@@ -6,7 +9,7 @@ type BaseError = {
 
 type GraphqlResponseError = BaseError & {
     type: 'graphql';
-    errors: NonEmptyArray<string>;
+    errors: NonEmptyArray<GraphqlError>;
 };
 
 type ServerError = BaseError & {

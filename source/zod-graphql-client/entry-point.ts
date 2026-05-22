@@ -24,7 +24,7 @@ export type {
 } from './define-variables.js';
 export { defineVariables } from './define-variables.js';
 export type { GraphqlTypeInferenceError } from './infer-graphql-type.js';
-export type { OperationErrorDetails } from './operation-error.js';
+export type { GraphqlError, OperationErrorDetails } from './operation-error.js';
 export { GraphqlOperationError } from './operation-error.js';
 export type { OperationHandle, OperationKind, ValuesOfOperationHandle } from './operation-handle.js';
 export { defineMutation, defineQuery } from './operation-handle.js';
