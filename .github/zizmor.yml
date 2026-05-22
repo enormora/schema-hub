@@ -1,0 +1,13 @@
+---
+# All audits run with defaults unless overridden below. Persona, severity
+# floor, and confidence floor are set on the zizmor CLI in the workflow.
+
+rules:
+    unpinned-uses:
+        config:
+            policies:
+                "*": hash-pin
+
+    secrets-outside-env:
+        config:
+            allow: []
