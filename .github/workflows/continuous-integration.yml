@@ -58,6 +58,9 @@ jobs:
         runs-on: ubuntu-latest
         permissions:
             contents: read
+        strategy:
+            matrix:
+                node-version: [24.x, 26.x]
         needs: ["install"]
         steps:
             - name: Checkout git repository
@@ -97,6 +100,9 @@ jobs:
         runs-on: ubuntu-latest
         permissions:
             contents: read
+        strategy:
+            matrix:
+                node-version: [24.x, 26.x]
         needs: ["compile", "static-code-analysis"]
         steps:
             - name: Checkout git repository
