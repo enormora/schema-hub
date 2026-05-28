@@ -17,11 +17,21 @@ export async function buildConfig() {
     }
 
     return {
-        registrySettings: { token: npmToken },
+        registrySettings: { auth: { type: 'bearer-token', token: npmToken } },
+        checks: {
+            noDuplicatedFiles: {
+                enabled: true,
+                allowList: [path.join(projectFolder, 'LICENSE')]
+            },
+            noUnusedBundleDependencies: { enabled: true },
+            noDevDependencyImports: { enabled: true },
+            uniqueTargetPaths: { enabled: true }
+        },
         commonPackageSettings: {
             sourcesFolder,
             mainPackageJson: packageJson,
             includeSourceMapFiles: true,
+            publishSettings: { access: 'public' },
             additionalFiles: [
                 {
                     sourceFilePath: path.join(projectFolder, 'LICENSE'),
@@ -38,12 +48,12 @@ export async function buildConfig() {
         packages: [
             {
                 name: '@schema-hub/zod-error-formatter',
-                entryPoints: [
-                    {
+                roots: {
+                    main: {
                         js: 'zod-error-formatter/formatter.js',
                         declarationFile: 'zod-error-formatter/formatter.d.ts'
                     }
-                ],
+                },
                 additionalPackageJsonAttributes: {
                     description: 'Simple and easy-to-understand zod error messages',
                     keywords: ['zod', 'zod-error', 'zod-format', 'formatter', 'error-formatter']
@@ -55,12 +65,12 @@ export async function buildConfig() {
             },
             {
                 name: '@schema-hub/zod-graphql-query-builder',
-                entryPoints: [
-                    {
+                roots: {
+                    main: {
                         js: 'zod-graphql-query-builder/entry-point.js',
                         declarationFile: 'zod-graphql-query-builder/entry-point.d.ts'
                     }
-                ],
+                },
                 additionalPackageJsonAttributes: {
                     description: 'Transforms Zod schemas into GraphQL queries',
                     keywords: ['zod', 'zod-graphql', 'graphql', 'graphql-query', 'query-builder', 'graphql-builder']
@@ -72,12 +82,12 @@ export async function buildConfig() {
             },
             {
                 name: '@schema-hub/zod-graphql-client',
-                entryPoints: [
-                    {
+                roots: {
+                    main: {
                         js: 'zod-graphql-client/entry-point.js',
                         declarationFile: 'zod-graphql-client/entry-point.d.ts'
                     }
-                ],
+                },
                 additionalPackageJsonAttributes: {
                     description: 'A lightweight and type-safe zod-based GraphQL client',
                     keywords: ['zod', 'zod-graphql', 'graphql', 'graphql-query', 'graphql-client', 'graphql-builder']
@@ -90,12 +100,12 @@ export async function buildConfig() {
             },
             {
                 name: '@schema-hub/zod-graphql-fake-client',
-                entryPoints: [
-                    {
+                roots: {
+                    main: {
                         js: 'zod-graphql-fake-client/fake-client.js',
                         declarationFile: 'zod-graphql-fake-client/fake-client.d.ts'
                     }
-                ],
+                },
                 additionalPackageJsonAttributes: {
                     description: 'Fake GraphQL client for testing @schema-hub/zod-graphql-client',
                     keywords: ['fake-graphql-client', 'testing-client']
@@ -104,8 +114,7 @@ export async function buildConfig() {
                     sourceFilePath: path.join(projectFolder, 'source/zod-graphql-fake-client/readme.md'),
                     targetFilePath: 'readme.md'
                 }],
-                bundlePeerDependencies: ['@schema-hub/zod-graphql-client'],
-                bundleDependencies: ['@schema-hub/zod-graphql-query-builder']
+                bundlePeerDependencies: ['@schema-hub/zod-graphql-client']
             }
         ]
     };
