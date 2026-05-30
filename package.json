@@ -47,7 +47,7 @@
         "dprint": "0.54.0",
         "eslint": "9.39.4",
         "sinon": "22.0.0",
-        "tstyche": "7.2.0",
+        "tstyche": "7.2.1",
         "typescript": "6.0.3",
         "zod": "4.2.1"
     },
