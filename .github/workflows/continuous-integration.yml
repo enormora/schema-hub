@@ -25,7 +25,7 @@ jobs:
                 node-version: [24.x, 26.x]
         steps:
             - name: Checkout git repository
-              uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+              uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
               with:
                   persist-credentials: false
             - uses: ./.github/actions/setup
@@ -41,7 +41,7 @@ jobs:
         needs: ["install"]
         steps:
             - name: Checkout git repository
-              uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+              uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
               with:
                   persist-credentials: false
             - uses: ./.github/actions/setup
@@ -64,7 +64,7 @@ jobs:
         needs: ["install"]
         steps:
             - name: Checkout git repository
-              uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+              uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
               with:
                   persist-credentials: false
             - uses: ./.github/actions/setup
@@ -82,7 +82,7 @@ jobs:
         needs: ["compile", "static-code-analysis"]
         steps:
             - name: Checkout git repository
-              uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+              uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
               with:
                   persist-credentials: false
             - uses: ./.github/actions/setup
@@ -106,7 +106,7 @@ jobs:
         needs: ["compile", "static-code-analysis"]
         steps:
             - name: Checkout git repository
-              uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+              uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
               with:
                   persist-credentials: false
             - uses: ./.github/actions/setup
@@ -124,7 +124,7 @@ jobs:
         needs: ["compile", "static-code-analysis"]
         steps:
             - name: Checkout git repository
-              uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+              uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
               with:
                   persist-credentials: false
             - uses: ./.github/actions/setup
@@ -143,7 +143,7 @@ jobs:
             security-events: write # required by zizmor-action to upload SARIF to code scanning
         steps:
             - name: Checkout git repository
-              uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+              uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
               with:
                   persist-credentials: false
             - name: Run zizmor
