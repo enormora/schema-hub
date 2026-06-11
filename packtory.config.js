@@ -4,8 +4,17 @@ import path from 'node:path';
 
 const projectFolder = process.cwd();
 const sourcesFolder = path.join(projectFolder, 'target/build/source');
+const repositoryHomepage = 'https://github.com/enormora/schema-hub';
 
 const npmToken = process.env.NPM_TOKEN;
+
+/**
+ * @param {string} packageFolderName
+ * @returns {string}
+ */
+function buildPackageHomepage(packageFolderName) {
+    return `${repositoryHomepage}/tree/main/source/${packageFolderName}#readme`;
+}
 
 /** @returns {Promise<import('@packtory/cli').PacktoryConfig>} */
 export async function buildConfig() {
@@ -42,7 +51,8 @@ export async function buildConfig() {
                 repository: packageJson.repository,
                 license: packageJson.license,
                 author: packageJson.author,
-                engines: packageJson.engines
+                engines: packageJson.engines,
+                bugs: { url: `${repositoryHomepage}/issues` }
             }
         },
         packages: [
@@ -56,7 +66,8 @@ export async function buildConfig() {
                 },
                 additionalPackageJsonAttributes: {
                     description: 'Simple and easy-to-understand zod error messages',
-                    keywords: ['zod', 'zod-error', 'zod-format', 'formatter', 'error-formatter']
+                    keywords: ['zod', 'zod-error', 'zod-format', 'formatter', 'error-formatter'],
+                    homepage: buildPackageHomepage('zod-error-formatter')
                 },
                 additionalFiles: [{
                     sourceFilePath: path.join(projectFolder, 'source/zod-error-formatter/readme.md'),
@@ -73,7 +84,8 @@ export async function buildConfig() {
                 },
                 additionalPackageJsonAttributes: {
                     description: 'Transforms Zod schemas into GraphQL queries',
-                    keywords: ['zod', 'zod-graphql', 'graphql', 'graphql-query', 'query-builder', 'graphql-builder']
+                    keywords: ['zod', 'zod-graphql', 'graphql', 'graphql-query', 'query-builder', 'graphql-builder'],
+                    homepage: buildPackageHomepage('zod-graphql-query-builder')
                 },
                 additionalFiles: [{
                     sourceFilePath: path.join(projectFolder, 'source/zod-graphql-query-builder/readme.md'),
@@ -90,7 +102,8 @@ export async function buildConfig() {
                 },
                 additionalPackageJsonAttributes: {
                     description: 'A lightweight and type-safe zod-based GraphQL client',
-                    keywords: ['zod', 'zod-graphql', 'graphql', 'graphql-query', 'graphql-client', 'graphql-builder']
+                    keywords: ['zod', 'zod-graphql', 'graphql', 'graphql-query', 'graphql-client', 'graphql-builder'],
+                    homepage: buildPackageHomepage('zod-graphql-client')
                 },
                 additionalFiles: [{
                     sourceFilePath: path.join(projectFolder, 'source/zod-graphql-client/readme.md'),
@@ -108,7 +121,8 @@ export async function buildConfig() {
                 },
                 additionalPackageJsonAttributes: {
                     description: 'Fake GraphQL client for testing @schema-hub/zod-graphql-client',
-                    keywords: ['fake-graphql-client', 'testing-client']
+                    keywords: ['fake-graphql-client', 'testing-client'],
+                    homepage: buildPackageHomepage('zod-graphql-fake-client')
                 },
                 additionalFiles: [{
                     sourceFilePath: path.join(projectFolder, 'source/zod-graphql-fake-client/readme.md'),
