@@ -45,7 +45,7 @@
         "c8": "11.0.0",
         "common-tags": "1.8.2",
         "dprint": "0.54.0",
-        "eslint": "9.39.4",
+        "eslint": "10.5.0",
         "sinon": "22.0.0",
         "tstyche": "7.2.1",
         "typescript": "6.0.3",
