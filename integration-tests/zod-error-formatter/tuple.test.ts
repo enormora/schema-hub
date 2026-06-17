@@ -40,6 +40,6 @@ test('formats messages for extra items in fixed tuple schemas correctly', functi
 
     assert.strictEqual(result.success, false);
     assert.deepStrictEqual(result.error.issues, [
-        'array must contain less than 1 element'
+        'array must contain at most 1 element'
     ]);
 });

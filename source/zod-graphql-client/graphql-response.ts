@@ -6,7 +6,7 @@ import type { OperationResultForType } from './operation-result.ts';
 
 const graphqlResponseSchema = z
     .object({
-        data: z.unknown(),
+        data: z.unknown().optional(),
         errors: z.array(graphqlErrorSchema).optional()
     })
     .strip();
