@@ -1,4 +1,4 @@
-import type { $ZodType, util } from 'zod/v4/core';
+import type { $ZodInvalidTypeExpected, util } from 'zod/v4/core';
 import { isNonEmptyArray, type NonEmptyArray } from '../tuple/non-empty-array.ts';
 
 function joinList(values: NonEmptyArray<string>, separator: string, lastItemSeparator: string): string {
@@ -14,7 +14,7 @@ function joinList(values: NonEmptyArray<string>, separator: string, lastItemSepa
     return `${joinedInitialList}${lastItemSeparator}${lastItem}`;
 }
 
-type ParsedType = { readonly type: $ZodType['_zod']['def']['type']; };
+type ParsedType = { readonly type: $ZodInvalidTypeExpected; };
 export type ListValue = ParsedType | util.Primitive;
 
 export function isParsedType(value: ListValue): value is ParsedType {
