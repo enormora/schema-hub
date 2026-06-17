@@ -1,9 +1,9 @@
-import { test } from '@sondr3/minitest';
 import assert from 'node:assert';
+import { test } from '@sondr3/minitest';
 import { z } from 'zod/v4-mini';
-import { safeParse } from '../../source/zod-error-formatter/formatter.js';
+import { safeParse } from '../../source/zod-error-formatter/formatter.ts';
 
-test('formats messages for invalid string schemas with max boundary correctly', () => {
+test('formats messages for invalid string schemas with max boundary correctly', function () {
     const schema = z.string().check(z.maxLength(1));
     const result = safeParse(schema, 'ab');
 
@@ -13,7 +13,7 @@ test('formats messages for invalid string schemas with max boundary correctly', 
     ]);
 });
 
-test('formats messages for invalid string schemas with length boundary correctly', () => {
+test('formats messages for invalid string schemas with length boundary correctly', function () {
     const length = 3;
     const schema = z.string().check(z.length(length));
     const result = safeParse(schema, 'abcd');

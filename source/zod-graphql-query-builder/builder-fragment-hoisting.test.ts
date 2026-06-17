@@ -1,10 +1,10 @@
 import { test } from '@sondr3/minitest';
 import { oneLine } from 'common-tags';
 import { z } from 'zod/v4-mini';
-import { checkError, checkQuery } from '../test-libraries/check-build-output.js';
-import { variablePlaceholder } from './values/variable-placeholder.js';
+import { checkError, checkQuery } from '../test-libraries/check-build-output.ts';
+import { variablePlaceholder } from './values/variable-placeholder.ts';
 
-(['query', 'mutation'] as const).forEach((operationType) => {
+([ 'query', 'mutation' ] as const).forEach(function (operationType) {
     test(
         `builds a ${operationType} keeping a single-use typed schema inline`,
         checkQuery({
@@ -283,14 +283,14 @@ import { variablePlaceholder } from './values/variable-placeholder.js';
         checkQuery({
             type: operationType,
             buildSchema(builder) {
-                const holder: { value: unknown; } = { value: null };
+                let cyclicSchema: unknown = null;
                 const baseUserSchema = z.strictObject({
                     id: z.string(),
-                    friends: z.array(z.lazy(() => {
-                        return holder.value as never;
+                    friends: z.array(z.lazy(function () {
+                        return cyclicSchema as never;
                     }))
                 });
-                holder.value = baseUserSchema;
+                cyclicSchema = baseUserSchema;
                 const userSchema = builder.registerFieldOptions(baseUserSchema, { typeName: 'User' });
                 return z.strictObject({ me: userSchema });
             },
@@ -303,14 +303,14 @@ import { variablePlaceholder } from './values/variable-placeholder.js';
         checkError({
             type: operationType,
             buildSchema() {
-                const holder: { value: unknown; } = { value: null };
+                let cyclicSchema: unknown = null;
                 const userSchema = z.strictObject({
                     id: z.string(),
-                    friends: z.array(z.lazy(() => {
-                        return holder.value as never;
+                    friends: z.array(z.lazy(function () {
+                        return cyclicSchema as never;
                     }))
                 });
-                holder.value = userSchema;
+                cyclicSchema = userSchema;
                 return z.strictObject({ me: userSchema });
             },
             expectedError: 'Cyclic schema detected without a resolvable GraphQL type name. ' +

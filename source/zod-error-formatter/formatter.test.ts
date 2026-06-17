@@ -1,13 +1,13 @@
+import assert from 'node:assert';
 import { test } from '@sondr3/minitest';
 import { stripIndents } from 'common-tags';
-import assert from 'node:assert';
 import { z } from 'zod/v4';
-import type { FormattedZodError } from './formatted-error.js';
-import { formatZodError, parse, safeParse } from './formatter.js';
+import type { FormattedZodError } from './formatted-error.ts';
+import { formatZodError, parse, safeParse } from './formatter.ts';
 
 const exampleSchema = z.object({ foo: z.string() }).strict();
 
-test('formatZodError() takes a zod error and formats all issues', () => {
+test('formatZodError() takes a zod error and formats all issues', function () {
     const result = exampleSchema.safeParse({ foo: 42, bar: '' });
 
     assert.strictEqual(result.success, false);
@@ -25,7 +25,7 @@ test('formatZodError() takes a zod error and formats all issues', () => {
     ]);
 });
 
-test('parse() parses a given value with a given schema and throws the formatted error when the data is invalid', () => {
+test('parse() parses a given value with a given schema and throws the formatted error when the data is invalid', function () {
     try {
         parse(exampleSchema, { foo: 42, bar: '' });
         assert.fail('Expected parse() to fail but it did not');
@@ -43,12 +43,12 @@ test('parse() parses a given value with a given schema and throws the formatted 
     }
 });
 
-test('parse() parses a given value with a given schema returns the data when it is valid', () => {
+test('parse() parses a given value with a given schema returns the data when it is valid', function () {
     const result = parse(exampleSchema, { foo: 'bar' });
     assert.deepStrictEqual(result, { foo: 'bar' });
 });
 
-test('safeParse() parses a given value with a given schema and returns a failure result when data is invalid', () => {
+test('safeParse() parses a given value with a given schema and returns a failure result when data is invalid', function () {
     const result = safeParse(exampleSchema, { foo: 42, bar: '' });
 
     assert.strictEqual(result.success, false, 'expected safeParse() to return a failure result but it did not');
@@ -64,7 +64,7 @@ test('safeParse() parses a given value with a given schema and returns a failure
     ]);
 });
 
-test('safeParse() parses a given value with a given schema returns the success result when it is valid', () => {
+test('safeParse() parses a given value with a given schema returns the success result when it is valid', function () {
     const result = safeParse(exampleSchema, { foo: 'bar' });
     assert.deepStrictEqual(result, { success: true, data: { foo: 'bar' } });
 });

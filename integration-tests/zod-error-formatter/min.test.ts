@@ -1,9 +1,9 @@
-import { test } from '@sondr3/minitest';
 import assert from 'node:assert';
+import { test } from '@sondr3/minitest';
 import { z } from 'zod/v4-mini';
-import { safeParse } from '../../source/zod-error-formatter/formatter.js';
+import { safeParse } from '../../source/zod-error-formatter/formatter.ts';
 
-test('formats messages for invalid set schemas with min boundary correctly', () => {
+test('formats messages for invalid set schemas with min boundary correctly', function () {
     const schema = z.number().check(z.minimum(1));
     const result = safeParse(schema, 0);
 
@@ -13,10 +13,10 @@ test('formats messages for invalid set schemas with min boundary correctly', () 
     ]);
 });
 
-test('formats messages for invalid array schemas with length boundary correctly', () => {
+test('formats messages for invalid array schemas with length boundary correctly', function () {
     const length = 3;
     const schema = z.array(z.string()).check(z.length(length));
-    const result = safeParse(schema, ['a', 'b']);
+    const result = safeParse(schema, [ 'a', 'b' ]);
 
     assert.strictEqual(result.success, false);
     assert.deepStrictEqual(result.error.issues, [

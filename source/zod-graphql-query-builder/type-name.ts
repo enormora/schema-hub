@@ -5,14 +5,14 @@ import {
     type FieldShape,
     type StrictObjectSchema,
     unwrapFieldSchema
-} from './query-schema.js';
-import { isValidGraphqlName } from './values/name.js';
-import type { GraphqlValue } from './values/value.js';
+} from './query-schema.ts';
+import { isValidGraphqlName } from './values/name.ts';
+import type { GraphqlValue } from './values/value.ts';
 
 export type GraphqlFieldOptions = {
-    aliasFor?: string;
-    parameters?: Record<string, GraphqlValue>;
-    typeName?: string;
+    readonly aliasFor?: string;
+    readonly parameters?: Readonly<Record<string, GraphqlValue>>;
+    readonly typeName?: string;
 };
 
 export type FieldOptionsRegistry = WeakMap<FieldSchema, GraphqlFieldOptions>;
@@ -26,7 +26,7 @@ function extractLiteralStringValue(schema: FieldSchema): string | null {
     if (values.length !== 1) {
         return null;
     }
-    const [value] = values;
+    const [ value ] = values;
     if (typeof value !== 'string') {
         return null;
     }

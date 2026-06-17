@@ -1,9 +1,9 @@
-import { test } from '@sondr3/minitest';
 import assert from 'node:assert';
+import { test } from '@sondr3/minitest';
 import { z } from 'zod/v4-mini';
-import { safeParse } from '../../source/zod-error-formatter/formatter.js';
+import { safeParse } from '../../source/zod-error-formatter/formatter.ts';
 
-test('formats messages for invalid string schemas correctly', () => {
+test('formats messages for invalid string schemas correctly', function () {
     const schema = z.string();
     const result = safeParse(schema, 0);
 
@@ -13,7 +13,7 @@ test('formats messages for invalid string schemas correctly', () => {
     ]);
 });
 
-test('formats messages for invalid number schemas correctly', () => {
+test('formats messages for invalid number schemas correctly', function () {
     const schema = z.number();
     const result = safeParse(schema, '');
 
@@ -23,7 +23,7 @@ test('formats messages for invalid number schemas correctly', () => {
     ]);
 });
 
-test('formats messages for invalid null schemas correctly', () => {
+test('formats messages for invalid null schemas correctly', function () {
     const schema = z.null();
     const result = safeParse(schema, true);
 
@@ -33,7 +33,7 @@ test('formats messages for invalid null schemas correctly', () => {
     ]);
 });
 
-test('formats messages for invalid object schemas correctly', () => {
+test('formats messages for invalid object schemas correctly', function () {
     const schema = z.object({ foo: z.string() });
     const result = safeParse(schema, new Map());
 
@@ -43,7 +43,7 @@ test('formats messages for invalid object schemas correctly', () => {
     ]);
 });
 
-test('formats messages for missing object properties correctly', () => {
+test('formats messages for missing object properties correctly', function () {
     const schema = z.object({ foo: z.string() });
     const result = safeParse(schema, {});
 

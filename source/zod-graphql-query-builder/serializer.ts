@@ -3,8 +3,8 @@ import {
     $ZodUndefined,
     type util
 } from 'zod/v4/core';
-import type { BuildContext } from './build-context.js';
-import { isCustomScalarSchema } from './custom-scalar.js';
+import type { BuildContext } from './build-context.ts';
+import { isCustomScalarSchema } from './custom-scalar.ts';
 import {
     type FieldArray,
     type FieldSchema,
@@ -23,26 +23,24 @@ import {
     type UnionOrListSchema,
     unwrapFieldSchema,
     unwrapFieldSchemaChain
-} from './query-schema.js';
+} from './query-schema.ts';
 import {
     type FieldOptionsRegistry,
     type GraphqlFieldOptions,
     resolveTypeName
-} from './type-name.js';
-import { normalizeParameterList } from './values/parameter-list.js';
-import type { NormalizedGraphqlValue } from './values/value.js';
-import { mergeVariables } from './values/variable-set.js';
-
-export type { FieldOptionsRegistry, GraphqlFieldOptions } from './type-name.js';
+} from './type-name.ts';
+import { normalizeParameterList } from './values/parameter-list.ts';
+import type { NormalizedGraphqlValue } from './values/value.ts';
+import { mergeVariables } from './values/variable-set.ts';
 
 export type SerializedRootShape = {
-    bodyEntries: readonly string[];
-    referencedVariables: Set<string>;
+    readonly bodyEntries: readonly string[];
+    readonly referencedVariables: ReadonlySet<string>;
 };
 
 type FragmentAllocation = {
-    fragmentName: string;
-    typeName: string;
+    readonly fragmentName: string;
+    readonly typeName: string;
 };
 
 type DiscriminatorValue = boolean | number | string;
@@ -69,7 +67,7 @@ function unwrapFromTupleSchema<SchemaType extends NonWrappedFieldSchema>(
     schema: FieldSchemaTuple
 ): SchemaType | null {
     const { items } = schema._zod.def;
-    const [firstElementSchema] = items;
+    const [ firstElementSchema ] = items;
     const unwrappedElementSchema = unwrapFieldSchema(firstElementSchema);
     if (predicate(unwrappedElementSchema)) {
         return unwrappedElementSchema;
@@ -102,7 +100,7 @@ function getFieldOptionsForSchema(
     schema: FieldSchema
 ): GraphqlFieldOptions {
     const unwrappingResult = unwrapFieldSchemaChain(schema);
-    const queue: FieldSchema[] = [...unwrappingResult.wrapperElements, unwrappingResult.unwrappedSchema];
+    const queue: FieldSchema[] = [ ...unwrappingResult.wrapperElements, unwrappingResult.unwrappedSchema ];
     for (const currentSchema of queue) {
         const fieldOptions = registry.get(currentSchema);
         if (fieldOptions !== undefined) {
@@ -146,7 +144,7 @@ function getObjectSchemasFromList(
         return [];
     }
     const objectSchema = getObjectSchema(unwrapped);
-    return objectSchema === null ? [] : [objectSchema];
+    return objectSchema === null ? [] : [ objectSchema ];
 }
 
 function getOptionsFromUnion(
@@ -220,6 +218,7 @@ export function collectSchemaReferences(
     return counts;
 }
 
+// eslint-disable-next-line functional/prefer-immutable-types -- mutates the shared fragment-name counter in place
 function allocateFragmentName(typeName: string, counterPerTypeName: Map<string, number>): string {
     const nextIndex = (counterPerTypeName.get(typeName) ?? 0) + 1;
     counterPerTypeName.set(typeName, nextIndex);
@@ -283,12 +282,12 @@ function serializeObjectSchemaInline(
 ): NormalizedGraphqlValue {
     const entries = Object
         .entries(objectSchema._zod.def.shape)
-        .toSorted(([nameA], [nameB]) => {
+        .toSorted(function ([ nameA ], [ nameB ]) {
             return nameA.localeCompare(nameB);
         });
     let referencedVariables = new Set<string>();
     const serializedEntries: string[] = [];
-    for (const [fieldName, fieldSchema] of entries) {
+    for (const [ fieldName, fieldSchema ] of entries) {
         // eslint-disable-next-line @typescript-eslint/no-use-before-define -- recursion
         const serializedField = serializeFieldSchema(registry, fieldName, fieldSchema, context);
         referencedVariables = mergeVariables(referencedVariables, serializedField.referencedVariables);
@@ -330,6 +329,7 @@ function lookupDiscriminatorName(
     if (value === undefined || value === null) {
         throw new Error(`Fragment name for index ${index} is undefined`);
     }
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- discriminator values come from zod's untyped PropValues but are always primitives
     return value as DiscriminatorValue;
 }
 
@@ -361,6 +361,7 @@ function serializeFragmentUnionOption(
 
 function serializeFragments(
     registry: FieldOptionsRegistry,
+    // eslint-disable-next-line functional/prefer-immutable-types -- discriminatorMap is a third-party zod util type that is only read
     discriminatorMap: util.PropValues,
     unionOptions: readonly FragmentUnionOptionSchema[],
     context: BuildContext
@@ -368,10 +369,10 @@ function serializeFragments(
     let referencedVariables = new Set<string>();
     const serializedFragments: string[] = [];
     const discriminatorNames = Array.from(discriminatorMap.__typename ?? []);
-    const pairedOptions = unionOptions.map((fragmentSchema, index) => {
+    const pairedOptions = unionOptions.map(function (fragmentSchema, index) {
         return { discriminatorName: lookupDiscriminatorName(discriminatorNames, index), fragmentSchema };
     });
-    const sortedOptions = pairedOptions.toSorted((optionA, optionB) => {
+    const sortedOptions = pairedOptions.toSorted(function (optionA, optionB) {
         return optionA.discriminatorName.toString().localeCompare(optionB.discriminatorName.toString());
     });
     for (const { discriminatorName, fragmentSchema } of sortedOptions) {
@@ -482,10 +483,10 @@ export function serializeRootShape(
 ): SerializedRootShape {
     let referencedVariables = new Set<string>();
     const bodyEntries: string[] = [];
-    const sortedEntries = Object.entries(rootShape).toSorted(([nameA], [nameB]) => {
+    const sortedEntries = Object.entries(rootShape).toSorted(function ([ nameA ], [ nameB ]) {
         return nameA.localeCompare(nameB);
     });
-    for (const [fieldName, fieldSchema] of sortedEntries) {
+    for (const [ fieldName, fieldSchema ] of sortedEntries) {
         const serializedField = serializeFieldSchema(registry, fieldName, fieldSchema, context);
         if (serializedField.serializedValue.length > 0) {
             bodyEntries.push(serializedField.serializedValue);

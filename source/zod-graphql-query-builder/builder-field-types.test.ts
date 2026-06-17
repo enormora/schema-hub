@@ -1,9 +1,9 @@
 import { test } from '@sondr3/minitest';
 import { z } from 'zod/v4-mini';
-import { checkQuery } from '../test-libraries/check-build-output.js';
-import { createCustomScalarSchema } from './custom-scalar.js';
+import { checkQuery } from '../test-libraries/check-build-output.ts';
+import { createCustomScalarSchema } from './custom-scalar.ts';
 
-(['query', 'mutation'] as const).forEach((operationType) => {
+([ 'query', 'mutation' ] as const).forEach(function (operationType) {
     test(
         `builds a ${operationType} with transformable object`,
         checkQuery({
@@ -13,7 +13,7 @@ import { createCustomScalarSchema } from './custom-scalar.js';
                     .strictObject({
                         foo: z.pipe(
                             z.strictObject({ bar: z.string() }),
-                            z.transform(() => {
+                            z.transform(function () {
                                 return '';
                             })
                         )
@@ -79,10 +79,10 @@ import { createCustomScalarSchema } from './custom-scalar.js';
                     .strictObject({
                         foo: z.pipe(
                             z
-                                .lazy(() => {
+                                .lazy(function () {
                                     return z.nullable(z.literal(''));
                                 }),
-                            z.transform(() => {
+                            z.transform(function () {
                                 return '';
                             })
                         )
@@ -159,8 +159,8 @@ import { createCustomScalarSchema } from './custom-scalar.js';
             buildSchema() {
                 const schema = z
                     .strictObject({
-                        foo: z.union([z.string(), z.number(), z.boolean(), z.null(), z.undefined()]),
-                        bar: z.union([z.literal('a'), z.literal(1), z.literal(false)])
+                        foo: z.union([ z.string(), z.number(), z.boolean(), z.null(), z.undefined() ]),
+                        bar: z.union([ z.literal('a'), z.literal(1), z.literal(false) ])
                     });
                 return schema;
             },

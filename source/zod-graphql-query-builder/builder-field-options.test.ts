@@ -1,8 +1,8 @@
 import { test } from '@sondr3/minitest';
 import { z } from 'zod/v4-mini';
-import { checkQuery } from '../test-libraries/check-build-output.js';
+import { checkQuery } from '../test-libraries/check-build-output.ts';
 
-(['query', 'mutation'] as const).forEach((operationType) => {
+([ 'query', 'mutation' ] as const).forEach(function (operationType) {
     test(
         `builds a ${operationType} with nested objects and parameters`,
         checkQuery({

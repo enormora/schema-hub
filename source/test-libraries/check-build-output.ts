@@ -3,53 +3,50 @@ import {
     createQueryBuilder,
     type OperationOptions,
     type QueryBuilder
-} from '../zod-graphql-query-builder/builder.js';
-import type { QuerySchema } from '../zod-graphql-query-builder/query-schema.js';
+} from '../zod-graphql-query-builder/builder.ts';
+import type { QuerySchema } from '../zod-graphql-query-builder/query-schema.ts';
 
 type BuildSchema = (builder: QueryBuilder) => QuerySchema;
 
 type ErrorTestCase = {
-    type: 'mutation' | 'query';
-    buildSchema: BuildSchema;
-    operationOptions?: OperationOptions;
-    expectedError: string;
+    readonly type: 'mutation' | 'query';
+    readonly buildSchema: BuildSchema;
+    readonly operationOptions?: OperationOptions;
+    readonly expectedError: string;
 };
 
 export function checkError(testCase: ErrorTestCase): () => void {
     const { buildSchema, expectedError, operationOptions } = testCase;
-    return () => {
+    return function () {
         const builder = createQueryBuilder();
         const schema = buildSchema(builder);
+        const build = testCase.type === 'query' ? 'buildQuery' : 'buildMutation';
 
         try {
-            if (testCase.type === 'query') {
-                builder.buildQuery(schema, operationOptions);
-            } else {
-                builder.buildMutation(schema, operationOptions);
-            }
-            assert.fail('Expected buildQuery() to fail but it did not');
+            builder[build](schema, operationOptions);
+            assert.fail('Expected the build to fail but it did not');
         } catch (error: unknown) {
-            assert.strictEqual((error as Error).message, expectedError);
+            assert.ok(error instanceof Error);
+            assert.strictEqual(error.message, expectedError);
         }
     };
 }
 
 type QueryTestCase = {
-    type: 'mutation' | 'query';
-    buildSchema: BuildSchema;
-    operationOptions?: OperationOptions;
-    expectedQuery: string;
+    readonly type: 'mutation' | 'query';
+    readonly buildSchema: BuildSchema;
+    readonly operationOptions?: OperationOptions;
+    readonly expectedQuery: string;
 };
 
 export function checkQuery(testCase: QueryTestCase): () => void {
     const { buildSchema, expectedQuery, operationOptions } = testCase;
-    return () => {
+    return function () {
         const builder = createQueryBuilder();
         const schema = buildSchema(builder);
+        const build = testCase.type === 'query' ? 'buildQuery' : 'buildMutation';
 
-        const result = testCase.type === 'query' ?
-            builder.buildQuery(schema, operationOptions) :
-            builder.buildMutation(schema, operationOptions);
+        const result = builder[build](schema, operationOptions);
 
         assert.strictEqual(result, expectedQuery);
     };

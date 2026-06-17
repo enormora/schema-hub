@@ -1,10 +1,10 @@
 import { test } from '@sondr3/minitest';
 import { oneLine } from 'common-tags';
 import { z } from 'zod/v4-mini';
-import { checkError, checkQuery } from '../test-libraries/check-build-output.js';
-import { variablePlaceholder } from './values/variable-placeholder.js';
+import { checkError, checkQuery } from '../test-libraries/check-build-output.ts';
+import { variablePlaceholder } from './values/variable-placeholder.ts';
 
-(['query', 'mutation'] as const).forEach((operationType) => {
+([ 'query', 'mutation' ] as const).forEach(function (operationType) {
     test(
         `throws building the ${operationType} when a referenced variable is not defined`,
         checkError({

@@ -1,13 +1,14 @@
 import { z } from 'zod/v4-mini';
 import type { $ZodError, $ZodType, output as TypeOf } from 'zod/v4/core';
-import type { NonEmptyArray } from '../tuple/non-empty-array.js';
-import { formatIssue } from './format-issue.js';
-import { createFormattedZodError, type FormattedZodError } from './formatted-error.js';
+import type { NonEmptyArray } from '../tuple/non-empty-array.ts';
+import { formatIssue } from './format-issue.ts';
+import { createFormattedZodError, type FormattedZodError } from './formatted-error.ts';
 
-export function formatZodError(error: $ZodError, input: unknown): FormattedZodError {
-    const formattedIssues = error.issues.map((issue) => {
+export function formatZodError(error: Readonly<$ZodError>, input: unknown): FormattedZodError {
+    const formattedIssues = error.issues.map(function (issue) {
         return formatIssue(issue, input);
     });
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- a ZodError always carries at least one issue, so the mapped list is non-empty
     return createFormattedZodError(formattedIssues as unknown as NonEmptyArray<string>);
 }
 
@@ -22,13 +23,13 @@ export function parse<Schema extends $ZodType>(schema: Schema, value: unknown): 
 }
 
 export type SafeParseSuccessResult<Output> = {
-    success: true;
-    data: Output;
+    readonly success: true;
+    readonly data: Output;
 };
 
 export type SafeParseErrorResult = {
-    success: false;
-    error: FormattedZodError;
+    readonly success: false;
+    readonly error: FormattedZodError;
 };
 
 export type SafeParseResult<Output> = SafeParseErrorResult | SafeParseSuccessResult<Output>;
@@ -46,4 +47,4 @@ export function safeParse<Schema extends $ZodType>(
     return { success: false, error: formatZodError(result.error, value) };
 }
 
-export { FormattedZodError } from './formatted-error.js';
+export { FormattedZodError } from './formatted-error.ts';

@@ -1,34 +1,32 @@
 import { type KyInstance, type Options as KyRequestOptions, TimeoutError } from 'ky';
 import type { output as TypeOf } from 'zod/v4/core';
-import { safeParse } from '../zod-error-formatter/formatter.js';
-import type { QuerySchema } from '../zod-graphql-query-builder/entry-point.js';
-import type { MaybeVariables } from './define-variables.js';
-import { parseGraphqlResponse } from './graphql-response.js';
-import { GraphqlOperationError } from './operation-error.js';
+import { safeParse } from '../zod-error-formatter/formatter.ts';
+import type { QuerySchema } from '../zod-graphql-query-builder/entry-point.ts';
+import type { MaybeVariables } from './define-variables.ts';
+import { parseGraphqlResponse } from './graphql-response.ts';
+import { GraphqlOperationError } from './operation-error.ts';
+import type { OperationHandle } from './operation-handle.ts';
 import {
     buildOperationPayload,
     type BuildOperationPayloadInput,
     type BuiltOperationPayload,
     type GraphqlOverHttpOperationRequestPayload,
     type OperationCallArgs,
-    type OperationHandle,
     type OperationOptions,
     type OperationTarget,
     type OperationType,
     type ResolvedOperationInputs,
     resolveOperationInputs,
     toPersistedQueryPayload
-} from './operation-payload.js';
-import type { OperationFailureResult, OperationResult, OperationResultForType } from './operation-result.js';
-import { detectPersistedQueryRetryReason } from './persisted-query.js';
-
-export type { OperationOptions } from './operation-payload.js';
+} from './operation-payload.ts';
+import type { OperationFailureResult, OperationResult, OperationResultForType } from './operation-result.ts';
+import { detectPersistedQueryRetryReason } from './persisted-query.ts';
 
 export type ClientOptions = {
-    endpoint: string;
-    headers?: Record<string, string | undefined>;
-    timeout?: number;
-    persistedQueries?: boolean;
+    readonly endpoint: string;
+    readonly headers?: Readonly<Record<string, string | undefined>>;
+    readonly timeout?: number;
+    readonly persistedQueries?: boolean;
 };
 
 export type GraphqlClient = {
@@ -53,7 +51,7 @@ export type GraphqlClient = {
 type CreateClientFn = (clientOptions: ClientOptions) => GraphqlClient;
 
 export type CreateClientDependencies = {
-    ky: KyInstance;
+    readonly ky: KyInstance;
 };
 
 const defaultRequestTimeout = 10_000;
@@ -88,12 +86,27 @@ async function parseServerResponse(response: Response): Promise<OperationResultF
     }
 }
 
+async function toServerResult(response: Response): Promise<OperationResultForType<unknown>> {
+    if (response.status !== successResponseStatusCode) {
+        return {
+            success: false,
+            errorDetails: {
+                type: 'server',
+                statusCode: response.status,
+                message: `Received response with unexpected status ${response.status} code from GraphQL server`
+            }
+        };
+    }
+    return parseServerResponse(response);
+}
+
 function parseResponseData<Schema extends QuerySchema>(schema: Schema, data: unknown): OperationResult<Schema> {
     const dataParseResult = safeParse(schema, data);
 
     if (dataParseResult.success) {
         return {
             success: true,
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- the schema parses its input into TypeOf<Schema>
             data: dataParseResult.data as TypeOf<Schema>
         };
     }
@@ -168,7 +181,9 @@ export function createClientFactory(dependencies: CreateClientDependencies): Cre
     const { ky } = dependencies;
 
     return function createClient(clientOptions) {
-        function buildBaseRequestOptions(operationOptions: OperationOptions): KyRequestOptions & { timeout: number; } {
+        function buildBaseRequestOptions(
+            operationOptions: OperationOptions
+        ): KyRequestOptions & { readonly timeout: number; } {
             const timeout = operationOptions.timeout ?? clientOptions.timeout ?? defaultRequestTimeout;
             return {
                 headers: {
@@ -191,19 +206,7 @@ export function createClientFactory(dependencies: CreateClientDependencies): Cre
                     ...baseRequestOptions,
                     json: payload
                 });
-
-                if (response.status !== successResponseStatusCode) {
-                    return {
-                        success: false,
-                        errorDetails: {
-                            type: 'server',
-                            statusCode: response.status,
-                            message:
-                                `Received response with unexpected status ${response.status} code from GraphQL server`
-                        }
-                    };
-                }
-                return parseServerResponse(response);
+                return await toServerResult(response);
             } catch (error: unknown) {
                 return mapUnknownNetworkErrorToFailureResult(error, baseRequestOptions.timeout);
             }
@@ -238,9 +241,9 @@ export function createClientFactory(dependencies: CreateClientDependencies): Cre
                 return parseAndValidate(schema, firstAttempt.data);
             }
 
-            const retryPayload = retryReason === 'not-supported' ?
-                basePayload :
-                toPersistedQueryPayload(basePayload, 'hash-and-query');
+            const retryPayload = retryReason === 'not-supported'
+                ? basePayload
+                : toPersistedQueryPayload(basePayload, 'hash-and-query');
             return fetchAndParse(schema, options, retryPayload);
         }
 
@@ -259,9 +262,11 @@ export function createClientFactory(dependencies: CreateClientDependencies): Cre
             const payload = buildOperationPayload(toBuildPayloadInput(operationType, inputs));
 
             if (clientOptions.persistedQueries === true) {
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- inputs.schema is the QuerySchema bound to this Schema type parameter
                 return performPersistedQueryOperation(inputs.schema as Schema, inputs.options, payload);
             }
 
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- inputs.schema is the QuerySchema bound to this Schema type parameter
             return fetchAndParse(inputs.schema as Schema, inputs.options, payload);
         }
 

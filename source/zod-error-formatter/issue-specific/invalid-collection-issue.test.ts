@@ -1,12 +1,12 @@
-import { test } from '@sondr3/minitest';
 import assert from 'node:assert';
-import { formatIssue } from '../format-issue.js';
+import { test } from '@sondr3/minitest';
+import { formatIssue } from '../format-issue.ts';
 import {
     formatInvalidElementIssueMessage,
     formatInvalidKeyIssueMessage
-} from './invalid-collection-issue.js';
+} from './invalid-collection-issue.ts';
 
-test('falls back to an origin-labeled message when invalid_key has no inner issues at the root path', () => {
+test('falls back to an origin-labeled message when invalid_key has no inner issues at the root path', function () {
     const message = formatInvalidKeyIssueMessage(
         {
             code: 'invalid_key',
@@ -22,11 +22,11 @@ test('falls back to an origin-labeled message when invalid_key has no inner issu
     assert.strictEqual(message, 'invalid map key');
 });
 
-test('prefixes the fallback with the path when invalid_key has no inner issues at a nested path', () => {
+test('prefixes the fallback with the path when invalid_key has no inner issues at a nested path', function () {
     const message = formatInvalidKeyIssueMessage(
         {
             code: 'invalid_key',
-            path: ['foo'],
+            path: [ 'foo' ],
             message: '',
             input: new Map(),
             origin: 'record',
@@ -38,18 +38,18 @@ test('prefixes the fallback with the path when invalid_key has no inner issues a
     assert.strictEqual(message, 'at foo: invalid record key');
 });
 
-test('delegates to formatChildIssue for invalid_key inner issues', () => {
+test('delegates to formatChildIssue for invalid_key inner issues', function () {
     const message = formatInvalidKeyIssueMessage(
         {
             code: 'invalid_key',
-            path: ['foo'],
+            path: [ 'foo' ],
             message: '',
             input: new Map(),
             origin: 'map',
             issues: [
                 {
                     code: 'invalid_type',
-                    path: ['foo'],
+                    path: [ 'foo' ],
                     message: '',
                     expected: 'string',
                     input: 1
@@ -62,7 +62,7 @@ test('delegates to formatChildIssue for invalid_key inner issues', () => {
     assert.strictEqual(message, 'at foo: expected string, but got number');
 });
 
-test('joins multiple inner issues with "; " for invalid_key', () => {
+test('joins multiple inner issues with "; " for invalid_key', function () {
     const message = formatInvalidKeyIssueMessage(
         {
             code: 'invalid_key',
@@ -71,8 +71,8 @@ test('joins multiple inner issues with "; " for invalid_key', () => {
             input: new Map(),
             origin: 'map',
             issues: [
-                { code: 'invalid_type', path: ['a'], message: '', expected: 'string', input: 1 },
-                { code: 'invalid_type', path: ['b'], message: '', expected: 'number', input: 'x' }
+                { code: 'invalid_type', path: [ 'a' ], message: '', expected: 'string', input: 1 },
+                { code: 'invalid_type', path: [ 'b' ], message: '', expected: 'number', input: 'x' }
             ]
         },
         { a: 1, b: 'x' },
@@ -84,11 +84,11 @@ test('joins multiple inner issues with "; " for invalid_key', () => {
     );
 });
 
-test('falls back to an origin-labeled message when invalid_element has no inner issues', () => {
+test('falls back to an origin-labeled message when invalid_element has no inner issues', function () {
     const message = formatInvalidElementIssueMessage(
         {
             code: 'invalid_element',
-            path: ['items'],
+            path: [ 'items' ],
             message: '',
             input: new Set(),
             origin: 'set',
@@ -101,11 +101,11 @@ test('falls back to an origin-labeled message when invalid_element has no inner 
     assert.strictEqual(message, 'at items: invalid set element');
 });
 
-test('delegates to formatChildIssue for invalid_element inner issues', () => {
+test('delegates to formatChildIssue for invalid_element inner issues', function () {
     const message = formatInvalidElementIssueMessage(
         {
             code: 'invalid_element',
-            path: ['items', 0],
+            path: [ 'items', 0 ],
             message: '',
             input: 1,
             origin: 'set',
@@ -113,14 +113,14 @@ test('delegates to formatChildIssue for invalid_element inner issues', () => {
             issues: [
                 {
                     code: 'invalid_type',
-                    path: ['items', 0],
+                    path: [ 'items', 0 ],
                     message: '',
                     expected: 'string',
                     input: 1
                 }
             ]
         },
-        { items: [1] },
+        { items: [ 1 ] },
         formatIssue
     );
     assert.strictEqual(message, 'at items[0]: expected string, but got number');

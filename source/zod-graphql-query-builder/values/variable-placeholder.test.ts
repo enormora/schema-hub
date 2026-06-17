@@ -1,38 +1,38 @@
-import { test } from '@sondr3/minitest';
 import assert from 'node:assert';
-import { isVariablePlaceholder, variablePlaceholder } from './variable-placeholder.js';
+import { test } from '@sondr3/minitest';
+import { isVariablePlaceholder, variablePlaceholder } from './variable-placeholder.ts';
 
-test('isVariablePlaceholder() returns false for non-objects', () => {
+test('isVariablePlaceholder() returns false for non-objects', function () {
     const result = isVariablePlaceholder('foo');
     assert.strictEqual(result, false);
 });
 
-test('isVariablePlaceholder() returns false for empty objects', () => {
+test('isVariablePlaceholder() returns false for empty objects', function () {
     const result = isVariablePlaceholder({});
     assert.strictEqual(result, false);
 });
 
-test('isVariablePlaceholder() returns false when there is only a variableName property', () => {
+test('isVariablePlaceholder() returns false when there is only a variableName property', function () {
     const result = isVariablePlaceholder({ variableName: 'foo' });
     assert.strictEqual(result, false);
 });
 
-test('isVariablePlaceholder() returns false objects with a variableName and a tag, but the tag is not a symbol', () => {
+test('isVariablePlaceholder() returns false objects with a variableName and a tag, but the tag is not a symbol', function () {
     const result = isVariablePlaceholder({ variableName: 'foo', tag: 'bar' });
     assert.strictEqual(result, false);
 });
 
-test('isVariablePlaceholder() returns false when there is a variableName and a non-matching tag symbol', () => {
+test('isVariablePlaceholder() returns false when there is a variableName and a non-matching tag symbol', function () {
     const result = isVariablePlaceholder({ variableName: 'foo', tag: Symbol('non-matching') });
     assert.strictEqual(result, false);
 });
 
-test('isVariablePlaceholder() returns true for objects with a variableName and the correct tag', () => {
+test('isVariablePlaceholder() returns true for objects with a variableName and the correct tag', function () {
     const result = isVariablePlaceholder(variablePlaceholder('$foo'));
     assert.strictEqual(result, true);
 });
 
-test('variablePlaceholder() throws when the given value is not a valid graphql name', () => {
+test('variablePlaceholder() throws when the given value is not a valid graphql name', function () {
     try {
         variablePlaceholder('foo');
         assert.fail('Expected variablePlaceholder() to throw but it did not');
@@ -41,7 +41,7 @@ test('variablePlaceholder() throws when the given value is not a valid graphql n
     }
 });
 
-test('variablePlaceholder() returns the wrapped value', () => {
+test('variablePlaceholder() returns the wrapped value', function () {
     const value = variablePlaceholder('$fooBar');
     assert.strictEqual(value.variableName, '$fooBar');
 });

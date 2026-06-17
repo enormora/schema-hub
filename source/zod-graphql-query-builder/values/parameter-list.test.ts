@@ -1,9 +1,9 @@
-import { test } from '@sondr3/minitest';
 import assert from 'node:assert';
-import { normalizeParameterList } from './parameter-list.js';
-import { variablePlaceholder } from './variable-placeholder.js';
+import { test } from '@sondr3/minitest';
+import { normalizeParameterList } from './parameter-list.ts';
+import { variablePlaceholder } from './variable-placeholder.ts';
 
-test('normalizes an empty object correctly', () => {
+test('normalizes an empty object correctly', function () {
     const result = normalizeParameterList({});
     assert.deepStrictEqual(result, {
         serializedValue: '',
@@ -11,7 +11,7 @@ test('normalizes an empty object correctly', () => {
     });
 });
 
-test('normalizes one parameter correctly', () => {
+test('normalizes one parameter correctly', function () {
     const result = normalizeParameterList({ foo: 'bar' });
     assert.deepStrictEqual(result, {
         serializedValue: '(foo: "bar")',
@@ -19,7 +19,7 @@ test('normalizes one parameter correctly', () => {
     });
 });
 
-test('normalizes multiple parameters correctly', () => {
+test('normalizes multiple parameters correctly', function () {
     const result = normalizeParameterList({ foo: 'bar', bar: true });
     assert.deepStrictEqual(result, {
         serializedValue: '(bar: true, foo: "bar")',
@@ -27,18 +27,18 @@ test('normalizes multiple parameters correctly', () => {
     });
 });
 
-test('normalizes multiple parameters with multiple variable placeholders correctly', () => {
+test('normalizes multiple parameters with multiple variable placeholders correctly', function () {
     const result = normalizeParameterList({
         foo: variablePlaceholder('$foo'),
         bar: { baz: variablePlaceholder('$baz') }
     });
     assert.deepStrictEqual(result, {
         serializedValue: '(bar: {baz: $baz}, foo: $foo)',
-        referencedVariables: new Set(['$foo', '$baz'])
+        referencedVariables: new Set([ '$foo', '$baz' ])
     });
 });
 
-test('throws when a parameter name is invalid', () => {
+test('throws when a parameter name is invalid', function () {
     try {
         normalizeParameterList({ 'foo-bar': 42 });
         assert.fail('Expected normalizeParameterList() to throw but it did not');

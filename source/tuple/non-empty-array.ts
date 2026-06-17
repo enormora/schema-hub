@@ -10,5 +10,6 @@ export function mapTuple<Tuple extends readonly unknown[], MappedItem>(
         item: Tuple[number]
     ) => MappedItem
 ): { [Key in keyof Tuple]: MappedItem; } {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Array.prototype.map widens the tuple to an array; the result preserves the tuple shape
     return tuple.map(mapItem) as unknown as { [Key in keyof Tuple]: MappedItem; };
 }

@@ -1,8 +1,8 @@
-import { test } from '@sondr3/minitest';
 import assert from 'node:assert';
-import { formatNotMultipleOfIssueMessage } from './not-multiple-of.js';
+import { test } from '@sondr3/minitest';
+import { formatNotMultipleOfIssueMessage } from './not-multiple-of.ts';
 
-test('formats the issue correctly mentioning the expected multiple-of factor', () => {
+test('formats the issue correctly mentioning the expected multiple-of factor', function () {
     const message = formatNotMultipleOfIssueMessage({
         code: 'not_multiple_of',
         path: [],

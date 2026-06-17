@@ -5,8 +5,8 @@ import {
     type $ZodIssueInvalidValue,
     util
 } from 'zod/v4/core';
-import { formatOneOfList, isParsedType, type ListValue } from '../list.js';
-import { findValueByPath, formatPath, isNonEmptyPath } from '../path.js';
+import { formatOneOfList, isParsedType, type ListValue } from '../list.ts';
+import { findValueByPath, formatPath, isNonEmptyPath } from '../path.ts';
 
 type FormatChildIssue = (issue: $ZodIssue, input: unknown) => string;
 
@@ -24,7 +24,7 @@ function isSupportedIssue(issue: $ZodIssue): issue is SupportedIssueType {
 }
 
 function isPrimitive(value: unknown): value is util.Primitive {
-    return ['string', 'number', 'symbol', 'bigint', 'boolean', 'undefined'].includes(typeof value) || value === null;
+    return [ 'string', 'number', 'symbol', 'bigint', 'boolean', 'undefined' ].includes(typeof value) || value === null;
 }
 
 function isSamePath(pathA: readonly PropertyKey[], pathB: readonly PropertyKey[]): boolean {
@@ -32,7 +32,7 @@ function isSamePath(pathA: readonly PropertyKey[], pathB: readonly PropertyKey[]
         return false;
     }
 
-    return pathA.every((element, index) => {
+    return pathA.every(function (element, index) {
         return element === pathB[index];
     });
 }
@@ -57,7 +57,7 @@ function determineExpectedValue(issue: SupportedIssueType): ListValue {
 }
 
 function hasValue(values: readonly ListValue[], expectedValue: ListValue): boolean {
-    return values.some((value) => {
+    return values.some(function (value) {
         if (isParsedType(value) && isParsedType(expectedValue)) {
             return value.type === expectedValue.type;
         }
@@ -82,14 +82,14 @@ function removeDuplicateListValues(values: readonly ListValue[]): readonly ListV
 // every constraint that a deeper union imposed becomes its own effective
 // alternative without merging unrelated alternatives together.
 function expandAlternatives(alternatives: readonly (readonly $ZodIssue[])[]): readonly AlternativeBucket[] {
-    return alternatives.flatMap((bucket): readonly AlternativeBucket[] => {
+    return alternatives.flatMap(function (bucket): readonly AlternativeBucket[] {
         if (bucket.length === 1) {
-            const [only] = bucket;
+            const [ only ] = bucket;
             if (only?.code === 'invalid_union') {
                 return expandAlternatives(only.errors);
             }
         }
-        return [bucket];
+        return [ bucket ];
     });
 }
 
@@ -104,8 +104,8 @@ function makeRelativeAlternatives(
     alternatives: readonly AlternativeBucket[],
     unionPath: readonly PropertyKey[]
 ): readonly AlternativeBucket[] {
-    return alternatives.map((bucket) => {
-        return bucket.map((subIssue) => {
+    return alternatives.map(function (bucket) {
+        return bucket.map(function (subIssue) {
             return stripPathPrefix(subIssue, unionPath);
         });
     });
@@ -115,7 +115,7 @@ function extractSingleSupportedIssue(bucket: AlternativeBucket): SupportedIssueT
     if (bucket.length !== 1) {
         return null;
     }
-    const [only] = bucket;
+    const [ only ] = bucket;
     if (only === undefined || !isSupportedIssue(only)) {
         return null;
     }
@@ -137,11 +137,11 @@ function collectSingleSupportedIssues(
 }
 
 function findCommonPath(issues: readonly SupportedIssueType[]): readonly PropertyKey[] | null {
-    const [first, ...rest] = issues;
+    const [ first, ...rest ] = issues;
     if (first === undefined) {
         return null;
     }
-    const matchesFirst = rest.every((issue) => {
+    const matchesFirst = rest.every(function (issue) {
         return isSamePath(first.path, issue.path);
     });
     return matchesFirst ? first.path : null;
@@ -196,8 +196,8 @@ function renderPerAlternative(
     inputAtUnion: unknown,
     formatChildIssue: FormatChildIssue
 ): readonly RenderedAlternative[] {
-    return alternatives.map((bucket) => {
-        return bucket.map((issue) => {
+    return alternatives.map(function (bucket) {
+        return bucket.map(function (issue) {
             return { issue, rendered: formatChildIssue(issue, inputAtUnion) };
         });
     });
@@ -207,18 +207,18 @@ function renderPerAlternative(
 // Each string is reported once even if an alternative carries it multiple times,
 // matching the "factor out shared constraints" semantics.
 function findCommonRenderedStrings(perAlternative: readonly RenderedAlternative[]): readonly string[] {
-    const [first, ...rest] = perAlternative;
+    const [ first, ...rest ] = perAlternative;
     if (first === undefined) {
         return [];
     }
     const uniqueFirst = Array.from(
-        new Set(first.map((item) => {
+        new Set(first.map(function (item) {
             return item.rendered;
         }))
     );
-    return uniqueFirst.filter((rendered) => {
-        return rest.every((other) => {
-            return other.some((candidate) => {
+    return uniqueFirst.filter(function (rendered) {
+        return rest.every(function (other) {
+            return other.some(function (candidate) {
                 return candidate.rendered === rendered;
             });
         });
@@ -230,24 +230,25 @@ function reduceAlternatives(
     commonRendered: readonly string[]
 ): readonly AlternativeBucket[] {
     if (commonRendered.length === 0) {
-        return perAlternative.map((bucket) => {
-            return bucket.map((item) => {
+        return perAlternative.map(function (bucket) {
+            return bucket.map(function (item) {
                 return item.issue;
             });
         });
     }
-    return perAlternative.map((bucket) => {
+    return perAlternative.map(function (bucket) {
         return bucket
-            .filter((item) => {
+            .filter(function (item) {
                 return !commonRendered.includes(item.rendered);
             })
-            .map((item) => {
+            .map(function (item) {
                 return item.issue;
             });
     });
 }
 
-type Group = { readonly indices: readonly number[]; readonly body: readonly string[]; };
+// eslint-disable-next-line enormora-typescript/prefer-readonly-types -- indices is accumulated in place while grouping identical alternatives
+type Group = { readonly indices: number[]; readonly body: readonly string[]; };
 
 // Groups alternatives that produce byte-identical rendered bodies so the output
 // reads "alternatives 1, 3: ..." instead of repeating the same line. Lossless:
@@ -255,21 +256,21 @@ type Group = { readonly indices: readonly number[]; readonly body: readonly stri
 // at this input, so listing them once preserves all information.
 function groupAlternativesByBody(perAlternative: readonly RenderedAlternative[]): readonly Group[] {
     const groups: Group[] = [];
-    perAlternative.forEach((bucket, index) => {
+    perAlternative.forEach(function (bucket, index) {
         if (bucket.length === 0) {
             return;
         }
-        const body = bucket.map((item) => {
+        const body = bucket.map(function (item) {
             return item.rendered;
         });
         const key = JSON.stringify(body);
-        const existing = groups.find((group) => {
+        const existing = groups.find(function (group) {
             return JSON.stringify(group.body) === key;
         });
         if (existing === undefined) {
-            groups.push({ indices: [index + 1], body });
+            groups.push({ indices: [ index + 1 ], body });
         } else {
-            (existing.indices as number[]).push(index + 1);
+            existing.indices.push(index + 1);
         }
     });
     return groups;
@@ -292,7 +293,7 @@ function enumerateAlternatives(
     if (groups.length === 0) {
         return null;
     }
-    const lines = groups.map((group) => {
+    const lines = groups.map(function (group) {
         return `${renderAlternativeLabel(group.indices)}: ${group.body.join('; ')}`;
     });
     return `no union alternative matched: ${lines.join(' | ')}`;
@@ -320,7 +321,7 @@ function tryFactoredCollapse(
     reducedAlternatives: readonly AlternativeBucket[],
     inputAtUnion: unknown
 ): string | null {
-    const anyReducedEmpty = reducedAlternatives.some((bucket) => {
+    const anyReducedEmpty = reducedAlternatives.some(function (bucket) {
         return bucket.length === 0;
     });
     if (commonRendered.length > 0 && anyReducedEmpty) {

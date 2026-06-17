@@ -1,9 +1,9 @@
-import { test } from '@sondr3/minitest';
 import assert from 'node:assert';
-import { formatIssue } from '../format-issue.js';
-import { formatInvalidUnionIssueMessage } from './invalid-union.js';
+import { test } from '@sondr3/minitest';
+import { formatIssue } from '../format-issue.ts';
+import { formatInvalidUnionIssueMessage } from './invalid-union.ts';
 
-test('formats the invalid union issue correctly when there are no union errors', () => {
+test('formats the invalid union issue correctly when there are no union errors', function () {
     const message = formatInvalidUnionIssueMessage(
         {
             code: 'invalid_union',
@@ -18,14 +18,14 @@ test('formats the invalid union issue correctly when there are no union errors',
     assert.strictEqual(message, 'invalid value doesn’t match expected union');
 });
 
-test('formats the invalid union issue correctly when there are only union errors without issues', () => {
+test('formats the invalid union issue correctly when there are only union errors without issues', function () {
     const message = formatInvalidUnionIssueMessage(
         {
             code: 'invalid_union',
             path: [],
             message: '',
             input: '',
-            errors: [[], []]
+            errors: [ [], [] ]
         },
         '',
         formatIssue
@@ -33,7 +33,7 @@ test('formats the invalid union issue correctly when there are only union errors
     assert.strictEqual(message, 'invalid value doesn’t match expected union');
 });
 
-test('formats the invalid union issue correctly when there is only one union error with one invalid type issue', () => {
+test('formats the invalid union issue correctly when there is only one union error with one invalid type issue', function () {
     const message = formatInvalidUnionIssueMessage(
         {
             code: 'invalid_union',
@@ -41,7 +41,7 @@ test('formats the invalid union issue correctly when there is only one union err
             message: '',
             input: '',
             errors: [
-                [{ code: 'invalid_type', path: [], message: '', expected: 'string', input: 'null' }]
+                [ { code: 'invalid_type', path: [], message: '', expected: 'string', input: 'null' } ]
             ]
         },
         null,
@@ -50,7 +50,7 @@ test('formats the invalid union issue correctly when there is only one union err
     assert.strictEqual(message, 'invalid value: expected string, but got null');
 });
 
-test('formats the invalid union issue correctly when there are only invalid type issues', () => {
+test('formats the invalid union issue correctly when there are only invalid type issues', function () {
     const message = formatInvalidUnionIssueMessage(
         {
             code: 'invalid_union',
@@ -58,8 +58,8 @@ test('formats the invalid union issue correctly when there are only invalid type
             message: '',
             input: '',
             errors: [
-                [{ code: 'invalid_type', path: [], message: '', expected: 'string', input: 'null' }],
-                [{ code: 'invalid_type', path: [], message: '', expected: 'number', input: 'null' }]
+                [ { code: 'invalid_type', path: [], message: '', expected: 'string', input: 'null' } ],
+                [ { code: 'invalid_type', path: [], message: '', expected: 'number', input: 'null' } ]
             ]
         },
         null,
@@ -68,7 +68,7 @@ test('formats the invalid union issue correctly when there are only invalid type
     assert.strictEqual(message, 'invalid value: expected one of string or number, but got null');
 });
 
-test('formats the invalid union issue correctly given only invalid type issues in nested unions', () => {
+test('formats the invalid union issue correctly given only invalid type issues in nested unions', function () {
     const message = formatInvalidUnionIssueMessage(
         {
             code: 'invalid_union',
@@ -76,45 +76,45 @@ test('formats the invalid union issue correctly given only invalid type issues i
             message: '',
             input: '',
             errors: [
-                [{ code: 'invalid_type', path: [], message: '', expected: 'string', input: 'null' }],
-                [{
+                [ { code: 'invalid_type', path: [], message: '', expected: 'string', input: 'null' } ],
+                [ {
                     code: 'invalid_union',
                     path: [],
                     message: '',
                     input: '',
                     errors: [
-                        [{
+                        [ {
                             code: 'invalid_union',
                             path: [],
                             message: '',
                             input: '',
                             errors: [
-                                [{
+                                [ {
                                     code: 'invalid_type',
                                     path: [],
                                     message: '',
                                     expected: 'number',
                                     input: 'null'
-                                }]
+                                } ]
                             ]
-                        }],
-                        [{
+                        } ],
+                        [ {
                             code: 'invalid_union',
                             path: [],
                             message: '',
                             input: '',
                             errors: [
-                                [{
+                                [ {
                                     code: 'invalid_type',
                                     path: [],
                                     message: '',
                                     expected: 'boolean',
                                     input: 'null'
-                                }]
+                                } ]
                             ]
-                        }]
+                        } ]
                     ]
-                }]
+                } ]
             ]
         },
         null,
@@ -123,7 +123,7 @@ test('formats the invalid union issue correctly given only invalid type issues i
     assert.strictEqual(message, 'invalid value: expected one of string, number or boolean, but got null');
 });
 
-test('formats the issue correctly when there are only invalid type issues but all have the same expected type', () => {
+test('formats the issue correctly when there are only invalid type issues but all have the same expected type', function () {
     const message = formatInvalidUnionIssueMessage(
         {
             code: 'invalid_union',
@@ -131,8 +131,8 @@ test('formats the issue correctly when there are only invalid type issues but al
             message: '',
             input: '',
             errors: [
-                [{ code: 'invalid_type', path: [], message: '', expected: 'string', input: 'null' }],
-                [{ code: 'invalid_type', path: [], message: '', expected: 'string', input: 'null' }]
+                [ { code: 'invalid_type', path: [], message: '', expected: 'string', input: 'null' } ],
+                [ { code: 'invalid_type', path: [], message: '', expected: 'string', input: 'null' } ]
             ]
         },
         null,
@@ -141,7 +141,7 @@ test('formats the issue correctly when there are only invalid type issues but al
     assert.strictEqual(message, 'invalid value: expected string, but got null');
 });
 
-test('formats the invalid union issue correctly when there are only invalid literal issues', () => {
+test('formats the invalid union issue correctly when there are only invalid literal issues', function () {
     const message = formatInvalidUnionIssueMessage(
         {
             code: 'invalid_union',
@@ -149,8 +149,8 @@ test('formats the invalid union issue correctly when there are only invalid lite
             message: '',
             input: '',
             errors: [
-                [{ code: 'invalid_value', path: [], message: '', values: ['foo'], input: 'bar' }],
-                [{ code: 'invalid_value', path: [], message: '', values: ['baz'], input: 'bar' }]
+                [ { code: 'invalid_value', path: [], message: '', values: [ 'foo' ], input: 'bar' } ],
+                [ { code: 'invalid_value', path: [], message: '', values: [ 'baz' ], input: 'bar' } ]
             ]
         },
         '',
@@ -159,7 +159,7 @@ test('formats the invalid union issue correctly when there are only invalid lite
     assert.strictEqual(message, 'invalid value: expected one of "foo" or "baz", but got string');
 });
 
-test('formats the invalid union issue correctly when there is a invalid literal issues with null as expected', () => {
+test('formats the invalid union issue correctly when there is a invalid literal issues with null as expected', function () {
     const message = formatInvalidUnionIssueMessage(
         {
             code: 'invalid_union',
@@ -167,7 +167,7 @@ test('formats the invalid union issue correctly when there is a invalid literal 
             message: '',
             input: '',
             errors: [
-                [{ code: 'invalid_value', path: [], message: '', values: [null], input: 'bar' }]
+                [ { code: 'invalid_value', path: [], message: '', values: [ null ], input: 'bar' } ]
             ]
         },
         '',
@@ -176,7 +176,7 @@ test('formats the invalid union issue correctly when there is a invalid literal 
     assert.strictEqual(message, 'invalid value: expected null, but got string');
 });
 
-test('formats the invalid union issue correctly when there are only invalid literal or invalid type issues', () => {
+test('formats the invalid union issue correctly when there are only invalid literal or invalid type issues', function () {
     const message = formatInvalidUnionIssueMessage(
         {
             code: 'invalid_union',
@@ -184,8 +184,8 @@ test('formats the invalid union issue correctly when there are only invalid lite
             message: '',
             input: '',
             errors: [
-                [{ code: 'invalid_type', path: [], message: '', expected: 'number', input: 'boolean' }],
-                [{ code: 'invalid_value', path: [], message: '', values: ['foo'], input: true }]
+                [ { code: 'invalid_type', path: [], message: '', expected: 'number', input: 'boolean' } ],
+                [ { code: 'invalid_value', path: [], message: '', values: [ 'foo' ], input: true } ]
             ]
         },
         true,
@@ -194,7 +194,7 @@ test('formats the invalid union issue correctly when there are only invalid lite
     assert.strictEqual(message, 'invalid value: expected one of number or "foo", but got boolean');
 });
 
-test('enumerates each alternative when one is supported and another is custom', () => {
+test('enumerates each alternative when one is supported and another is custom', function () {
     const message = formatInvalidUnionIssueMessage(
         {
             code: 'invalid_union',
@@ -202,8 +202,8 @@ test('enumerates each alternative when one is supported and another is custom', 
             message: '',
             input: '',
             errors: [
-                [{ code: 'invalid_type', path: [], message: '', expected: 'string', input: 'null' }],
-                [{ code: 'custom', path: [], message: 'must satisfy something', input: '' }]
+                [ { code: 'invalid_type', path: [], message: '', expected: 'string', input: 'null' } ],
+                [ { code: 'custom', path: [], message: 'must satisfy something', input: '' } ]
             ]
         },
         '',
@@ -211,27 +211,26 @@ test('enumerates each alternative when one is supported and another is custom', 
     );
     assert.strictEqual(
         message,
-        // eslint-disable-next-line @stylistic/max-len -- expected enumeration is intentionally explicit
         'no union alternative matched: alternative 1: expected string, but got string | alternative 2: must satisfy something'
     );
 });
 
-test('enumerates each alternative when supported issues live at different relative paths', () => {
+test('enumerates each alternative when supported issues live at different relative paths', function () {
     const message = formatInvalidUnionIssueMessage(
         {
             code: 'invalid_union',
-            path: ['foo'],
+            path: [ 'foo' ],
             message: '',
             input: [],
             errors: [
-                [{ code: 'invalid_type', path: ['foo'], message: '', expected: 'string', input: 'null' }],
-                [{
+                [ { code: 'invalid_type', path: [ 'foo' ], message: '', expected: 'string', input: 'null' } ],
+                [ {
                     code: 'invalid_type',
-                    path: ['foo', 'bar'],
+                    path: [ 'foo', 'bar' ],
                     message: '',
                     expected: 'number',
                     input: 'null'
-                }]
+                } ]
             ]
         },
         { foo: {} },
@@ -239,12 +238,11 @@ test('enumerates each alternative when supported issues live at different relati
     );
     assert.strictEqual(
         message,
-        // eslint-disable-next-line @stylistic/max-len -- test expectation must match the produced multi-issue string exactly
         'at foo: no union alternative matched: alternative 1: expected string, but got object | alternative 2: at bar: missing property; expected number'
     );
 });
 
-test('collapses to a deeper common path when every alternative produces exactly one issue at the same field', () => {
+test('collapses to a deeper common path when every alternative produces exactly one issue at the same field', function () {
     const message = formatInvalidUnionIssueMessage(
         {
             code: 'invalid_union',
@@ -252,8 +250,8 @@ test('collapses to a deeper common path when every alternative produces exactly 
             message: '',
             input: '',
             errors: [
-                [{ code: 'invalid_type', path: ['a'], message: '', expected: 'string', input: 'null' }],
-                [{ code: 'invalid_type', path: ['a'], message: '', expected: 'number', input: 'null' }]
+                [ { code: 'invalid_type', path: [ 'a' ], message: '', expected: 'string', input: 'null' } ],
+                [ { code: 'invalid_type', path: [ 'a' ], message: '', expected: 'number', input: 'null' } ]
             ]
         },
         { a: true },
@@ -262,7 +260,7 @@ test('collapses to a deeper common path when every alternative produces exactly 
     assert.strictEqual(message, 'at a: invalid value: expected one of string or number, but got boolean');
 });
 
-test('collapses discriminator-style unions where every alternative reports the same literal field', () => {
+test('collapses discriminator-style unions where every alternative reports the same literal field', function () {
     const message = formatInvalidUnionIssueMessage(
         {
             code: 'invalid_union',
@@ -270,8 +268,8 @@ test('collapses discriminator-style unions where every alternative reports the s
             message: '',
             input: '',
             errors: [
-                [{ code: 'invalid_value', path: ['kind'], message: '', values: ['a'], input: 'c' }],
-                [{ code: 'invalid_value', path: ['kind'], message: '', values: ['b'], input: 'c' }]
+                [ { code: 'invalid_value', path: [ 'kind' ], message: '', values: [ 'a' ], input: 'c' } ],
+                [ { code: 'invalid_value', path: [ 'kind' ], message: '', values: [ 'b' ], input: 'c' } ]
             ]
         },
         { kind: 'c' },
@@ -280,7 +278,7 @@ test('collapses discriminator-style unions where every alternative reports the s
     assert.strictEqual(message, 'at kind: invalid value: expected one of "a" or "b", but got string');
 });
 
-test('enumerates instead of collapsing when an alternative has multiple issues', () => {
+test('enumerates instead of collapsing when an alternative has multiple issues', function () {
     const message = formatInvalidUnionIssueMessage(
         {
             code: 'invalid_union',
@@ -289,12 +287,12 @@ test('enumerates instead of collapsing when an alternative has multiple issues',
             input: '',
             errors: [
                 [
-                    { code: 'invalid_value', path: ['a'], message: '', values: ['X'], input: 'Z' },
-                    { code: 'invalid_type', path: ['b'], message: '', expected: 'number', input: 'boolean' }
+                    { code: 'invalid_value', path: [ 'a' ], message: '', values: [ 'X' ], input: 'Z' },
+                    { code: 'invalid_type', path: [ 'b' ], message: '', expected: 'number', input: 'boolean' }
                 ],
                 [
-                    { code: 'invalid_value', path: ['a'], message: '', values: ['Y'], input: 'Z' },
-                    { code: 'invalid_type', path: ['b'], message: '', expected: 'string', input: 'boolean' }
+                    { code: 'invalid_value', path: [ 'a' ], message: '', values: [ 'Y' ], input: 'Z' },
+                    { code: 'invalid_type', path: [ 'b' ], message: '', expected: 'string', input: 'boolean' }
                 ]
             ]
         },
@@ -303,16 +301,15 @@ test('enumerates instead of collapsing when an alternative has multiple issues',
     );
     assert.strictEqual(
         message,
-        // eslint-disable-next-line @stylistic/max-len -- test expectation must match the produced multi-issue string exactly
         'no union alternative matched: alternative 1: at a: invalid value: expected "X", but got string; at b: expected number, but got boolean | alternative 2: at a: invalid value: expected "Y", but got string; at b: expected string, but got boolean'
     );
 });
 
-test('formats the invalid union issue with a path when no info is available', () => {
+test('formats the invalid union issue with a path when no info is available', function () {
     const message = formatInvalidUnionIssueMessage(
         {
             code: 'invalid_union',
-            path: ['foo'],
+            path: [ 'foo' ],
             message: '',
             input: '',
             errors: []
@@ -323,11 +320,11 @@ test('formats the invalid union issue with a path when no info is available', ()
     assert.strictEqual(message, 'at foo: invalid value doesn’t match expected union');
 });
 
-test('formats a missing property message when the path doesn’t exist in the given object', () => {
+test('formats a missing property message when the path doesn’t exist in the given object', function () {
     const message = formatInvalidUnionIssueMessage(
         {
             code: 'invalid_union',
-            path: ['foo'],
+            path: [ 'foo' ],
             message: '',
             input: [],
             errors: []
@@ -338,11 +335,11 @@ test('formats a missing property message when the path doesn’t exist in the gi
     assert.strictEqual(message, 'at foo: missing property');
 });
 
-test('formats a missing property message when the path doesn’t exist in the given array', () => {
+test('formats a missing property message when the path doesn’t exist in the given array', function () {
     const message = formatInvalidUnionIssueMessage(
         {
             code: 'invalid_union',
-            path: [0],
+            path: [ 0 ],
             message: '',
             input: [],
             errors: []
@@ -353,7 +350,7 @@ test('formats a missing property message when the path doesn’t exist in the gi
     assert.strictEqual(message, 'at [0]: missing key');
 });
 
-test('groups duplicate alternative bodies into one labeled entry', () => {
+test('groups duplicate alternative bodies into one labeled entry', function () {
     const message = formatInvalidUnionIssueMessage(
         {
             code: 'invalid_union',
@@ -362,14 +359,14 @@ test('groups duplicate alternative bodies into one labeled entry', () => {
             input: '',
             errors: [
                 [
-                    { code: 'invalid_type', path: ['a'], message: '', expected: 'string', input: 1 },
-                    { code: 'invalid_type', path: ['b'], message: '', expected: 'number', input: 'x' }
+                    { code: 'invalid_type', path: [ 'a' ], message: '', expected: 'string', input: 1 },
+                    { code: 'invalid_type', path: [ 'b' ], message: '', expected: 'number', input: 'x' }
                 ],
                 [
-                    { code: 'invalid_type', path: ['a'], message: '', expected: 'string', input: 1 },
-                    { code: 'invalid_type', path: ['b'], message: '', expected: 'number', input: 'x' }
+                    { code: 'invalid_type', path: [ 'a' ], message: '', expected: 'string', input: 1 },
+                    { code: 'invalid_type', path: [ 'b' ], message: '', expected: 'number', input: 'x' }
                 ],
-                [{ code: 'invalid_type', path: ['c'], message: '', expected: 'boolean', input: null }]
+                [ { code: 'invalid_type', path: [ 'c' ], message: '', expected: 'boolean', input: null } ]
             ]
         },
         { a: 1, b: 'x', c: null },
@@ -377,12 +374,11 @@ test('groups duplicate alternative bodies into one labeled entry', () => {
     );
     assert.strictEqual(
         message,
-        // eslint-disable-next-line @stylistic/max-len -- expected enumeration string is intentionally explicit
         'no union alternative matched: alternatives 1, 2: at a: expected string, but got number; at b: expected number, but got string | alternative 3: at c: expected boolean, but got null'
     );
 });
 
-test('factors out issues common to every alternative and re-collapses the remaining single-issue alternatives', () => {
+test('factors out issues common to every alternative and re-collapses the remaining single-issue alternatives', function () {
     const message = formatInvalidUnionIssueMessage(
         {
             code: 'invalid_union',
@@ -391,12 +387,12 @@ test('factors out issues common to every alternative and re-collapses the remain
             input: '',
             errors: [
                 [
-                    { code: 'invalid_value', path: ['type'], message: '', values: ['a'], input: 'c' },
-                    { code: 'invalid_type', path: ['x'], message: '', expected: 'number', input: 'wrong' }
+                    { code: 'invalid_value', path: [ 'type' ], message: '', values: [ 'a' ], input: 'c' },
+                    { code: 'invalid_type', path: [ 'x' ], message: '', expected: 'number', input: 'wrong' }
                 ],
                 [
-                    { code: 'invalid_value', path: ['type'], message: '', values: ['b'], input: 'c' },
-                    { code: 'invalid_type', path: ['x'], message: '', expected: 'number', input: 'wrong' }
+                    { code: 'invalid_value', path: [ 'type' ], message: '', values: [ 'b' ], input: 'c' },
+                    { code: 'invalid_type', path: [ 'x' ], message: '', expected: 'number', input: 'wrong' }
                 ]
             ]
         },
@@ -409,7 +405,7 @@ test('factors out issues common to every alternative and re-collapses the remain
     );
 });
 
-test('factors out common issues and enumerates the rest when the reduced alternatives can’t collapse', () => {
+test('factors out common issues and enumerates the rest when the reduced alternatives can’t collapse', function () {
     const message = formatInvalidUnionIssueMessage(
         {
             code: 'invalid_union',
@@ -418,12 +414,12 @@ test('factors out common issues and enumerates the rest when the reduced alterna
             input: '',
             errors: [
                 [
-                    { code: 'invalid_type', path: ['shared'], message: '', expected: 'number', input: 'x' },
-                    { code: 'invalid_type', path: ['extraA'], message: '', expected: 'string', input: 1 }
+                    { code: 'invalid_type', path: [ 'shared' ], message: '', expected: 'number', input: 'x' },
+                    { code: 'invalid_type', path: [ 'extraA' ], message: '', expected: 'string', input: 1 }
                 ],
                 [
-                    { code: 'invalid_type', path: ['shared'], message: '', expected: 'number', input: 'x' },
-                    { code: 'invalid_type', path: ['extraB'], message: '', expected: 'boolean', input: null }
+                    { code: 'invalid_type', path: [ 'shared' ], message: '', expected: 'number', input: 'x' },
+                    { code: 'invalid_type', path: [ 'extraB' ], message: '', expected: 'boolean', input: null }
                 ]
             ]
         },
@@ -432,12 +428,11 @@ test('factors out common issues and enumerates the rest when the reduced alterna
     );
     assert.strictEqual(
         message,
-        // eslint-disable-next-line @stylistic/max-len -- expected output combines factored and enumerated parts
         'at shared: expected number, but got string; no union alternative matched: alternative 1: at extraA: expected string, but got number | alternative 2: at extraB: expected boolean, but got null'
     );
 });
 
-test('emits only the common issue when one alternative is fully described by the shared constraints', () => {
+test('emits only the common issue when one alternative is fully described by the shared constraints', function () {
     // alt 1 carries only the common issue, so fixing it alone makes alt 1 pass —
     // reporting alt 2's extra requirement would mislead the user into thinking
     // both must be addressed.
@@ -448,10 +443,10 @@ test('emits only the common issue when one alternative is fully described by the
             message: '',
             input: '',
             errors: [
-                [{ code: 'invalid_type', path: ['common'], message: '', expected: 'number', input: 'x' }],
+                [ { code: 'invalid_type', path: [ 'common' ], message: '', expected: 'number', input: 'x' } ],
                 [
-                    { code: 'invalid_type', path: ['common'], message: '', expected: 'number', input: 'x' },
-                    { code: 'invalid_type', path: ['extra'], message: '', expected: 'boolean', input: null }
+                    { code: 'invalid_type', path: [ 'common' ], message: '', expected: 'number', input: 'x' },
+                    { code: 'invalid_type', path: [ 'extra' ], message: '', expected: 'boolean', input: null }
                 ]
             ]
         },
@@ -461,7 +456,7 @@ test('emits only the common issue when one alternative is fully described by the
     assert.strictEqual(message, 'at common: expected number, but got string');
 });
 
-test('handles a single-alternative union as a regular collapse', () => {
+test('handles a single-alternative union as a regular collapse', function () {
     const message = formatInvalidUnionIssueMessage(
         {
             code: 'invalid_union',
@@ -469,7 +464,7 @@ test('handles a single-alternative union as a regular collapse', () => {
             message: '',
             input: '',
             errors: [
-                [{ code: 'invalid_type', path: [], message: '', expected: 'string', input: true }]
+                [ { code: 'invalid_type', path: [], message: '', expected: 'string', input: true } ]
             ]
         },
         true,
@@ -478,7 +473,7 @@ test('handles a single-alternative union as a regular collapse', () => {
     assert.strictEqual(message, 'invalid value: expected string, but got boolean');
 });
 
-test('does not expand a nested invalid_union when its alternative carries other sibling issues', () => {
+test('does not expand a nested invalid_union when its alternative carries other sibling issues', function () {
     // The bucket carries both a nested invalid_union and an unrelated invalid_type.
     // Expansion would discard the sibling, so the formatter must keep the bucket
     // intact and let formatIssue recurse into the nested union.
@@ -490,15 +485,27 @@ test('does not expand a nested invalid_union when its alternative carries other 
             input: '',
             errors: [
                 [
-                    { code: 'invalid_type', path: ['outer'], message: '', expected: 'string', input: 1 },
+                    { code: 'invalid_type', path: [ 'outer' ], message: '', expected: 'string', input: 1 },
                     {
                         code: 'invalid_union',
-                        path: ['inner'],
+                        path: [ 'inner' ],
                         message: '',
                         input: 'x',
                         errors: [
-                            [{ code: 'invalid_type', path: ['inner'], message: '', expected: 'number', input: 'x' }],
-                            [{ code: 'invalid_type', path: ['inner'], message: '', expected: 'boolean', input: 'x' }]
+                            [ {
+                                code: 'invalid_type',
+                                path: [ 'inner' ],
+                                message: '',
+                                expected: 'number',
+                                input: 'x'
+                            } ],
+                            [ {
+                                code: 'invalid_type',
+                                path: [ 'inner' ],
+                                message: '',
+                                expected: 'boolean',
+                                input: 'x'
+                            } ]
                         ]
                     }
                 ]
@@ -509,24 +516,23 @@ test('does not expand a nested invalid_union when its alternative carries other 
     );
     assert.strictEqual(
         message,
-        // eslint-disable-next-line @stylistic/max-len -- expected output spans both sibling messages
         'at outer: expected string, but got number; at inner: invalid value: expected one of number or boolean, but got string'
     );
 });
 
-test('walks invalid_union paths into Map values', () => {
+test('walks invalid_union paths into Map values', function () {
     const message = formatInvalidUnionIssueMessage(
         {
             code: 'invalid_union',
-            path: ['m', 'key'],
+            path: [ 'm', 'key' ],
             message: '',
             input: true,
             errors: [
-                [{ code: 'invalid_type', path: ['m', 'key'], message: '', expected: 'string', input: true }],
-                [{ code: 'invalid_type', path: ['m', 'key'], message: '', expected: 'number', input: true }]
+                [ { code: 'invalid_type', path: [ 'm', 'key' ], message: '', expected: 'string', input: true } ],
+                [ { code: 'invalid_type', path: [ 'm', 'key' ], message: '', expected: 'number', input: true } ]
             ]
         },
-        { m: new Map([['key', true]]) },
+        { m: new Map([ [ 'key', true ] ]) },
         formatIssue
     );
     assert.strictEqual(message, 'at m.key: invalid value: expected one of string or number, but got boolean');

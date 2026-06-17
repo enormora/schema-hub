@@ -1,29 +1,29 @@
 import type { output as TypeOf } from 'zod/v4/core';
-import { extractDataOrThrow } from '../zod-graphql-client/client.js';
-import type { MaybeVariables } from '../zod-graphql-client/define-variables.js';
+import { extractDataOrThrow } from '../zod-graphql-client/client.ts';
+import type { MaybeVariables } from '../zod-graphql-client/define-variables.ts';
 import type {
     GraphqlClient,
     OperationErrorDetails,
     OperationResult,
     QuerySchema
-} from '../zod-graphql-client/entry-point.js';
+} from '../zod-graphql-client/entry-point.ts';
+import type { OperationHandle } from '../zod-graphql-client/operation-handle.ts';
 import {
     buildOperationPayload,
     type GraphqlOverHttpOperationRequestPayload,
     type OperationCallArgs,
-    type OperationHandle,
     type OperationOptions,
     type OperationTarget,
     type OperationType,
     resolveOperationInputs
-} from '../zod-graphql-client/operation-payload.js';
+} from '../zod-graphql-client/operation-payload.ts';
 
 export type RecordedOperation = {
     readonly type: OperationType;
     readonly schema: QuerySchema;
     readonly payload: GraphqlOverHttpOperationRequestPayload;
     readonly operationName: string | undefined;
-    readonly values: Record<string, unknown>;
+    readonly values: Readonly<Record<string, unknown>>;
     readonly options: OperationOptions;
 };
 
@@ -46,19 +46,19 @@ export type FakeGraphqlClient = GraphqlClient & {
 };
 
 type FakeSuccessData = {
-    error?: undefined;
-    data: unknown;
+    readonly error?: undefined;
+    readonly data: unknown;
 };
 
 type FakeFailureResult = {
-    data?: undefined;
-    error: OperationErrorDetails;
+    readonly data?: undefined;
+    readonly error: OperationErrorDetails;
 };
 
 export type FakeResult = FakeFailureResult | FakeSuccessData;
 
 type FakeClientOptions = {
-    readonly results?: FakeResult[];
+    readonly results?: readonly FakeResult[];
 };
 
 function operationMatchesObject(matcher: OperationMatcherObject, recorded: RecordedOperation): boolean {
@@ -105,12 +105,12 @@ type OperationFinders = {
 
 function buildOperationFinders(recordedOperations: readonly RecordedOperation[]): OperationFinders {
     function findOperation(matcher: OperationMatcher): RecordedOperation | undefined {
-        return recordedOperations.find((recorded) => {
+        return recordedOperations.find(function (recorded) {
             return operationMatches(matcher, recorded);
         });
     }
     function findAllOperations(matcher: OperationMatcher): readonly RecordedOperation[] {
-        return recordedOperations.filter((recorded) => {
+        return recordedOperations.filter(function (recorded) {
             return operationMatches(matcher, recorded);
         });
     }
@@ -126,6 +126,7 @@ function buildOperationFinders(recordedOperations: readonly RecordedOperation[])
 
 type FakeClientState = {
     readonly results: readonly FakeResult[];
+    // eslint-disable-next-line enormora-typescript/prefer-readonly-types -- appended to in place as operations are invoked
     readonly recordedOperations: RecordedOperation[];
 };
 
@@ -169,6 +170,7 @@ function recordAndRespond<Schema extends QuerySchema>(
     if (result.error !== undefined) {
         return { success: false, errorDetails: result.error };
     }
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- the fake result data stands in for the schema's parsed output
     return { success: true, data: result.data as TypeOf<Schema> };
 }
 
@@ -222,12 +224,14 @@ function buildClientMethods(state: FakeClientState): GraphqlClient {
     return { query, queryOrThrow, mutate, mutateOrThrow };
 }
 
-function buildInspectors(recordedOperations: readonly RecordedOperation[]): {
+type Inspectors = {
     readonly inspectOperationPayload: (index: number) => GraphqlOverHttpOperationRequestPayload;
     readonly inspectFirstOperationPayload: () => GraphqlOverHttpOperationRequestPayload;
     readonly inspectOperation: (index: number) => RecordedOperation;
     readonly inspectFirstOperation: () => RecordedOperation;
-} {
+};
+
+function buildInspectors(recordedOperations: readonly RecordedOperation[]): Inspectors {
     function inspectOperationPayload(index: number): GraphqlOverHttpOperationRequestPayload {
         const recorded = recordedOperations[index];
         if (recorded === undefined) {
@@ -244,11 +248,11 @@ function buildInspectors(recordedOperations: readonly RecordedOperation[]): {
     }
     return {
         inspectOperationPayload,
-        inspectFirstOperationPayload: () => {
+        inspectFirstOperationPayload() {
             return inspectOperationPayload(0);
         },
         inspectOperation,
-        inspectFirstOperation: () => {
+        inspectFirstOperation() {
             return inspectOperation(0);
         }
     };

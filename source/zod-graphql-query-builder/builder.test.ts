@@ -1,10 +1,10 @@
-import { test } from '@sondr3/minitest';
 import assert from 'node:assert';
+import { test } from '@sondr3/minitest';
 import { z } from 'zod/v4-mini';
-import { createQueryBuilder } from './builder.js';
-import { createCustomScalarSchema } from './custom-scalar.js';
+import { createQueryBuilder } from './builder.ts';
+import { createCustomScalarSchema } from './custom-scalar.ts';
 
-test('throws at registration when typeName is not a valid GraphQL identifier', () => {
+test('throws at registration when typeName is not a valid GraphQL identifier', function () {
     const builder = createQueryBuilder();
     const baseSchema = z.strictObject({ id: z.string() });
 
@@ -19,7 +19,7 @@ test('throws at registration when typeName is not a valid GraphQL identifier', (
     }
 });
 
-test('a schema with custom scalar validates correctly', () => {
+test('a schema with custom scalar validates correctly', function () {
     const schema = z
         .strictObject({
             foo: createCustomScalarSchema(z.object({ bar: z.record(z.string(), z.string()) }))

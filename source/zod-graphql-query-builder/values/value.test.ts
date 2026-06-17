@@ -1,10 +1,10 @@
-import { test } from '@sondr3/minitest';
 import assert from 'node:assert';
-import { enumValue } from './enum.js';
-import { normalizeGraphqlValue } from './value.js';
-import { variablePlaceholder } from './variable-placeholder.js';
+import { test } from '@sondr3/minitest';
+import { enumValue } from './enum.ts';
+import { normalizeGraphqlValue } from './value.ts';
+import { variablePlaceholder } from './variable-placeholder.ts';
 
-test('normalizes a string value correctly', () => {
+test('normalizes a string value correctly', function () {
     const result = normalizeGraphqlValue('foo');
     assert.deepStrictEqual(result, {
         serializedValue: '"foo"',
@@ -12,7 +12,7 @@ test('normalizes a string value correctly', () => {
     });
 });
 
-test('normalizes a number value correctly', () => {
+test('normalizes a number value correctly', function () {
     const result = normalizeGraphqlValue(1);
     assert.deepStrictEqual(result, {
         serializedValue: '1',
@@ -20,7 +20,7 @@ test('normalizes a number value correctly', () => {
     });
 });
 
-test('normalizes a boolean value correctly', () => {
+test('normalizes a boolean value correctly', function () {
     const result = normalizeGraphqlValue(false);
     assert.deepStrictEqual(result, {
         serializedValue: 'false',
@@ -28,7 +28,7 @@ test('normalizes a boolean value correctly', () => {
     });
 });
 
-test('normalizes null correctly', () => {
+test('normalizes null correctly', function () {
     const result = normalizeGraphqlValue(null);
     assert.deepStrictEqual(result, {
         serializedValue: 'null',
@@ -36,7 +36,7 @@ test('normalizes null correctly', () => {
     });
 });
 
-test('normalizes an empty array correctly', () => {
+test('normalizes an empty array correctly', function () {
     const result = normalizeGraphqlValue([]);
     assert.deepStrictEqual(result, {
         serializedValue: '[]',
@@ -44,7 +44,7 @@ test('normalizes an empty array correctly', () => {
     });
 });
 
-test('normalizes an empty object correctly', () => {
+test('normalizes an empty object correctly', function () {
     const result = normalizeGraphqlValue({});
     assert.deepStrictEqual(result, {
         serializedValue: '{}',
@@ -52,7 +52,7 @@ test('normalizes an empty object correctly', () => {
     });
 });
 
-test('normalizes an enum value correctly', () => {
+test('normalizes an enum value correctly', function () {
     const result = normalizeGraphqlValue(enumValue('foo'));
     assert.deepStrictEqual(result, {
         serializedValue: 'foo',
@@ -60,47 +60,47 @@ test('normalizes an enum value correctly', () => {
     });
 });
 
-test('normalizes a variable placeholder correctly', () => {
+test('normalizes a variable placeholder correctly', function () {
     const result = normalizeGraphqlValue(variablePlaceholder('$foo'));
     assert.deepStrictEqual(result, {
         serializedValue: '$foo',
-        referencedVariables: new Set(['$foo'])
+        referencedVariables: new Set([ '$foo' ])
     });
 });
 
-test('normalizes an array of primitives correctly', () => {
-    const result = normalizeGraphqlValue(['foo', 1, null, true]);
+test('normalizes an array of primitives correctly', function () {
+    const result = normalizeGraphqlValue([ 'foo', 1, null, true ]);
     assert.deepStrictEqual(result, {
         serializedValue: '["foo", 1, null, true]',
         referencedVariables: new Set()
     });
 });
 
-test('normalizes an array of enum values correctly', () => {
-    const result = normalizeGraphqlValue([enumValue('foo')]);
+test('normalizes an array of enum values correctly', function () {
+    const result = normalizeGraphqlValue([ enumValue('foo') ]);
     assert.deepStrictEqual(result, {
         serializedValue: '[foo]',
         referencedVariables: new Set()
     });
 });
 
-test('normalizes an array of arrays correctly', () => {
-    const result = normalizeGraphqlValue([[[], 'bar']]);
+test('normalizes an array of arrays correctly', function () {
+    const result = normalizeGraphqlValue([ [ [], 'bar' ] ]);
     assert.deepStrictEqual(result, {
         serializedValue: '[[[], "bar"]]',
         referencedVariables: new Set()
     });
 });
 
-test('normalizes an array of variable placeholders correctly', () => {
-    const result = normalizeGraphqlValue([variablePlaceholder('$foo'), variablePlaceholder('$bar')]);
+test('normalizes an array of variable placeholders correctly', function () {
+    const result = normalizeGraphqlValue([ variablePlaceholder('$foo'), variablePlaceholder('$bar') ]);
     assert.deepStrictEqual(result, {
         serializedValue: '[$foo, $bar]',
-        referencedVariables: new Set(['$foo', '$bar'])
+        referencedVariables: new Set([ '$foo', '$bar' ])
     });
 });
 
-test('normalizes an object of primitives correctly', () => {
+test('normalizes an object of primitives correctly', function () {
     const result = normalizeGraphqlValue({ foo: 'bar', bar: 1, qux: null });
     assert.deepStrictEqual(result, {
         serializedValue: '{bar: 1, foo: "bar", qux: null}',
@@ -108,7 +108,7 @@ test('normalizes an object of primitives correctly', () => {
     });
 });
 
-test('throws when an object contains an invalid property name', () => {
+test('throws when an object contains an invalid property name', function () {
     try {
         normalizeGraphqlValue({ 'foo-bar': true });
         assert.fail('Expected normalizeGraphqlValue() to throw but it did not');
@@ -117,21 +117,21 @@ test('throws when an object contains an invalid property name', () => {
     }
 });
 
-test('normalizes an object of variable placeholders correctly', () => {
+test('normalizes an object of variable placeholders correctly', function () {
     const result = normalizeGraphqlValue({ foo: variablePlaceholder('$bar') });
     assert.deepStrictEqual(result, {
         serializedValue: '{foo: $bar}',
-        referencedVariables: new Set(['$bar'])
+        referencedVariables: new Set([ '$bar' ])
     });
 });
 
-test('normalizes a nested object with multiple variable placeholders correctly', () => {
+test('normalizes a nested object with multiple variable placeholders correctly', function () {
     const result = normalizeGraphqlValue({
         foo: variablePlaceholder('$bar'),
-        bar: [[variablePlaceholder('$baz')], null]
+        bar: [ [ variablePlaceholder('$baz') ], null ]
     });
     assert.deepStrictEqual(result, {
         serializedValue: '{bar: [[$baz], null], foo: $bar}',
-        referencedVariables: new Set(['$bar', '$baz'])
+        referencedVariables: new Set([ '$bar', '$baz' ])
     });
 });

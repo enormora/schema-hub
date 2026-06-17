@@ -1,50 +1,50 @@
-import { test } from '@sondr3/minitest';
 import assert from 'node:assert';
+import { test } from '@sondr3/minitest';
 import { z } from 'zod/v4';
-import { defineVariables } from './define-variables.js';
-import { defineMutation, defineQuery, isOperationHandle } from './operation-handle.js';
+import { defineVariables } from './define-variables.ts';
+import { defineMutation, defineQuery, isOperationHandle } from './operation-handle.ts';
 
 const simpleSchema = z.strictObject({ foo: z.string() });
 
-test('defineQuery() returns a recognizable operation handle of kind "query"', () => {
+test('defineQuery() returns a recognizable operation handle of kind "query"', function () {
     const handle = defineQuery({ schema: simpleSchema });
 
     assert.strictEqual(isOperationHandle(handle), true);
     assert.strictEqual(handle.kind, 'query');
 });
 
-test('defineMutation() returns a recognizable operation handle of kind "mutation"', () => {
+test('defineMutation() returns a recognizable operation handle of kind "mutation"', function () {
     const handle = defineMutation({ schema: simpleSchema });
 
     assert.strictEqual(isOperationHandle(handle), true);
     assert.strictEqual(handle.kind, 'mutation');
 });
 
-test('defineQuery() passes through operationName', () => {
+test('defineQuery() passes through operationName', function () {
     const handle = defineQuery({ schema: simpleSchema, operationName: 'GetFoo' });
 
     assert.strictEqual(handle.operationName, 'GetFoo');
 });
 
-test('defineQuery() accepts a variable map handle and stores it on the operation handle', () => {
+test('defineQuery() accepts a variable map handle and stores it on the operation handle', function () {
     const vars = defineVariables({ bar: z.string() });
     const handle = defineQuery({ schema: simpleSchema, variables: vars });
 
     assert.strictEqual(handle.variables, vars);
 });
 
-test('defineQuery() works without variables and operationName', () => {
+test('defineQuery() works without variables and operationName', function () {
     const handle = defineQuery({ schema: simpleSchema });
 
     assert.strictEqual(handle.variables, undefined);
     assert.strictEqual(handle.operationName, undefined);
 });
 
-test('isOperationHandle() returns false for plain objects', () => {
+test('isOperationHandle() returns false for plain objects', function () {
     assert.strictEqual(isOperationHandle({ kind: 'query', schema: simpleSchema }), false);
 });
 
-test('isOperationHandle() returns false for null and primitives', () => {
+test('isOperationHandle() returns false for null and primitives', function () {
     assert.strictEqual(isOperationHandle(null), false);
     assert.strictEqual(isOperationHandle('foo'), false);
     assert.strictEqual(isOperationHandle(undefined), false);

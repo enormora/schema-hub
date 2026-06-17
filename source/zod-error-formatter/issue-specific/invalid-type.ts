@@ -1,5 +1,5 @@
 import { type $ZodIssueInvalidType, util } from 'zod/v4/core';
-import { findValueByPath } from '../path.js';
+import { findValueByPath } from '../path.ts';
 
 export function formatInvalidTypeIssueMessage(issue: $ZodIssueInvalidType, input: unknown): string {
     const result = findValueByPath(input, issue.path);

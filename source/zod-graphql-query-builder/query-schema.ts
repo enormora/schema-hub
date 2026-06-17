@@ -1,5 +1,6 @@
 /* eslint-disable no-underscore-dangle -- we need to access _zod */
 /* eslint-disable @typescript-eslint/consistent-type-definitions, @typescript-eslint/no-empty-object-type -- using an interface to avoid circular reference */
+/* eslint-disable functional/type-declaration-immutability -- these types model zod's mutable internal $Zod* types and can't be made ReadonlyShallow */
 import {
     type $strict,
     $ZodArray,
@@ -31,7 +32,7 @@ import {
     type $ZodUnionDef,
     type util as zodUtil
 } from 'zod/v4/core';
-import { type CustomScalarSchema, isCustomScalarSchema } from './custom-scalar.js';
+import { type CustomScalarSchema, isCustomScalarSchema } from './custom-scalar.ts';
 
 /*
  * Drop-in replacements for the zod-v4 schema types whose `_zod` derivations
@@ -110,7 +111,7 @@ export interface FragmentUnionOptionSchema extends
     StrictObjectSchema<
         & FieldShape
         & {
-            __typename: PrimitiveSchema;
+            readonly __typename: PrimitiveSchema;
         }
     > {}
 
@@ -149,45 +150,30 @@ function isWrappedFieldSchema(schema: FieldSchema): schema is WrappedFieldSchema
 
 type UnwrappedChainResult = {
     unwrappedSchema: NonWrappedFieldSchema;
-    wrapperElements: WrappedFieldSchema[];
+    wrapperElements: readonly WrappedFieldSchema[];
 };
 
-// eslint-disable-next-line max-statements,complexity -- no idea how to refactor for now
-function recursiveUnwrapFieldSchemaChain(
-    parent: FieldSchema,
-    currentChain: WrappedFieldSchema[]
-): UnwrappedChainResult {
-    let unwrapped: FieldSchema = parent;
+export function unwrapFieldSchemaChain(parent: FieldSchema): UnwrappedChainResult {
+    let current: FieldSchema = parent;
+    const wrapperElements: WrappedFieldSchema[] = [];
 
-    if (!isWrappedFieldSchema(parent)) {
-        return {
-            unwrappedSchema: parent,
-            wrapperElements: currentChain
-        };
-    }
-
-    if (parent instanceof $ZodLazy) {
-        unwrapped = parent._zod.def.getter() as FieldSchema;
-    } else if (parent instanceof $ZodPipe) {
-        unwrapped = parent._zod.def.in as FieldSchema;
-    } else if (parent instanceof $ZodNullable) {
-        unwrapped = parent._zod.def.innerType;
-    } else if (parent instanceof $ZodReadonly) {
-        unwrapped = parent._zod.def.innerType as FieldSchema;
-    }
-
-    if (isWrappedFieldSchema(unwrapped)) {
-        return recursiveUnwrapFieldSchemaChain(unwrapped, [...currentChain, parent]);
+    while (isWrappedFieldSchema(current)) {
+        wrapperElements.push(current);
+        if (current instanceof $ZodLazy) {
+            current = current._zod.def.getter();
+        } else if (current instanceof $ZodPipe) {
+            current = current._zod.def.in;
+        } else if (current instanceof $ZodNullable) {
+            current = current._zod.def.innerType;
+        } else if (current instanceof $ZodReadonly) {
+            current = current._zod.def.innerType;
+        }
     }
 
     return {
-        unwrappedSchema: unwrapped,
-        wrapperElements: [...currentChain, parent]
+        unwrappedSchema: current,
+        wrapperElements
     };
-}
-
-export function unwrapFieldSchemaChain(parent: FieldSchema): UnwrappedChainResult {
-    return recursiveUnwrapFieldSchemaChain(parent, []);
 }
 
 export function unwrapFieldSchema(parent: FieldSchema): NonWrappedFieldSchema {
