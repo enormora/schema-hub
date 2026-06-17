@@ -1,33 +1,33 @@
-import { test } from '@sondr3/minitest';
 import assert from 'node:assert';
-import { isValidGraphqlType } from './variable-type.js';
+import { test } from '@sondr3/minitest';
+import { isValidGraphqlType } from './variable-type.ts';
 
-test('returns true when the given type is a valid primitive type', () => {
+test('returns true when the given type is a valid primitive type', function () {
     const result = isValidGraphqlType('String');
     assert.strictEqual(result, true);
 });
 
-test('returns true when the given type is a valid non-nullable primitive type', () => {
+test('returns true when the given type is a valid non-nullable primitive type', function () {
     const result = isValidGraphqlType('String!');
     assert.strictEqual(result, true);
 });
 
-test('returns true when the given type is a valid non-nullable list of primitive type', () => {
+test('returns true when the given type is a valid non-nullable list of primitive type', function () {
     const result = isValidGraphqlType('[String]!');
     assert.strictEqual(result, true);
 });
 
-test('returns true when the given type is a valid custom type', () => {
+test('returns true when the given type is a valid custom type', function () {
     const result = isValidGraphqlType('MyCustomType');
     assert.strictEqual(result, true);
 });
 
-test('returns true when the given type is a valid list of custom type', () => {
+test('returns true when the given type is a valid list of custom type', function () {
     const result = isValidGraphqlType('[MyCustomType]');
     assert.strictEqual(result, true);
 });
 
-test('returns false when the given value contains incorrect syntax', () => {
+test('returns false when the given value contains incorrect syntax', function () {
     const result = isValidGraphqlType('[MyCustomType');
     assert.strictEqual(result, false);
 });

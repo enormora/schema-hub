@@ -1,4 +1,4 @@
-import type { NonEmptyArray } from '../tuple/non-empty-array.js';
+import type { NonEmptyArray } from '../tuple/non-empty-array.ts';
 
 function formatCombinedMessage(issues: NonEmptyArray<string>): string {
     if (issues.length === 1) {
@@ -9,12 +9,14 @@ function formatCombinedMessage(issues: NonEmptyArray<string>): string {
 }
 
 export class FormattedZodError extends Error {
-    public issues: NonEmptyArray<string>;
+    // eslint-disable-next-line restricted-syntax-typescript/no-public-class-property -- issues is part of the error's public API
+    public readonly issues: NonEmptyArray<string>;
 
-    constructor(issues: NonEmptyArray<string>) {
+    public constructor(issues: NonEmptyArray<string>, options?: ErrorOptions) {
         const fullMessage = formatCombinedMessage(issues);
-        super(fullMessage);
-        // eslint-disable-next-line functional/no-this-expressions -- sub-classing errors is one of the few exceptions where classes are useful
+        super(fullMessage, options);
+
+        this.name = 'FormattedZodError';
         this.issues = issues;
     }
 }

@@ -1,9 +1,9 @@
 import { test } from '@sondr3/minitest';
 import { oneLine } from 'common-tags';
 import { z } from 'zod/v4-mini';
-import { checkQuery } from '../test-libraries/check-build-output.js';
+import { checkQuery } from '../test-libraries/check-build-output.ts';
 
-(['query', 'mutation'] as const).forEach((operationType) => {
+([ 'query', 'mutation' ] as const).forEach(function (operationType) {
     test(
         `builds a ${operationType} with fragments`,
         checkQuery({
@@ -99,10 +99,10 @@ import { checkQuery } from '../test-libraries/check-build-output.js';
             buildSchema() {
                 const schema = z
                     .strictObject({
-                        foo: z.tuple([z.discriminatedUnion('__typename', [
+                        foo: z.tuple([ z.discriminatedUnion('__typename', [
                             z.strictObject({ __typename: z.literal('A'), valueA: z.string() }),
                             z.strictObject({ __typename: z.literal('B'), valueB: z.string() })
-                        ])])
+                        ]) ])
                     });
                 return schema;
             },

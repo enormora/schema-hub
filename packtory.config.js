@@ -21,7 +21,7 @@ export async function buildConfig() {
         checks: {
             noDuplicatedFiles: {
                 enabled: true,
-                allowList: [path.join(projectFolder, 'LICENSE')]
+                allowList: [ path.join(projectFolder, 'LICENSE') ]
             },
             noUnusedBundleDependencies: { enabled: true },
             noDevDependencyImports: { enabled: true },
@@ -56,12 +56,12 @@ export async function buildConfig() {
                 },
                 additionalPackageJsonAttributes: {
                     description: 'Simple and easy-to-understand zod error messages',
-                    keywords: ['zod', 'zod-error', 'zod-format', 'formatter', 'error-formatter']
+                    keywords: [ 'zod', 'zod-error', 'zod-format', 'formatter', 'error-formatter' ]
                 },
-                additionalFiles: [{
+                additionalFiles: [ {
                     sourceFilePath: path.join(projectFolder, 'source/zod-error-formatter/readme.md'),
                     targetFilePath: 'readme.md'
-                }]
+                } ]
             },
             {
                 name: '@schema-hub/zod-graphql-query-builder',
@@ -73,12 +73,12 @@ export async function buildConfig() {
                 },
                 additionalPackageJsonAttributes: {
                     description: 'Transforms Zod schemas into GraphQL queries',
-                    keywords: ['zod', 'zod-graphql', 'graphql', 'graphql-query', 'query-builder', 'graphql-builder']
+                    keywords: [ 'zod', 'zod-graphql', 'graphql', 'graphql-query', 'query-builder', 'graphql-builder' ]
                 },
-                additionalFiles: [{
+                additionalFiles: [ {
                     sourceFilePath: path.join(projectFolder, 'source/zod-graphql-query-builder/readme.md'),
                     targetFilePath: 'readme.md'
-                }]
+                } ]
             },
             {
                 name: '@schema-hub/zod-graphql-client',
@@ -90,13 +90,13 @@ export async function buildConfig() {
                 },
                 additionalPackageJsonAttributes: {
                     description: 'A lightweight and type-safe zod-based GraphQL client',
-                    keywords: ['zod', 'zod-graphql', 'graphql', 'graphql-query', 'graphql-client', 'graphql-builder']
+                    keywords: [ 'zod', 'zod-graphql', 'graphql', 'graphql-query', 'graphql-client', 'graphql-builder' ]
                 },
-                additionalFiles: [{
+                additionalFiles: [ {
                     sourceFilePath: path.join(projectFolder, 'source/zod-graphql-client/readme.md'),
                     targetFilePath: 'readme.md'
-                }],
-                bundleDependencies: ['@schema-hub/zod-graphql-query-builder', '@schema-hub/zod-error-formatter']
+                } ],
+                bundleDependencies: [ '@schema-hub/zod-graphql-query-builder', '@schema-hub/zod-error-formatter' ]
             },
             {
                 name: '@schema-hub/zod-graphql-fake-client',
@@ -108,13 +108,13 @@ export async function buildConfig() {
                 },
                 additionalPackageJsonAttributes: {
                     description: 'Fake GraphQL client for testing @schema-hub/zod-graphql-client',
-                    keywords: ['fake-graphql-client', 'testing-client']
+                    keywords: [ 'fake-graphql-client', 'testing-client' ]
                 },
-                additionalFiles: [{
+                additionalFiles: [ {
                     sourceFilePath: path.join(projectFolder, 'source/zod-graphql-fake-client/readme.md'),
                     targetFilePath: 'readme.md'
-                }],
-                bundlePeerDependencies: ['@schema-hub/zod-graphql-client']
+                } ],
+                bundlePeerDependencies: [ '@schema-hub/zod-graphql-client' ]
             }
         ]
     };

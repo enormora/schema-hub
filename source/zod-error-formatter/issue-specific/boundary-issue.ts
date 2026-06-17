@@ -11,8 +11,8 @@ export type BoundaryPhrases = {
     readonly dateNonInclusive: string;
 };
 
-const collectionTypes = new Set(['string', 'array', 'set']);
-const numericTypes = new Set(['bigint', 'number']);
+const collectionTypes = new Set([ 'string', 'array', 'set' ]);
+const numericTypes = new Set([ 'bigint', 'number' ]);
 
 function inclusivePredicate(issue: BoundaryIssue, inclusiveVariant: string, nonInclusiveVariant: string): string {
     if (issue.inclusive === true) {
@@ -59,5 +59,6 @@ export function formatBoundaryIssue(
         return `${issue.origin} must be ${predicate} ${boundary}`;
     }
 
-    return `${issue.origin} must be ${predicate} ${new Date(Number(boundary)).toUTCString()}`;
+    const boundaryDate = new Date(Number(boundary));
+    return `${issue.origin} must be ${predicate} ${boundaryDate.toUTCString()}`;
 }

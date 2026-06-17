@@ -1,19 +1,16 @@
-import { createBuildContext } from './build-context.js';
-import { formatFragmentDefinitions } from './fragment-definitions.js';
-import type { FieldSchema, QuerySchema } from './query-schema.js';
-import { extractRootShape } from './root-shape.js';
-import {
-    type FieldOptionsRegistry,
-    type GraphqlFieldOptions,
-    serializeRootShape
-} from './serializer.js';
-import { isValidGraphqlName } from './values/name.js';
-import { ensureValidVariableCorrelations } from './variable-correlations.js';
-import { serializeVariableDefinitions, type VariableDefinitions } from './variable-definition.js';
+import { createBuildContext } from './build-context.ts';
+import { formatFragmentDefinitions } from './fragment-definitions.ts';
+import type { FieldSchema, QuerySchema } from './query-schema.ts';
+import { extractRootShape } from './root-shape.ts';
+import { serializeRootShape } from './serializer.ts';
+import type { FieldOptionsRegistry, GraphqlFieldOptions } from './type-name.ts';
+import { isValidGraphqlName } from './values/name.ts';
+import { ensureValidVariableCorrelations } from './variable-correlations.ts';
+import { serializeVariableDefinitions, type VariableDefinitions } from './variable-definition.ts';
 
 export type OperationOptions = {
-    operationName?: string | undefined;
-    variableDefinitions?: VariableDefinitions | undefined;
+    readonly operationName?: string | undefined;
+    readonly variableDefinitions?: VariableDefinitions | undefined;
 };
 
 export type QueryBuilder = {

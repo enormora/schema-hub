@@ -1,8 +1,8 @@
 import { z } from 'zod/v4';
-import { isNonEmptyArray } from '../tuple/non-empty-array.js';
-import { safeParse } from '../zod-error-formatter/formatter.js';
-import { graphqlErrorSchema } from './graphql-error.js';
-import type { OperationResultForType } from './operation-result.js';
+import { isNonEmptyArray } from '../tuple/non-empty-array.ts';
+import { safeParse } from '../zod-error-formatter/formatter.ts';
+import { graphqlErrorSchema } from './graphql-error.ts';
+import type { OperationResultForType } from './operation-result.ts';
 
 const graphqlResponseSchema = z
     .object({

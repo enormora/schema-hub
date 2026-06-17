@@ -1,69 +1,69 @@
-import { test } from '@sondr3/minitest';
 import assert from 'node:assert';
-import { formatInvalidValueIssueMessage } from './invalid-value.js';
+import { test } from '@sondr3/minitest';
+import { formatInvalidValueIssueMessage } from './invalid-value.ts';
 
-test('formats the issue by using the expected value as is and only the type of the received value', () => {
+test('formats the issue by using the expected value as is and only the type of the received value', function () {
     const message = formatInvalidValueIssueMessage({
         code: 'invalid_value',
         path: [],
         message: '',
-        values: [1],
+        values: [ 1 ],
         input: { foo: 'bar' }
     }, { foo: 'bar' });
     assert.strictEqual(message, 'invalid value: expected 1, but got object');
 });
 
-test('wraps the expected value in double quotes when it is a string', () => {
+test('wraps the expected value in double quotes when it is a string', function () {
     const message = formatInvalidValueIssueMessage({
         code: 'invalid_value',
         path: [],
         message: '',
-        values: ['foo'],
+        values: [ 'foo' ],
         input: null
     }, null);
     assert.strictEqual(message, 'invalid value: expected "foo", but got null');
 });
 
-test('correctly works with undefined as expected value', () => {
+test('correctly works with undefined as expected value', function () {
     const message = formatInvalidValueIssueMessage({
         code: 'invalid_value',
         path: [],
         message: '',
-        values: [undefined],
+        values: [ undefined ],
         input: null
     }, null);
     assert.strictEqual(message, 'invalid value: expected undefined, but got null');
 });
 
-test('correctly works with bigint as expected value', () => {
+test('correctly works with bigint as expected value', function () {
     const message = formatInvalidValueIssueMessage({
         code: 'invalid_value',
         path: [],
         message: '',
         // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- using a large number for testing
-        values: [9_007_199_254_740_993n],
+        values: [ 9_007_199_254_740_993n ],
         input: null
     }, null);
     assert.strictEqual(message, 'invalid value: expected 9007199254740993, but got null');
 });
 
-test('formats the issue as missing property when the path doesn’t exist in the given object', () => {
+test('formats the issue as missing property when the path doesn’t exist in the given object', function () {
     const message = formatInvalidValueIssueMessage({
         code: 'invalid_value',
-        path: ['foo'],
+        path: [ 'foo' ],
         message: '',
-        values: [1],
+        values: [ 1 ],
         input: { foo: 'bar' }
     }, {});
     assert.strictEqual(message, 'missing property; expected 1');
 });
 
-test('formats the issue as missing key when the path doesn’t exist in the given array', () => {
+test('formats the issue as missing key when the path doesn’t exist in the given array', function () {
     const message = formatInvalidValueIssueMessage({
         code: 'invalid_value',
-        path: [0],
+        path: [ 0 ],
         message: '',
-        values: [1],
+        values: [ 1 ],
         input: { foo: 'bar' }
     }, []);
     assert.strictEqual(message, 'missing key; expected 1');

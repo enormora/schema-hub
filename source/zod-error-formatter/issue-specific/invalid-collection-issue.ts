@@ -1,5 +1,5 @@
 import type { $ZodIssue, $ZodIssueInvalidElement, $ZodIssueInvalidKey } from 'zod/v4/core';
-import { formatPath, isNonEmptyPath } from '../path.js';
+import { formatPath, isNonEmptyPath } from '../path.ts';
 
 type FormatChildIssue = (issue: $ZodIssue, input: unknown) => string;
 
@@ -24,7 +24,7 @@ function formatCollectionIssue(
     // sub-messages without doubling the prefix.
     return issue
         .issues
-        .map((subIssue) => {
+        .map(function (subIssue) {
             return formatChildIssue(subIssue, input);
         })
         .join('; ');

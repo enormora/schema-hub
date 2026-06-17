@@ -1,4 +1,5 @@
 /* eslint-disable no-underscore-dangle -- we need to access _zod */
+/* eslint-disable functional/prefer-immutable-types -- parameters are third-party zod schema types that are only read */
 import {
     $ZodArray,
     $ZodBoolean,
@@ -10,33 +11,36 @@ import {
 } from 'zod/v4/core';
 
 export class GraphqlTypeInferenceError extends Error {
-    public constructor(message: string) {
-        super(message);
-        // eslint-disable-next-line functional/no-this-expressions -- sub-classing errors is one of the few exceptions where classes are useful
+    public constructor(message: string, options?: ErrorOptions) {
+        super(message, options);
+
         this.name = 'GraphqlTypeInferenceError';
     }
 }
 
-const integerNumberFormats = new Set(['safeint', 'int32', 'int64', 'uint32', 'uint64']);
+const integerNumberFormats = new Set([ 'safeint', 'int32', 'int64', 'uint32', 'uint64' ]);
 
 type NumberDefShape = {
-    format?: string;
-    checks?: readonly { _zod: { def: { format?: string; }; }; }[];
+    readonly format?: string;
+    readonly checks?: readonly { readonly _zod: { readonly def: { readonly format?: string; }; }; }[];
 };
 
 function hasIntegerFormat(schema: $ZodNumber): boolean {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- reads the number schema's internal def shape, which zod doesn't expose with precise types
     const def = schema._zod.def as NumberDefShape;
     if (def.format !== undefined && integerNumberFormats.has(def.format)) {
         return true;
     }
     const { checks = [] } = def;
-    return checks.some((check) => {
+    return checks.some(function (check) {
         const checkFormat = check._zod.def.format;
         return checkFormat !== undefined && integerNumberFormats.has(checkFormat);
     });
 }
 
-function unwrapNullable(schema: $ZodType): { readonly innerSchema: $ZodType; readonly isNullable: boolean; } {
+type UnwrappedNullable = { readonly innerSchema: $ZodType; readonly isNullable: boolean; };
+
+function unwrapNullable(schema: $ZodType): UnwrappedNullable {
     let current: $ZodType = schema;
     let isNullable = false;
     while (current instanceof $ZodNullable || current instanceof $ZodOptional) {

@@ -6,7 +6,7 @@ const locationSchema = z
         column: z.number().check(z.int(), z.positive())
     });
 
-const pathSegmentSchema = z.union([z.string(), z.number()]);
+const pathSegmentSchema = z.union([ z.string(), z.number() ]);
 
 export const graphqlErrorSchema = z
     .object({
@@ -16,4 +16,4 @@ export const graphqlErrorSchema = z
         extensions: z.optional(z.record(z.string(), z.unknown()))
     });
 
-export type GraphqlError = z.infer<typeof graphqlErrorSchema>;
+export type GraphqlError = Readonly<z.infer<typeof graphqlErrorSchema>>;

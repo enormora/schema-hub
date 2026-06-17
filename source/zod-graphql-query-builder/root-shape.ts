@@ -1,5 +1,5 @@
 /* eslint-disable no-underscore-dangle -- we need to access _zod */
-import type { FieldShape, QuerySchema } from './query-schema.js';
+import type { FieldShape, QuerySchema } from './query-schema.ts';
 
 export function extractRootShape(schema: QuerySchema): FieldShape {
     if (schema._zod.def.type === 'readonly') {

@@ -1,5 +1,5 @@
 import type { $ZodIssueTooSmall } from 'zod/v4/core';
-import { type BoundaryPhrases, formatBoundaryIssue } from './boundary-issue.js';
+import { type BoundaryPhrases, formatBoundaryIssue } from './boundary-issue.ts';
 
 const phrases: BoundaryPhrases = {
     collectionInclusive: 'at least',

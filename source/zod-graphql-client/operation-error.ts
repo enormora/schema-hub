@@ -1,49 +1,57 @@
-import type { NonEmptyArray } from '../tuple/non-empty-array.js';
-import type { GraphqlError } from './graphql-error.js';
-
-export type { GraphqlError } from './graphql-error.js';
+import type { NonEmptyArray } from '../tuple/non-empty-array.ts';
+import type { GraphqlError } from './graphql-error.ts';
 
 type BaseError = {
-    message: string;
+    readonly message: string;
 };
 
 type GraphqlResponseError = BaseError & {
-    type: 'graphql';
-    errors: NonEmptyArray<GraphqlError>;
+    readonly type: 'graphql';
+    readonly errors: NonEmptyArray<GraphqlError>;
 };
 
 type ServerError = BaseError & {
-    type: 'server';
-    statusCode: number;
-    cause?: unknown;
+    readonly type: 'server';
+    readonly statusCode: number;
+    readonly cause?: unknown;
 };
 
 type ValidationError = BaseError & {
-    type: 'validation';
-    issues: NonEmptyArray<string>;
+    readonly type: 'validation';
+    readonly issues: NonEmptyArray<string>;
 };
 
 type NetworkError = BaseError & {
-    type: 'network';
-    cause?: unknown;
+    readonly type: 'network';
+    readonly cause?: unknown;
 };
 
 type UnknownError = BaseError & {
-    type: 'unknown';
-    cause?: unknown;
+    readonly type: 'unknown';
+    readonly cause?: unknown;
 };
 
 export type OperationErrorDetails = GraphqlResponseError | NetworkError | ServerError | UnknownError | ValidationError;
 
+function causeOf(details: OperationErrorDetails): unknown {
+    // eslint-disable-next-line unicorn/prefer-includes-over-repeated-comparisons -- literal comparisons narrow the discriminated union so `cause` is accessible
+    if (details.type === 'network' || details.type === 'server' || details.type === 'unknown') {
+        return details.cause;
+    }
+    return undefined;
+}
+
 export class GraphqlOperationError extends Error {
-    // eslint-disable-next-line @typescript-eslint/no-restricted-types -- no type-fest installed
+    // eslint-disable-next-line @typescript-eslint/no-restricted-types, restricted-syntax-typescript/no-public-class-property -- no type-fest installed; details is part of the error's public API
     public readonly details: Omit<OperationErrorDetails, 'message'>;
 
-    constructor(details: OperationErrorDetails) {
+    // eslint-disable-next-line unicorn/custom-error-definition -- constructor takes a domain details object rather than message + options
+    public constructor(details: OperationErrorDetails) {
+        const cause = causeOf(details);
         const { message, ...remainingDetails } = details;
-        const cause = 'cause' in remainingDetails ? remainingDetails.cause : undefined;
         super(message, cause === undefined ? undefined : { cause });
-        // eslint-disable-next-line functional/no-this-expressions -- sub-classing errors is ok
+
+        this.name = 'GraphqlOperationError';
         this.details = remainingDetails;
     }
 }

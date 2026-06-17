@@ -1,12 +1,12 @@
-import { isValidVariableIdentifier } from './values/variable-placeholder.js';
-import { isValidGraphqlType } from './variable-type.js';
+import { isValidVariableIdentifier } from './values/variable-placeholder.ts';
+import { isValidGraphqlType } from './variable-type.ts';
 
-export type VariableDefinitions = Record<string, string>;
+export type VariableDefinitions = Readonly<Record<string, string>>;
 
 type VariableDefinitionPair = readonly [variableName: string, variableType: string];
 
 function ensureValidVariableDefinition(variableDefinition: VariableDefinitionPair): void {
-    const [variableName, variableType] = variableDefinition;
+    const [ variableName, variableType ] = variableDefinition;
 
     if (!isValidVariableIdentifier(variableName)) {
         throw new Error(`Variable name "${variableName}" is not a valid GraphQL variable name`);
@@ -17,7 +17,7 @@ function ensureValidVariableDefinition(variableDefinition: VariableDefinitionPai
 }
 
 function serializeVariableDefinitionPair(variableDefinition: VariableDefinitionPair): string {
-    const [variableName, variableType] = variableDefinition;
+    const [ variableName, variableType ] = variableDefinition;
     return `${variableName}: ${variableType}`;
 }
 
@@ -29,7 +29,7 @@ export function serializeVariableDefinitions(definitions: VariableDefinitions): 
     }
 
     entries.forEach(ensureValidVariableDefinition);
-    const sortedEntries = entries.toSorted(([nameA], [nameB]) => {
+    const sortedEntries = entries.toSorted(function ([ nameA ], [ nameB ]) {
         return nameA.localeCompare(nameB);
     });
     const serializedEntries = sortedEntries.map(serializeVariableDefinitionPair);

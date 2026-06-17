@@ -1,8 +1,8 @@
-import { test } from '@sondr3/minitest';
 import assert from 'node:assert';
-import { formatInvalidTypeIssueMessage } from './invalid-type.js';
+import { test } from '@sondr3/minitest';
+import { formatInvalidTypeIssueMessage } from './invalid-type.ts';
 
-test('formats the expected and received value correctly', () => {
+test('formats the expected and received value correctly', function () {
     const message = formatInvalidTypeIssueMessage({
         code: 'invalid_type',
         path: [],
@@ -13,10 +13,10 @@ test('formats the expected and received value correctly', () => {
     assert.strictEqual(message, 'expected date, but got null');
 });
 
-test('formats the issue as missing property when the path couldn’t be resolved in the given input data', () => {
+test('formats the issue as missing property when the path couldn’t be resolved in the given input data', function () {
     const message = formatInvalidTypeIssueMessage({
         code: 'invalid_type',
-        path: ['foo', 'bar'],
+        path: [ 'foo', 'bar' ],
         message: '',
         expected: 'date',
         input: 'null'
@@ -24,10 +24,10 @@ test('formats the issue as missing property when the path couldn’t be resolved
     assert.strictEqual(message, 'missing property; expected date');
 });
 
-test('formats the issue as missing key when the path couldn’t be resolved in the given input data', () => {
+test('formats the issue as missing key when the path couldn’t be resolved in the given input data', function () {
     const message = formatInvalidTypeIssueMessage({
         code: 'invalid_type',
-        path: [1],
+        path: [ 1 ],
         message: '',
         expected: 'date',
         input: 'null'

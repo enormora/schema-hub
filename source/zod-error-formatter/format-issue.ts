@@ -16,13 +16,13 @@ import {
     formatTooBigIssueMessage,
     formatTooSmallIssueMessage,
     formatUnrecognizedKeysIssueMessage
-} from './issue-specific/entry-point.js';
-import { formatPath, isNonEmptyPath } from './path.js';
+} from './issue-specific/entry-point.ts';
+import { formatPath, isNonEmptyPath } from './path.ts';
 
 type ZodIssueCode = Exclude<$ZodIssue['code'], undefined>;
 
 type FormatterForCode<Code extends ZodIssueCode> = (
-    issue: Extract<$ZodIssue, { code: Code; }>,
+    issue: Extract<$ZodIssue, { readonly code: Code; }>,
     input: unknown
 ) => string;
 
@@ -34,7 +34,7 @@ type FormatterMap = {
 // either render a multi-issue block (invalid_union) or delegate to child
 // formatters whose absolute paths would otherwise be doubled (invalid_key,
 // invalid_element).
-const selfPrefixingCodes: ReadonlySet<ZodIssueCode> = new Set(['invalid_union', 'invalid_key', 'invalid_element']);
+const selfPrefixingCodes: ReadonlySet<ZodIssueCode> = new Set([ 'invalid_union', 'invalid_key', 'invalid_element' ]);
 
 function formatCustom(issue: $ZodIssueCustom): string {
     if (issue.message.length > 0) {
@@ -73,8 +73,9 @@ const issueCodeToFormatterMap: FormatterMap = {
 };
 
 export function formatIssue(issue: $ZodIssue, input: unknown): string {
-    const { path, code = 'custom' } = issue;
+    const { path, code } = issue;
 
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- the formatter looked up by issue code accepts that specific issue, which the map type can't express
     const formatter = issueCodeToFormatterMap[code] as (
         issue: $ZodIssue,
         input: unknown

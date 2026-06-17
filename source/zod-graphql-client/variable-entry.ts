@@ -5,12 +5,13 @@ export type ExplicitVariableEntry<Schema extends $ZodType = $ZodType> = {
     readonly schema: Schema;
 };
 
+// eslint-disable-next-line functional/type-declaration-immutability -- $ZodType is a third-party mutable type
 export type VariableEntry = $ZodType | ExplicitVariableEntry;
 
 type SchemaFromZodType<Entry> = Entry extends $ZodType ? Entry : never;
 
-export type EntrySchema<Entry extends VariableEntry> = Entry extends ExplicitVariableEntry<infer Schema> ? Schema :
-    SchemaFromZodType<Entry>;
+export type EntrySchema<Entry extends VariableEntry> = Entry extends ExplicitVariableEntry<infer Schema> ? Schema
+    : SchemaFromZodType<Entry>;
 
 export type EntryValueType<Entry extends VariableEntry> = TypeOf<EntrySchema<Entry>>;
 

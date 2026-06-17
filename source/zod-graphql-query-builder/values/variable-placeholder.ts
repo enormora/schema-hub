@@ -1,4 +1,4 @@
-import { hasProperty, isRecord } from './record.js';
+import { hasProperty, isRecord } from './record.ts';
 
 export type GraphqlVariablePlaceholder = {
     readonly variableName: string;

@@ -1,5 +1,5 @@
 import type { $ZodIssueUnrecognizedKeys } from 'zod/v4/core';
-import { formatList } from '../list.js';
+import { formatList } from '../list.ts';
 
 export function formatUnrecognizedKeysIssueMessage(issue: $ZodIssueUnrecognizedKeys): string {
     const formattedProperties = formatList(issue.keys, ' and ');

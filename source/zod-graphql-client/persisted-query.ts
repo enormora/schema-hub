@@ -4,9 +4,9 @@ import { z } from 'zod/v4-mini';
 const persistedQueryVersion = 1;
 
 export type PersistedQueryExtensions = {
-    persistedQuery: {
-        version: typeof persistedQueryVersion;
-        sha256Hash: string;
+    readonly persistedQuery: {
+        readonly version: typeof persistedQueryVersion;
+        readonly sha256Hash: string;
     };
 };
 
@@ -39,9 +39,11 @@ const persistedQueryErrorDetectionSchema = z.object({
 
 export type PersistedQueryRetryReason = 'not-found' | 'not-supported';
 
+type GraphqlErrorExtensions = { readonly code?: string | undefined; };
+
 type GraphqlErrorShape = {
-    message?: string | undefined;
-    extensions?: { code?: string | undefined; } | undefined;
+    readonly message?: string | undefined;
+    readonly extensions?: GraphqlErrorExtensions | undefined;
 };
 
 function classifyPersistedQueryError(error: GraphqlErrorShape): PersistedQueryRetryReason | undefined {

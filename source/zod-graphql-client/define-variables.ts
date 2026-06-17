@@ -1,32 +1,32 @@
 import { z } from 'zod/v4-mini';
 import type { $ZodType } from 'zod/v4/core';
-import { safeParse, type SafeParseResult } from '../zod-error-formatter/formatter.js';
+import { safeParse, type SafeParseResult } from '../zod-error-formatter/formatter.ts';
 import {
     type GraphqlVariablePlaceholder,
     variablePlaceholder
-} from '../zod-graphql-query-builder/values/variable-placeholder.js';
-import { inferGraphqlType } from './infer-graphql-type.js';
+} from '../zod-graphql-query-builder/values/variable-placeholder.ts';
+import { inferGraphqlType } from './infer-graphql-type.ts';
 import {
     type EntryValueType,
     getEntrySchema,
     isExplicitVariableEntry,
     type VariableEntry
-} from './variable-entry.js';
+} from './variable-entry.ts';
 
-export type VariableValues<Map extends Record<string, VariableEntry>> = {
-    [Name in keyof Map]: EntryValueType<Map[Name]>;
+export type VariableValues<Variables extends Record<string, VariableEntry>> = {
+    readonly [Name in keyof Variables]: EntryValueType<Variables[Name]>;
 };
 
 const variableMapMetadataKey = Symbol('variable-map-metadata');
 
 type AnyVariableMapMetadata = {
     readonly definitions: Readonly<Record<string, string>>;
-    readonly parse: (input: unknown) => SafeParseResult<Record<string, unknown>>;
+    readonly parse: (input: unknown) => SafeParseResult<Readonly<Record<string, unknown>>>;
 };
 
-type VariableMapMetadata<Map extends Record<string, VariableEntry>> = {
+type VariableMapMetadata<Variables extends Record<string, VariableEntry>> = {
     readonly definitions: Readonly<Record<string, string>>;
-    readonly parse: (input: unknown) => SafeParseResult<VariableValues<Map>>;
+    readonly parse: (input: unknown) => SafeParseResult<VariableValues<Variables>>;
 };
 
 declare const variableMapHandleBrand: unique symbol;
@@ -38,33 +38,34 @@ export type AnyVariableMapHandle = {
 
 export type MaybeVariables = AnyVariableMapHandle | undefined;
 
-export type VariableMapHandle<Map extends Record<string, VariableEntry>> =
+export type VariableMapHandle<Variables extends Record<string, VariableEntry>> =
     & AnyVariableMapHandle
-    & Readonly<Record<string & keyof Map, GraphqlVariablePlaceholder>>
+    & Readonly<Record<string & keyof Variables, GraphqlVariablePlaceholder>>
     & {
-        readonly [variableMapMetadataKey]: VariableMapMetadata<Map>;
+        readonly [variableMapMetadataKey]: VariableMapMetadata<Variables>;
     };
 
-type MapOfHandle<Handle> = Handle extends VariableMapHandle<infer Map> ? Map : never;
+type MapOfHandle<Handle> = Handle extends VariableMapHandle<infer Variables> ? Variables : never;
 
 export type ValuesOfVariableMapHandle<Handle extends AnyVariableMapHandle> = VariableValues<MapOfHandle<Handle>>;
 
 export function getVariableMapMetadata(handle: AnyVariableMapHandle): AnyVariableMapMetadata {
+    // eslint-disable-next-line unicorn/no-unsafe-property-key -- variableMapMetadataKey is a unique symbol, which is a safe property key
     return handle[variableMapMetadataKey];
 }
 
 type PreparedMap = {
-    readonly definitions: Record<string, string>;
-    readonly schemaShape: Record<string, $ZodType>;
-    readonly placeholders: Record<string, GraphqlVariablePlaceholder>;
+    readonly definitions: Readonly<Record<string, string>>;
+    readonly schemaShape: Readonly<Record<string, $ZodType>>;
+    readonly placeholders: Readonly<Record<string, GraphqlVariablePlaceholder>>;
 };
 
-function prepareVariableMap(map: Record<string, VariableEntry>): PreparedMap {
+function prepareVariableMap(map: Readonly<Record<string, VariableEntry>>): PreparedMap {
     const definitions: Record<string, string> = {};
     const schemaShape: Record<string, $ZodType> = {};
     const placeholders: Record<string, GraphqlVariablePlaceholder> = {};
 
-    for (const [name, entry] of Object.entries(map)) {
+    for (const [ name, entry ] of Object.entries(map)) {
         const placeholderName = `$${name}`;
         placeholders[name] = variablePlaceholder(placeholderName);
         definitions[placeholderName] = isExplicitVariableEntry(entry) ? entry.type : inferGraphqlType(entry);
@@ -74,21 +75,25 @@ function prepareVariableMap(map: Record<string, VariableEntry>): PreparedMap {
     return { definitions, schemaShape, placeholders };
 }
 
-export function defineVariables<Map extends Record<string, VariableEntry>>(map: Map): VariableMapHandle<Map> {
+export function defineVariables<Variables extends Record<string, VariableEntry>>(
+    map: Variables
+): VariableMapHandle<Variables> {
     const { definitions, schemaShape, placeholders } = prepareVariableMap(map);
     const combinedSchema = z.object(schemaShape);
 
-    const metadata: VariableMapMetadata<Map> = {
+    const metadata: VariableMapMetadata<Variables> = {
         definitions: Object.freeze(definitions),
-        parse(input: unknown): SafeParseResult<VariableValues<Map>> {
-            return safeParse(combinedSchema, input) as SafeParseResult<VariableValues<Map>>;
+        parse(input: unknown): SafeParseResult<VariableValues<Variables>> {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- the dynamically built schema parses into VariableValues<Variables>
+            return safeParse(combinedSchema, input) as SafeParseResult<VariableValues<Variables>>;
         }
     };
 
-    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- combined placeholder map + metadata symbol can't be inferred to VariableMapHandle<Map> structurally
+    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions, @typescript-eslint/no-unsafe-type-assertion -- combined placeholder map + metadata symbol can't be inferred to VariableMapHandle<Variables> structurally
     const handle = {
         ...placeholders,
+        // eslint-disable-next-line unicorn/no-unsafe-property-key -- variableMapMetadataKey is a unique symbol, which is a safe property key
         [variableMapMetadataKey]: metadata
-    } as VariableMapHandle<Map>;
+    } as VariableMapHandle<Variables>;
     return handle;
 }

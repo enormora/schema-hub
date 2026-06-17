@@ -1,11 +1,11 @@
-import { isNonEmptyArray, type NonEmptyArray } from '../tuple/non-empty-array.js';
+import { isNonEmptyArray, type NonEmptyArray } from '../tuple/non-empty-array.ts';
 
 type Path = NonEmptyArray<PropertyKey>;
 
 export const isNonEmptyPath = isNonEmptyArray<PropertyKey>;
 
 export function formatPath(path: Path): string {
-    return path.reduce<string>((currentFormattedPath, item, index) => {
+    return path.reduce<string>(function (currentFormattedPath, item, index) {
         if (typeof item === 'number') {
             return `${currentFormattedPath}[${item}]`;
         }
@@ -31,7 +31,7 @@ type ValueNotFoundResult = {
 
 type ValueResult = FoundValueResult | ValueNotFoundResult;
 
-type Indexable = Record<PropertyKey, unknown>;
+type Indexable = Readonly<Record<PropertyKey, unknown>>;
 
 function isIndexable(value: unknown): value is Indexable {
     return typeof value === 'object' && value !== null;
@@ -45,9 +45,9 @@ function determinePathItemKind(pathItem: PropertyKey): 'key' | 'property' {
     return typeof pathItem === 'number' ? 'key' : 'property';
 }
 
-function findMapValueByPath(value: Map<unknown, unknown>, path: readonly PropertyKey[]): ValueResult {
+function findMapValueByPath(value: ReadonlyMap<unknown, unknown>, path: readonly PropertyKey[]): ValueResult {
     if (isNonEmptyPath(path)) {
-        const [mapEntryKey, ...remainingPath] = path;
+        const [ mapEntryKey, ...remainingPath ] = path;
         const entry = value.get(mapEntryKey);
 
         if (entry !== undefined) {
@@ -62,18 +62,20 @@ function findMapValueByPath(value: Map<unknown, unknown>, path: readonly Propert
 }
 
 export function findValueByPath(value: unknown, path: readonly PropertyKey[]): ValueResult {
-    if (isMap(value)) {
-        return findMapValueByPath(value, path);
-    }
+    let currentValue = value;
+    let currentPath = path;
 
-    if (isNonEmptyPath(path)) {
-        const [currentPathItem, ...remainingPath] = path;
+    while (!isMap(currentValue) && isNonEmptyPath(currentPath)) {
+        const [ currentPathItem, ...remainingPath ] = currentPath;
 
-        if (isIndexable(value) && Object.hasOwn(value, currentPathItem)) {
-            return findValueByPath(value[currentPathItem], remainingPath);
+        if (!isIndexable(currentValue) || !Object.hasOwn(currentValue, currentPathItem)) {
+            return { found: false, pathItemKind: determinePathItemKind(currentPathItem) };
         }
-        return { found: false, pathItemKind: determinePathItemKind(currentPathItem) };
+        currentValue = currentValue[currentPathItem];
+        currentPath = remainingPath;
     }
 
-    return { found: true, value };
+    return isMap(currentValue)
+        ? findMapValueByPath(currentValue, currentPath)
+        : { found: true, value: currentValue };
 }

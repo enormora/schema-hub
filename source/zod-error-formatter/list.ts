@@ -1,8 +1,9 @@
 import type { $ZodType, util } from 'zod/v4/core';
-import { isNonEmptyArray, type NonEmptyArray } from '../tuple/non-empty-array.js';
+import { isNonEmptyArray, type NonEmptyArray } from '../tuple/non-empty-array.ts';
 
 function joinList(values: NonEmptyArray<string>, separator: string, lastItemSeparator: string): string {
     const initialList = Array.from(values);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- values is a NonEmptyArray, so pop() always returns an item
     const lastItem = initialList.pop() as string;
 
     if (initialList.length === 0) {
@@ -13,7 +14,7 @@ function joinList(values: NonEmptyArray<string>, separator: string, lastItemSepa
     return `${joinedInitialList}${lastItemSeparator}${lastItem}`;
 }
 
-type ParsedType = { type: $ZodType['_zod']['def']['type']; };
+type ParsedType = { readonly type: $ZodType['_zod']['def']['type']; };
 export type ListValue = ParsedType | util.Primitive;
 
 export function isParsedType(value: ListValue): value is ParsedType {

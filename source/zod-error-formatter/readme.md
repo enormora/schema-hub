@@ -21,13 +21,13 @@ Input:
 ```typescript
 import { safeParse } from '@schema-hub/zod-error-formatter';
 
-const schema = z.union([z.string(), z.number()]);
+const schema = z.union([ z.string(), z.number() ]);
 const result = safeParse(schema, true);
 ```
 
 Error message:
 
-```
+```text
 Validation failed: invalid value: expected one of string or number, but got boolean
 ```
 

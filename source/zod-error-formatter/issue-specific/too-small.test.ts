@@ -1,8 +1,8 @@
-import { test } from '@sondr3/minitest';
 import assert from 'node:assert';
-import { formatTooSmallIssueMessage } from './too-small.js';
+import { test } from '@sondr3/minitest';
+import { formatTooSmallIssueMessage } from './too-small.ts';
 
-test('formats the boundary correctly for string type with minimum 1', () => {
+test('formats the boundary correctly for string type with minimum 1', function () {
     const message = formatTooSmallIssueMessage({
         code: 'too_small',
         path: [],
@@ -15,7 +15,7 @@ test('formats the boundary correctly for string type with minimum 1', () => {
     assert.strictEqual(message, 'string must contain at least 1 character');
 });
 
-test('formats the boundary correctly for string type with minimum more than 1', () => {
+test('formats the boundary correctly for string type with minimum more than 1', function () {
     const message = formatTooSmallIssueMessage({
         code: 'too_small',
         path: [],
@@ -28,7 +28,7 @@ test('formats the boundary correctly for string type with minimum more than 1', 
     assert.strictEqual(message, 'string must contain at least 2 characters');
 });
 
-test('formats the boundary correctly for array type with minimum 1', () => {
+test('formats the boundary correctly for array type with minimum 1', function () {
     const message = formatTooSmallIssueMessage({
         code: 'too_small',
         path: [],
@@ -41,7 +41,7 @@ test('formats the boundary correctly for array type with minimum 1', () => {
     assert.strictEqual(message, 'array must contain at least 1 element');
 });
 
-test('formats the boundary correctly for array type with minimum more than 1', () => {
+test('formats the boundary correctly for array type with minimum more than 1', function () {
     const message = formatTooSmallIssueMessage({
         code: 'too_small',
         path: [],
@@ -54,7 +54,7 @@ test('formats the boundary correctly for array type with minimum more than 1', (
     assert.strictEqual(message, 'array must contain at least 2 elements');
 });
 
-test('formats the boundary correctly for set type with minimum 1', () => {
+test('formats the boundary correctly for set type with minimum 1', function () {
     const message = formatTooSmallIssueMessage({
         code: 'too_small',
         path: [],
@@ -67,7 +67,7 @@ test('formats the boundary correctly for set type with minimum 1', () => {
     assert.strictEqual(message, 'set must contain at least 1 element');
 });
 
-test('formats the boundary correctly for set type with minimum more than 1', () => {
+test('formats the boundary correctly for set type with minimum more than 1', function () {
     const message = formatTooSmallIssueMessage({
         code: 'too_small',
         path: [],
@@ -80,7 +80,7 @@ test('formats the boundary correctly for set type with minimum more than 1', () 
     assert.strictEqual(message, 'set must contain at least 2 elements');
 });
 
-test('formats the boundary correctly for number type', () => {
+test('formats the boundary correctly for number type', function () {
     const message = formatTooSmallIssueMessage({
         code: 'too_small',
         path: [],
@@ -93,7 +93,7 @@ test('formats the boundary correctly for number type', () => {
     assert.strictEqual(message, 'number must be greater than or equal to 1');
 });
 
-test('formats the boundary correctly for bigint type', () => {
+test('formats the boundary correctly for bigint type', function () {
     const message = formatTooSmallIssueMessage({
         code: 'too_small',
         path: [],
@@ -106,7 +106,7 @@ test('formats the boundary correctly for bigint type', () => {
     assert.strictEqual(message, 'bigint must be greater than or equal to 1');
 });
 
-test('formats the boundary correctly for date type', () => {
+test('formats the boundary correctly for date type', function () {
     const message = formatTooSmallIssueMessage({
         code: 'too_small',
         path: [],
@@ -119,7 +119,7 @@ test('formats the boundary correctly for date type', () => {
     assert.strictEqual(message, 'date must be greater than or equal to Thu, 01 Jan 1970 00:00:00 GMT');
 });
 
-test('formats the predicate correctly when inclusive true for string type', () => {
+test('formats the predicate correctly when inclusive true for string type', function () {
     const message = formatTooSmallIssueMessage({
         code: 'too_small',
         path: [],
@@ -132,7 +132,7 @@ test('formats the predicate correctly when inclusive true for string type', () =
     assert.strictEqual(message, 'string must contain at least 1 character');
 });
 
-test('formats the predicate correctly when inclusive false for string type', () => {
+test('formats the predicate correctly when inclusive false for string type', function () {
     const message = formatTooSmallIssueMessage({
         code: 'too_small',
         path: [],
@@ -145,7 +145,7 @@ test('formats the predicate correctly when inclusive false for string type', () 
     assert.strictEqual(message, 'string must contain more than 1 character');
 });
 
-test('formats the predicate correctly when inclusive true for set type', () => {
+test('formats the predicate correctly when inclusive true for set type', function () {
     const message = formatTooSmallIssueMessage({
         code: 'too_small',
         path: [],
@@ -158,7 +158,7 @@ test('formats the predicate correctly when inclusive true for set type', () => {
     assert.strictEqual(message, 'set must contain at least 1 element');
 });
 
-test('formats the predicate correctly when inclusive false for set type', () => {
+test('formats the predicate correctly when inclusive false for set type', function () {
     const message = formatTooSmallIssueMessage({
         code: 'too_small',
         path: [],
@@ -171,7 +171,7 @@ test('formats the predicate correctly when inclusive false for set type', () => 
     assert.strictEqual(message, 'set must contain more than 1 element');
 });
 
-test('formats the predicate correctly when inclusive true for array type', () => {
+test('formats the predicate correctly when inclusive true for array type', function () {
     const message = formatTooSmallIssueMessage({
         code: 'too_small',
         path: [],
@@ -184,7 +184,7 @@ test('formats the predicate correctly when inclusive true for array type', () =>
     assert.strictEqual(message, 'array must contain at least 1 element');
 });
 
-test('formats the predicate correctly when inclusive false for array type', () => {
+test('formats the predicate correctly when inclusive false for array type', function () {
     const message = formatTooSmallIssueMessage({
         code: 'too_small',
         path: [],
@@ -197,7 +197,7 @@ test('formats the predicate correctly when inclusive false for array type', () =
     assert.strictEqual(message, 'array must contain more than 1 element');
 });
 
-test('formats the predicate correctly when inclusive true for number type', () => {
+test('formats the predicate correctly when inclusive true for number type', function () {
     const message = formatTooSmallIssueMessage({
         code: 'too_small',
         path: [],
@@ -210,7 +210,7 @@ test('formats the predicate correctly when inclusive true for number type', () =
     assert.strictEqual(message, 'number must be greater than or equal to 1');
 });
 
-test('formats the predicate correctly when inclusive false for number type', () => {
+test('formats the predicate correctly when inclusive false for number type', function () {
     const message = formatTooSmallIssueMessage({
         code: 'too_small',
         path: [],
@@ -222,7 +222,7 @@ test('formats the predicate correctly when inclusive false for number type', () 
     assert.strictEqual(message, 'number must be greater than 1');
 });
 
-test('formats the predicate correctly when inclusive true for bigint type', () => {
+test('formats the predicate correctly when inclusive true for bigint type', function () {
     const message = formatTooSmallIssueMessage({
         code: 'too_small',
         path: [],
@@ -235,7 +235,7 @@ test('formats the predicate correctly when inclusive true for bigint type', () =
     assert.strictEqual(message, 'bigint must be greater than or equal to 1');
 });
 
-test('formats the predicate correctly when inclusive false for bigint type', () => {
+test('formats the predicate correctly when inclusive false for bigint type', function () {
     const message = formatTooSmallIssueMessage({
         code: 'too_small',
         path: [],
@@ -248,7 +248,7 @@ test('formats the predicate correctly when inclusive false for bigint type', () 
     assert.strictEqual(message, 'bigint must be greater than 1');
 });
 
-test('formats the predicate correctly when inclusive true for date type', () => {
+test('formats the predicate correctly when inclusive true for date type', function () {
     const message = formatTooSmallIssueMessage({
         code: 'too_small',
         path: [],
@@ -261,7 +261,7 @@ test('formats the predicate correctly when inclusive true for date type', () => 
     assert.strictEqual(message, 'date must be greater than or equal to Thu, 01 Jan 1970 00:00:00 GMT');
 });
 
-test('formats the predicate correctly when inclusive false for date type', () => {
+test('formats the predicate correctly when inclusive false for date type', function () {
     const message = formatTooSmallIssueMessage({
         code: 'too_small',
         path: [],
@@ -274,7 +274,7 @@ test('formats the predicate correctly when inclusive false for date type', () =>
     assert.strictEqual(message, 'date must be greater than Thu, 01 Jan 1970 00:00:00 GMT');
 });
 
-test('formats the predicate correctly when exact is true', () => {
+test('formats the predicate correctly when exact is true', function () {
     const message = formatTooSmallIssueMessage({
         code: 'too_small',
         path: [],

@@ -1,5 +1,5 @@
-import { isValidGraphqlName } from './name.js';
-import { hasProperty, isRecord } from './record.js';
+import { isValidGraphqlName } from './name.ts';
+import { hasProperty, isRecord } from './record.ts';
 
 export type GraphqlEnumValue = {
     readonly enumValue: string;

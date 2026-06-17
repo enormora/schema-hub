@@ -3,8 +3,9 @@ import type { $ZodLazy, $ZodType } from 'zod/v4/core';
 
 const customScalarSymbol: unique symbol = Symbol('custom-scalar');
 
+// eslint-disable-next-line functional/type-declaration-immutability -- intersects the third-party mutable $ZodLazy type
 export type CustomScalarSchema<Schema extends $ZodType> = $ZodLazy<Schema> & {
-    [customScalarSymbol]: true;
+    readonly [customScalarSymbol]: true;
 };
 
 export function isCustomScalarSchema(schema: $ZodType): schema is CustomScalarSchema<$ZodType> {
@@ -14,11 +15,10 @@ export function isCustomScalarSchema(schema: $ZodType): schema is CustomScalarSc
 export function createCustomScalarSchema<Schema extends $ZodType>(
     schema: Schema
 ): CustomScalarSchema<Schema> {
-    const wrappedSchema = z.lazy(() => {
+    const wrappedSchema = z.lazy(function () {
         return schema;
-    }) as unknown as CustomScalarSchema<Schema>;
+    });
 
-    wrappedSchema[customScalarSymbol] = true;
-
-    return wrappedSchema;
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion, unicorn/no-unsafe-property-key -- branding the lazy schema with the custom-scalar marker symbol (a unique symbol) can't be expressed structurally
+    return Object.assign(wrappedSchema, { [customScalarSymbol]: true }) as unknown as CustomScalarSchema<Schema>;
 }

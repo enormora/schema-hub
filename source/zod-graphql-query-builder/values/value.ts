@@ -1,10 +1,10 @@
-import { type GraphqlEnumValue, isEnumValue } from './enum.js';
-import { isValidGraphqlName } from './name.js';
-import { isRecord } from './record.js';
-import { type GraphqlVariablePlaceholder, isVariablePlaceholder } from './variable-placeholder.js';
-import { mergeVariables } from './variable-set.js';
+import { type GraphqlEnumValue, isEnumValue } from './enum.ts';
+import { isValidGraphqlName } from './name.ts';
+import { isRecord } from './record.ts';
+import { type GraphqlVariablePlaceholder, isVariablePlaceholder } from './variable-placeholder.ts';
+import { mergeVariables } from './variable-set.ts';
 
-type GraphqlObjectValue = { [Key: string]: GraphqlValue; };
+type GraphqlObjectValue = { readonly [Key: string]: GraphqlValue; };
 
 function isObjectValue(value: GraphqlValue): value is GraphqlObjectValue {
     return isRecord(value) && !isEnumValue(value) && !isVariablePlaceholder(value);
@@ -21,12 +21,12 @@ export type GraphqlValue =
     | GraphqlEnumValue
     | GraphqlObjectValue
     | GraphqlPrimitiveValue
-    | GraphqlValue[]
-    | GraphqlVariablePlaceholder;
+    | GraphqlVariablePlaceholder
+    | readonly GraphqlValue[];
 
 export type NormalizedGraphqlValue = {
-    serializedValue: string;
-    referencedVariables: Set<string>;
+    readonly serializedValue: string;
+    readonly referencedVariables: ReadonlySet<string>;
 };
 
 function serializePrimitiveValue(value: GraphqlPrimitiveValue): string {
@@ -39,11 +39,11 @@ function normalizeObjectValue(value: GraphqlObjectValue): NormalizedGraphqlValue
 
     const sortedEntries = Object
         .entries(value)
-        .toSorted(([nameA], [nameB]) => {
+        .toSorted(function ([ nameA ], [ nameB ]) {
             return nameA.localeCompare(nameB);
         });
 
-    for (const [fieldName, fieldValue] of sortedEntries) {
+    for (const [ fieldName, fieldValue ] of sortedEntries) {
         if (!isValidGraphqlName(fieldName)) {
             throw new Error(`Field name "${fieldName}" is not a valid GraphQL field name`);
         }
@@ -59,7 +59,7 @@ function normalizeObjectValue(value: GraphqlObjectValue): NormalizedGraphqlValue
     };
 }
 
-function normalizeListValue(value: GraphqlValue[]): NormalizedGraphqlValue {
+function normalizeListValue(value: readonly GraphqlValue[]): NormalizedGraphqlValue {
     let referencedVariables = new Set<string>();
     const serializedItems: string[] = [];
 
@@ -93,7 +93,7 @@ export function normalizeGraphqlValue(value: GraphqlValue): NormalizedGraphqlVal
     if (isVariablePlaceholder(value)) {
         return {
             serializedValue: value.variableName,
-            referencedVariables: new Set([...referencedVariables, value.variableName])
+            referencedVariables: new Set([ ...referencedVariables, value.variableName ])
         };
     }
     if (isObjectValue(value)) {

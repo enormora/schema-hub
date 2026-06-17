@@ -1,3 +1,4 @@
+/* eslint-disable functional/prefer-immutable-types -- parameters are third-party zod issue types that are only read */
 import type {
     $ZodIssueInvalidStringFormat,
     $ZodIssueStringIncludes,
@@ -10,7 +11,7 @@ import type {
 function isStringFormatIssue<Format extends $ZodStringFormats>(
     issue: $ZodIssueInvalidStringFormat,
     format: Format
-): issue is Extract<$ZodStringFormatIssues, { format: Format; }> {
+): issue is Extract<$ZodStringFormatIssues, { readonly format: Format; }> {
     return issue.format === format;
 }
 

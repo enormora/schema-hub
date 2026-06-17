@@ -1,42 +1,40 @@
-import { buildGraphqlMutation, buildGraphqlQuery, type QuerySchema } from '../zod-graphql-query-builder/entry-point.js';
+import { buildGraphqlMutation, buildGraphqlQuery, type QuerySchema } from '../zod-graphql-query-builder/entry-point.ts';
 import {
     type AnyVariableMapHandle,
     getVariableMapMetadata,
     type MaybeVariables,
     type ValuesOfVariableMapHandle
-} from './define-variables.js';
-import type { OperationHandle } from './operation-handle.js';
-import type { OperationFailureResult } from './operation-result.js';
-import { buildPersistedQueryExtensions, type PersistedQueryExtensions } from './persisted-query.js';
-
-export type { OperationHandle } from './operation-handle.js';
+} from './define-variables.ts';
+import type { OperationHandle } from './operation-handle.ts';
+import type { OperationFailureResult } from './operation-result.ts';
+import { buildPersistedQueryExtensions, type PersistedQueryExtensions } from './persisted-query.ts';
 
 export type OperationType = 'mutation' | 'query';
 
 export type OperationOptions = {
-    timeout?: number;
-    headers?: Record<string, string | undefined>;
+    readonly timeout?: number;
+    readonly headers?: Readonly<Record<string, string | undefined>>;
 };
 
 export type GraphqlOverHttpOperationRequestPayload = {
-    query?: string;
-    variables: Record<string, unknown>;
-    operationName?: string | undefined;
-    extensions?: PersistedQueryExtensions;
+    readonly query?: string;
+    readonly variables: Readonly<Record<string, unknown>>;
+    readonly operationName?: string | undefined;
+    readonly extensions?: PersistedQueryExtensions;
 };
 
 export type BuiltOperationPayload = {
-    query: string;
-    variables: Record<string, unknown>;
-    operationName?: string | undefined;
+    readonly query: string;
+    readonly variables: Readonly<Record<string, unknown>>;
+    readonly operationName?: string | undefined;
 };
 
 export type BuildOperationPayloadInput = {
     readonly schema: QuerySchema;
     readonly operationType: OperationType;
     readonly operationName?: string | undefined;
-    readonly variableDefinitions: Record<string, string>;
-    readonly variableValues: Record<string, unknown>;
+    readonly variableDefinitions: Readonly<Record<string, string>>;
+    readonly variableValues: Readonly<Record<string, unknown>>;
 };
 
 export function buildOperationPayload(input: BuildOperationPayloadInput): BuiltOperationPayload {
@@ -44,9 +42,8 @@ export function buildOperationPayload(input: BuildOperationPayloadInput): BuiltO
         operationName: input.operationName,
         variableDefinitions: input.variableDefinitions
     };
-    const serializedQuery = input.operationType === 'query' ?
-        buildGraphqlQuery(input.schema, builderOptions) :
-        buildGraphqlMutation(input.schema, builderOptions);
+    const build = input.operationType === 'query' ? buildGraphqlQuery : buildGraphqlMutation;
+    const serializedQuery = build(input.schema, builderOptions);
 
     return {
         query: serializedQuery,
@@ -63,20 +60,20 @@ type WithVariables<Variables extends AnyVariableMapHandle> = readonly [
 ];
 type WithoutVariables = readonly [options?: OperationOptions];
 
-export type OperationCallArgs<V extends MaybeVariables> = V extends AnyVariableMapHandle ? WithVariables<V> :
-    WithoutVariables;
+export type OperationCallArgs<V extends MaybeVariables> = V extends AnyVariableMapHandle ? WithVariables<V>
+    : WithoutVariables;
 
 export type ResolvedOperationInputs = {
     readonly schema: QuerySchema;
     readonly operationName: string | undefined;
-    readonly variableDefinitions: Record<string, string>;
-    readonly variableValues: Record<string, unknown>;
+    readonly variableDefinitions: Readonly<Record<string, string>>;
+    readonly variableValues: Readonly<Record<string, unknown>>;
     readonly options: OperationOptions;
 };
 
 export type ResolveOperationInputsResult =
     | OperationFailureResult
-    | { success: true; data: ResolvedOperationInputs; };
+    | { readonly success: true; readonly data: ResolvedOperationInputs; };
 
 export function resolveOperationInputs(
     handle: OperationTarget,
@@ -91,6 +88,7 @@ export function resolveOperationInputs(
                 operationName: handle.operationName,
                 variableDefinitions: {},
                 variableValues: {},
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- for variable-less operations the first call argument is the options object
                 options: (valuesOrOptions as OperationOptions | undefined) ?? {}
             }
         };

@@ -1,8 +1,8 @@
-import type { VariableDefinitions } from './variable-definition.js';
+import type { VariableDefinitions } from './variable-definition.ts';
 
 export function ensureValidVariableCorrelations(
     variableDefinitions: VariableDefinitions,
-    referencedVariables: Set<string>
+    referencedVariables: ReadonlySet<string>
 ): void {
     const unusedVariableDefinitions = new Set(Object.keys(variableDefinitions));
 
@@ -13,7 +13,7 @@ export function ensureValidVariableCorrelations(
         }
     }
 
-    const [firstUnusedVariable] = Array.from(unusedVariableDefinitions);
+    const [ firstUnusedVariable ] = Array.from(unusedVariableDefinitions);
     if (firstUnusedVariable !== undefined) {
         throw new Error(`Variable definition for "${firstUnusedVariable}" is never referenced`);
     }

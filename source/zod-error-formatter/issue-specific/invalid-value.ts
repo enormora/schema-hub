@@ -1,6 +1,6 @@
 import { type $ZodIssueInvalidValue, util } from 'zod/v4/core';
-import { formatOneOfList } from '../list.js';
-import { findValueByPath } from '../path.js';
+import { formatOneOfList } from '../list.ts';
+import { findValueByPath } from '../path.ts';
 
 export function formatInvalidValueIssueMessage(
     issue: $ZodIssueInvalidValue,
