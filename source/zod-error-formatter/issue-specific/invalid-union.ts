@@ -7,10 +7,16 @@ import {
 } from 'zod/v4/core';
 import { formatOneOfList, isParsedType, type ListValue } from '../list.ts';
 import { findValueByPath, formatPath, isNonEmptyPath } from '../path.ts';
+import {
+    allValuesArePrimitive,
+    type AlternativeBucket,
+    findInvalidValuePathCandidate,
+    isPrimitive,
+    isSamePath,
+    selectRelevantAlternatives
+} from './invalid-union-alternatives.ts';
 
 type FormatChildIssue = (issue: $ZodIssue, input: unknown) => string;
-
-type AlternativeBucket = readonly $ZodIssue[];
 
 type SupportedIssueType = $ZodIssueInvalidType | $ZodIssueInvalidValue;
 
@@ -21,20 +27,6 @@ type CollapseCandidate = {
 
 function isSupportedIssue(issue: $ZodIssue): issue is SupportedIssueType {
     return issue.code === 'invalid_type' || issue.code === 'invalid_value';
-}
-
-function isPrimitive(value: unknown): value is util.Primitive {
-    return [ 'string', 'number', 'symbol', 'bigint', 'boolean', 'undefined' ].includes(typeof value) || value === null;
-}
-
-function isSamePath(pathA: readonly PropertyKey[], pathB: readonly PropertyKey[]): boolean {
-    if (pathA.length !== pathB.length) {
-        return false;
-    }
-
-    return pathA.every(function (element, index) {
-        return element === pathB[index];
-    });
 }
 
 function prependPath(path: readonly PropertyKey[], message: string): string {
@@ -176,6 +168,27 @@ function renderCollapsedMessage(candidate: CollapseCandidate, inputAtUnion: unkn
     return prependPath(candidate.commonPath, message);
 }
 
+function renderInvalidValuePathMessage(
+    issues: readonly $ZodIssueInvalidValue[],
+    path: readonly PropertyKey[],
+    inputAtUnion: unknown
+): string | null {
+    if (!allValuesArePrimitive(issues)) {
+        return null;
+    }
+    return renderCollapsedMessage({ commonPath: path, issues }, inputAtUnion);
+}
+
+function tryCollapseInvalidValuePath(
+    alternatives: readonly AlternativeBucket[],
+    inputAtUnion: unknown
+): string | null {
+    const candidate = findInvalidValuePathCandidate(alternatives);
+    return candidate === null
+        ? null
+        : renderInvalidValuePathMessage(candidate.issues, candidate.path, inputAtUnion);
+}
+
 function tryCollapseToOneOfMessage(
     alternatives: readonly AlternativeBucket[],
     inputAtUnion: unknown
@@ -299,6 +312,33 @@ function enumerateAlternatives(
     return `no union alternative matched: ${lines.join(' | ')}`;
 }
 
+function renderSingleAlternative(
+    alternative: AlternativeBucket,
+    inputAtUnion: unknown,
+    formatChildIssue: FormatChildIssue
+): string | null {
+    const rendered = alternative.map(function (issue) {
+        return formatChildIssue(issue, inputAtUnion);
+    });
+
+    if (rendered.length === 0) {
+        return null;
+    }
+
+    return rendered.join('; ');
+}
+
+function renderOnlyAlternative(
+    alternatives: readonly AlternativeBucket[],
+    inputAtUnion: unknown,
+    formatChildIssue: FormatChildIssue
+): string | null {
+    const [ onlyAlternative ] = alternatives;
+    return onlyAlternative !== undefined && alternatives.length === 1
+        ? renderSingleAlternative(onlyAlternative, inputAtUnion, formatChildIssue)
+        : null;
+}
+
 function joinWithCommon(commonRendered: readonly string[], rest: string): string {
     if (commonRendered.length === 0) {
         return rest;
@@ -307,13 +347,13 @@ function joinWithCommon(commonRendered: readonly string[], rest: string): string
 }
 
 // Factor out issues that appear (by rendered-message equality) in every
-// alternative — they are hard requirements of the union regardless of which
+// alternative because they are hard requirements of the union regardless of which
 // branch the user picks. After factoring, retry collapse on the reduced
 // alternatives so e.g. a discriminator field can OR-merge once shared
 // constraints have been lifted. Returns null only when there is genuinely
 // nothing reportable.
 // If any alternative is fully described by the common issues, fixing those
-// is sufficient — the union passes via that alternative. Listing the other
+// is sufficient because the union passes via that alternative. Listing the other
 // alternatives' extra constraints would be misleading. Also retries collapse
 // on the reduced alternatives so a discriminator field can OR-merge cleanly.
 function tryFactoredCollapse(
@@ -365,6 +405,16 @@ function formatAlternativesWithFactoring(
     return enumerateOrCommonFallback(reducedAlternatives, commonRendered, inputAtUnion, formatChildIssue);
 }
 
+function formatRelevantAlternatives(
+    alternatives: readonly AlternativeBucket[],
+    valueAtUnion: unknown,
+    formatChildIssue: FormatChildIssue
+): string | null {
+    return tryCollapseToOneOfMessage(alternatives, valueAtUnion)
+        ?? renderOnlyAlternative(alternatives, valueAtUnion, formatChildIssue)
+        ?? formatAlternativesWithFactoring(alternatives, valueAtUnion, formatChildIssue);
+}
+
 function buildUnionMessage(
     issue: $ZodIssueInvalidUnion,
     valueAtUnion: unknown,
@@ -372,18 +422,10 @@ function buildUnionMessage(
 ): string {
     const expanded = expandAlternatives(issue.errors);
     const relativeAlternatives = makeRelativeAlternatives(expanded, issue.path);
-
-    const collapsed = tryCollapseToOneOfMessage(relativeAlternatives, valueAtUnion);
-    if (collapsed !== null) {
-        return collapsed;
-    }
-
-    const factored = formatAlternativesWithFactoring(relativeAlternatives, valueAtUnion, formatChildIssue);
-    if (factored !== null) {
-        return factored;
-    }
-
-    return 'invalid value doesn’t match expected union';
+    const relevantAlternatives = selectRelevantAlternatives(relativeAlternatives, valueAtUnion);
+    return tryCollapseInvalidValuePath(relativeAlternatives, valueAtUnion)
+        ?? formatRelevantAlternatives(relevantAlternatives, valueAtUnion, formatChildIssue)
+        ?? 'invalid value doesn’t match expected union';
 }
 
 export function formatInvalidUnionIssueMessage(

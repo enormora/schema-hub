@@ -217,7 +217,8 @@ test('formats the predicate correctly when inclusive false for number type', fun
         message: '',
         input: '',
         origin: 'number',
-        minimum: 1
+        minimum: 1,
+        inclusive: false
     });
     assert.strictEqual(message, 'number must be greater than 1');
 });

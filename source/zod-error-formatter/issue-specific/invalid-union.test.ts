@@ -433,9 +433,6 @@ test('factors out common issues and enumerates the rest when the reduced alterna
 });
 
 test('emits only the common issue when one alternative is fully described by the shared constraints', function () {
-    // alt 1 carries only the common issue, so fixing it alone makes alt 1 pass —
-    // reporting alt 2's extra requirement would mislead the user into thinking
-    // both must be addressed.
     const message = formatInvalidUnionIssueMessage(
         {
             code: 'invalid_union',
@@ -474,9 +471,6 @@ test('handles a single-alternative union as a regular collapse', function () {
 });
 
 test('does not expand a nested invalid_union when its alternative carries other sibling issues', function () {
-    // The bucket carries both a nested invalid_union and an unrelated invalid_type.
-    // Expansion would discard the sibling, so the formatter must keep the bucket
-    // intact and let formatIssue recurse into the nested union.
     const message = formatInvalidUnionIssueMessage(
         {
             code: 'invalid_union',
