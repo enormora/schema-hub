@@ -67,6 +67,18 @@ test('formats the boundary correctly for array type with maximum 1', function ()
     assert.strictEqual(message, 'array must contain at most 1 element');
 });
 
+test('formats a missing inclusive flag as inclusive', function () {
+    const message = formatTooBigIssueMessage({
+        code: 'too_big',
+        path: [],
+        message: '',
+        input: '',
+        origin: 'array',
+        maximum: 1
+    });
+    assert.strictEqual(message, 'array must contain at most 1 element');
+});
+
 test('formats the boundary correctly for array type with maximum more than 1', function () {
     const message = formatTooBigIssueMessage({
         code: 'too_big',

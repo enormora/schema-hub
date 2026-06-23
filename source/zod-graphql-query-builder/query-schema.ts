@@ -39,11 +39,11 @@ import { type CustomScalarSchema, isCustomScalarSchema } from './custom-scalar.t
  * blow the TypeScript instantiation depth when used in a recursive union (see
  * enormora/schema-hub#285). Two upstream bugs are involved:
  *
- *   - colinhacks/zod#4611 — the wrappers $ZodLazy/$ZodNullable/$ZodReadonly/
+ *   - colinhacks/zod#4611: the wrappers $ZodLazy/$ZodNullable/$ZodReadonly/
  *     $ZodPipe bubble `optin`/`optout`/`values`/`pattern`/`propValues` from
  *     their inner generic. The maintainer is "not planning to pursue a fix."
  *
- *   - colinhacks/zod#6015 — $ZodObject/$ZodArray/$ZodUnion/$ZodTuple/
+ *   - colinhacks/zod#6015: $ZodObject/$ZodArray/$ZodUnion/$ZodTuple/
  *     $ZodDiscriminatedUnion derive their `_zod.output`/`_zod.input` from
  *     their inner generic, which cycles in recursive unions once
  *     materialization is forced.
@@ -52,7 +52,7 @@ import { type CustomScalarSchema, isCustomScalarSchema } from './custom-scalar.t
  * runtime, which is enough for structural assignability from the real
  * `$Zod*` class. When the matching upstream issue is fixed, search for
  * `Gh4611` / `Gh6015` and swap that group back to the original `$Zod*<...>`
- * types — the deletion is mechanical.
+ * types. The deletion is mechanical.
  */
 interface ZodLazyGh4611IssueWorkaround<T extends $ZodType = $ZodType> extends $ZodType {
     readonly _zod: $ZodTypeInternals & { readonly def: $ZodLazyDef<T>; };
@@ -81,11 +81,10 @@ interface ZodUnionGh6015IssueWorkaround<T extends readonly $ZodType[] = readonly
     readonly _zod: $ZodTypeInternals & { readonly def: $ZodUnionDef<T>; };
 }
 interface ZodDiscriminatedUnionGh6015IssueWorkaround<
-    Options extends readonly $ZodType[] = readonly $ZodType[],
-    Disc extends string = string
+    Options extends readonly $ZodType[] = readonly $ZodType[]
 > extends $ZodType {
     readonly _zod: $ZodTypeInternals & {
-        readonly def: $ZodDiscriminatedUnionDef<Options, Disc>;
+        readonly def: $ZodDiscriminatedUnionDef<Options>;
         readonly propValues: zodUtil.PropValues;
     };
 }

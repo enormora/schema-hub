@@ -15,10 +15,7 @@ const collectionTypes = new Set([ 'string', 'array', 'set' ]);
 const numericTypes = new Set([ 'bigint', 'number' ]);
 
 function inclusivePredicate(issue: BoundaryIssue, inclusiveVariant: string, nonInclusiveVariant: string): string {
-    if (issue.inclusive === true) {
-        return inclusiveVariant;
-    }
-    return nonInclusiveVariant;
+    return issue.inclusive === false ? nonInclusiveVariant : inclusiveVariant;
 }
 
 function formatPredicate(issue: BoundaryIssue, phrases: BoundaryPhrases): string {
