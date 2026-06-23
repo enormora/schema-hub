@@ -150,7 +150,7 @@ jobs:
               id: zizmor
               uses: zizmorcore/zizmor-action@192e21d79ab29983730a13d1382995c2307fbcaa # v0.5.7
               with:
-                  version: 1.25.2
+                  version: 1.26.1
                   persona: pedantic
                   min-severity: informational
                   min-confidence: low
