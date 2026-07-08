@@ -34,7 +34,7 @@
         "@packtory/cli": "0.0.56",
         "@sondr3/minitest": "0.1.2",
         "@types/common-tags": "1.8.4",
-        "@types/node": "24.13.2",
+        "@types/node": "24.13.3",
         "@types/sinon": "22.0.0",
         "c8": "11.0.0",
         "common-tags": "1.8.2",
