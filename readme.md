@@ -18,6 +18,9 @@ Currently, the `@schema-hub` monorepo contains the following projects:
 - **[@schema-hub/zod-graphql-fake-client](./source/zod-graphql-fake-client/readme.md)**:
   Fake GraphQL client for testing `@schema-hub/zod-graphql-client`.
   [![npm version](https://img.shields.io/npm/v/@schema-hub/zod-graphql-fake-client?style=flat-square&logo=npm&logoColor=fff&cacheSeconds=300&labelColor=CB3837&color=37CACB)](https://www.npmjs.com/package/@schema-hub/zod-graphql-fake-client)
+- **[@schema-hub/stryker-zod-mutator](./source/stryker-zod-mutator/readme.md)**:
+  Adds Zod-specific schema mutations to StrykerJS.
+  [![npm version](https://img.shields.io/npm/v/@schema-hub/stryker-zod-mutator?style=flat-square&logo=npm&logoColor=fff&cacheSeconds=300&labelColor=CB3837&color=37CACB)](https://www.npmjs.com/package/@schema-hub/stryker-zod-mutator)
 
 ## Versioning
 
