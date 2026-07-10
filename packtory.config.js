@@ -115,6 +115,23 @@ export async function buildConfig() {
                     targetFilePath: 'readme.md'
                 } ],
                 bundlePeerDependencies: [ '@schema-hub/zod-graphql-client' ]
+            },
+            {
+                name: '@schema-hub/stryker-zod-mutator',
+                roots: {
+                    main: {
+                        js: 'stryker-zod-mutator/entry-point.js',
+                        declarationFile: 'stryker-zod-mutator/entry-point.d.ts'
+                    }
+                },
+                additionalPackageJsonAttributes: {
+                    description: 'Zod schema mutators for StrykerJS',
+                    keywords: [ 'zod', 'stryker', 'mutation-testing', 'mutator', 'schema-validation' ]
+                },
+                additionalFiles: [ {
+                    sourceFilePath: path.join(projectFolder, 'source/stryker-zod-mutator/readme.md'),
+                    targetFilePath: 'readme.md'
+                } ]
             }
         ]
     };
