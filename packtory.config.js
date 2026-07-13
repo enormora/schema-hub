@@ -5,19 +5,18 @@ import path from 'node:path';
 const projectFolder = process.cwd();
 const sourcesFolder = path.join(projectFolder, 'target/build/source');
 
-const npmToken = process.env.NPM_TOKEN;
-
 /** @returns {Promise<import('@packtory/cli').PacktoryConfig>} */
 export async function buildConfig() {
     const packageJsonContent = await fs.readFile('./package.json', { encoding: 'utf8' });
     const packageJson = JSON.parse(packageJsonContent);
 
-    if (npmToken === undefined) {
-        throw new Error('Missing NPM_TOKEN environment variable');
-    }
-
     return {
-        registrySettings: { auth: { type: 'bearer-token', token: npmToken } },
+        registrySettings: {
+            auth: {
+                publish: { type: 'npm-oidc', provider: 'auto' },
+                metadata: 'auto'
+            }
+        },
         checks: {
             noDuplicatedFiles: {
                 enabled: true,
@@ -31,7 +30,10 @@ export async function buildConfig() {
             sourcesFolder,
             mainPackageJson: packageJson,
             includeSourceMapFiles: true,
-            publishSettings: { access: 'public' },
+            publishSettings: {
+                access: 'public',
+                provenance: { type: 'auto' }
+            },
             additionalFiles: [
                 {
                     sourceFilePath: path.join(projectFolder, 'LICENSE'),
