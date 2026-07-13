@@ -19,6 +19,6 @@ export function createCustomScalarSchema<Schema extends $ZodType>(
         return schema;
     });
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion, unicorn/no-unsafe-property-key -- branding the lazy schema with the custom-scalar marker symbol (a unique symbol) can't be expressed structurally
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- branding the lazy schema with the custom-scalar marker symbol can't be expressed structurally
     return Object.assign(wrappedSchema, { [customScalarSymbol]: true }) as unknown as CustomScalarSchema<Schema>;
 }
