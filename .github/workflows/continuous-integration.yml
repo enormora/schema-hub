@@ -46,7 +46,7 @@ jobs:
                   persist-credentials: false
             - uses: ./.github/actions/setup
             - name: Compile
-              run: "npm run compile"
+              run: "npx just compile"
             - name: Archive artifacts
               uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
               with:
@@ -69,7 +69,7 @@ jobs:
                   persist-credentials: false
             - uses: ./.github/actions/setup
             - name: Run linters
-              run: "npm run lint"
+              run: "npx just lint"
 
     unit-tests:
         name: Unit Tests
@@ -93,7 +93,7 @@ jobs:
             - name: Modify AppArmor Settings
               run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
             - name: Run unit tests
-              run: "unshare --map-root-user -n npm run test:unit:with-coverage"
+              run: "unshare --map-root-user -n npx just test-unit-with-coverage"
 
     type-tests:
         name: Type Tests
@@ -111,7 +111,7 @@ jobs:
                   persist-credentials: false
             - uses: ./.github/actions/setup
             - name: Run type tests
-              run: "npm run test:types"
+              run: "npx just test-types"
 
     integration-tests:
         name: Integration Tests
@@ -133,7 +133,25 @@ jobs:
                   name: build-artifacts-node-${{ matrix.node-version }}
                   path: target/build
             - name: Run integration tests
-              run: "npm run test:integration"
+              run: "npx just test-integration"
+
+    packtory-dry-run:
+        name: Packtory Dry-Run
+        runs-on: ubuntu-latest
+        permissions:
+            contents: read
+        strategy:
+            matrix:
+                node-version: [24.x, 26.x]
+        needs: ["compile", "static-code-analysis"]
+        steps:
+            - name: Checkout git repository
+              uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+              with:
+                  persist-credentials: false
+            - uses: ./.github/actions/setup
+            - name: Run Packtory dry-run
+              run: "npx just packtory-dry-run"
 
     workflow-security:
         name: Workflow Security Analysis

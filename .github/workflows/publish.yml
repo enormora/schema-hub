@@ -1,0 +1,97 @@
+---
+name: Publish
+
+on:
+    workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+    group: publish-main
+
+jobs:
+    evaluate-gate:
+        runs-on: ubuntu-24.04
+        name: Evaluate GitHub release gate
+        permissions:
+            contents: read # required for actions/checkout to read the workflow source
+            issues: read # required by the release gate to inspect open issues for activity
+            pull-requests: read # required by the release gate to inspect open PRs for activity
+        outputs:
+            should_publish: ${{ steps.release-gate.outputs.should_publish }}
+            reason: ${{ steps.release-gate.outputs.reason }}
+            main_head_sha: ${{ steps.release-gate.outputs.main_head_sha }}
+        steps:
+            - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+              with:
+                  ref: main
+                  persist-credentials: false
+            - name: Use Node.js
+              uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+              with:
+                  node-version: 26.x
+            - name: Install dependencies from the lockfile
+              run: npm clean-install --ignore-scripts
+            - name: Evaluate GitHub release gate
+              id: release-gate
+              run: npx just release-gate
+              env:
+                  CI_WORKFLOW_FILE: continuous-integration.yml
+                  DEFAULT_BRANCH: main
+                  DEPENDENCY_ONLY_MIN_AGE_DAYS: "7"
+                  GITHUB_TOKEN: ${{ github.token }}
+                  MAX_LATENCY_HOURS: "24"
+                  QUIET_PERIOD_MINUTES: "45"
+            - name: Log gate decision when publish is skipped
+              if: steps.release-gate.outputs.should_publish != 'true'
+              env:
+                  GATE_REASON: ${{ steps.release-gate.outputs.reason }}
+              run: echo "Skipping publish because ${GATE_REASON}."
+
+    publish:
+        needs: evaluate-gate
+        if: needs.evaluate-gate.outputs.should_publish == 'true'
+        runs-on: ubuntu-24.04
+        name: Publish packages
+        permissions:
+            contents: read # required for actions/checkout to read the workflow source
+            id-token: write # required by npm trusted publishing to mint the OIDC token
+        steps:
+            - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+              with:
+                  ref: ${{ needs.evaluate-gate.outputs.main_head_sha }}
+                  persist-credentials: false
+            - name: Use Node.js
+              uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+              with:
+                  node-version: 26.x
+            - name: Install dependencies from the lockfile
+              run: npm clean-install --ignore-scripts
+            - name: Verify registry signatures for installed dependencies
+              run: npm audit signatures
+            - name: Verify `@packtory/cli` ships with a provenance attestation
+              run: |
+                  version=$(jq -r '.devDependencies["@packtory/cli"]' package.json)
+                  spec="@packtory/cli@${version}"
+                  attestation=$(npm view "${spec}" --json | jq -r '.dist.attestations // empty')
+                  if [ -z "${attestation}" ]; then
+                    echo "::error::${spec} is missing a provenance attestation; refusing to publish"
+                    exit 1
+                  fi
+                  echo "Verified ${spec} has a registered provenance attestation."
+            - name: Publish packages
+              id: publish-packages
+              continue-on-error: true
+              run: npx just packtory-publish
+            # The `sigstore` wrapper used by `libnpmpublish` hardcodes
+            # `fetchOnConflict: false`, so a retried Rekor POST after a
+            # transient blip surfaces as
+            # `error creating tlog entry - (409) an equivalent entry already exists`
+            # even though the original submission landed. Re-running publish
+            # mints a fresh OIDC cert, so the next signature differs and
+            # Rekor accepts it.
+            - name: Re-publish after a transient sigstore failure
+              if: steps.publish-packages.outcome == 'failure'
+              run: |
+                  sleep 10
+                  npx just packtory-publish
