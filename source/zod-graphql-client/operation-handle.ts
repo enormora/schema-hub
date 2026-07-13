@@ -35,7 +35,6 @@ function createOperationHandle<
     Variables extends AnyVariableMapHandle | undefined
 >(kind: OperationKind, config: OperationHandleConfig<Schema, Variables>): OperationHandle<Schema, Variables> {
     const base: OperationHandle<Schema, Variables> = {
-        // eslint-disable-next-line unicorn/no-unsafe-property-key -- operationHandleTag is a unique symbol, which is a safe property key
         [operationHandleTag]: true,
         kind,
         schema: config.schema
@@ -65,6 +64,5 @@ export function isOperationHandle(
 ): value is OperationHandle<QuerySchema, AnyVariableMapHandle | undefined> {
     return typeof value === 'object' &&
         value !== null &&
-        // eslint-disable-next-line unicorn/no-unsafe-property-key -- operationHandleTag is a unique symbol, which is a safe property key
         (value as { readonly [operationHandleTag]?: unknown; })[operationHandleTag] === true;
 }

@@ -50,7 +50,6 @@ type MapOfHandle<Handle> = Handle extends VariableMapHandle<infer Variables> ? V
 export type ValuesOfVariableMapHandle<Handle extends AnyVariableMapHandle> = VariableValues<MapOfHandle<Handle>>;
 
 export function getVariableMapMetadata(handle: AnyVariableMapHandle): AnyVariableMapMetadata {
-    // eslint-disable-next-line unicorn/no-unsafe-property-key -- variableMapMetadataKey is a unique symbol, which is a safe property key
     return handle[variableMapMetadataKey];
 }
 
@@ -92,7 +91,6 @@ export function defineVariables<Variables extends Record<string, VariableEntry>>
     // eslint-disable-next-line @typescript-eslint/consistent-type-assertions, @typescript-eslint/no-unsafe-type-assertion -- combined placeholder map + metadata symbol can't be inferred to VariableMapHandle<Variables> structurally
     const handle = {
         ...placeholders,
-        // eslint-disable-next-line unicorn/no-unsafe-property-key -- variableMapMetadataKey is a unique symbol, which is a safe property key
         [variableMapMetadataKey]: metadata
     } as VariableMapHandle<Variables>;
     return handle;

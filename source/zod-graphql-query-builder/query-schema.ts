@@ -162,9 +162,7 @@ export function unwrapFieldSchemaChain(parent: FieldSchema): UnwrappedChainResul
             current = current._zod.def.getter();
         } else if (current instanceof $ZodPipe) {
             current = current._zod.def.in;
-        } else if (current instanceof $ZodNullable) {
-            current = current._zod.def.innerType;
-        } else if (current instanceof $ZodReadonly) {
+        } else if (current instanceof $ZodNullable || current instanceof $ZodReadonly) {
             current = current._zod.def.innerType;
         }
     }
