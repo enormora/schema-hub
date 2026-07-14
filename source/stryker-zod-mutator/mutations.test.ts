@@ -254,6 +254,37 @@ test('does not add readonly where freezing has no observable effect', function (
     }
 });
 
+test('does not add readonly to schemas that are already readonly', function () {
+    const alreadyReadonlySources = [
+        "import { z } from 'zod/v4'; const schema = z.object({ a: z.string() }).readonly();",
+        "import * as z from 'zod/mini'; const schema = z.readonly(z.object({ a: z.string() }));",
+        "import { z } from 'zod/v4'; const schema = z.array(z.string()).readonly();",
+        "import { z } from 'zod/v4'; const schema = z.object({ a: z.string() }).readonly().optional();",
+        "import { z } from 'zod/v4'; const schema = z.array(z.string()).min(1).readonly();"
+    ];
+
+    for (const source of alreadyReadonlySources) {
+        assert.deepStrictEqual(collectMutations(source, 'ZodReadonlyAdd'), []);
+    }
+});
+
+test('adds readonly once per schema value and leaves an already readonly field untouched', function () {
+    assert.deepStrictEqual(
+        collectMutations(
+            "import { z } from 'zod/v4'; const schema = z.object({ a: z.string() }).optional();",
+            'ZodReadonlyAdd'
+        ),
+        [ 'z.object({\n  a: z.string()\n}).optional().readonly()' ]
+    );
+    assert.deepStrictEqual(
+        collectMutations(
+            "import { z } from 'zod/v4'; const schema = z.object({ a: z.array(z.string()).readonly() });",
+            'ZodReadonlyAdd'
+        ),
+        [ 'z.object({\n  a: z.array(z.string()).readonly()\n}).readonly()' ]
+    );
+});
+
 test('replaces coercion with strict schemas', function () {
     const mutations = collectMutations(
         "import { z } from 'zod/v4'; const schema = z.coerce.number();",

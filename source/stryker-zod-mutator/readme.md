@@ -167,7 +167,8 @@ and `z.unknown()`.
 `ZodReadonlyAdd` only targets schemas whose parsed value is frozen observably at runtime, namely the
 object, `array`, `tuple`, and record families, including those wrapped in `optional`, `nullable`, `nullish`,
 `nonoptional`, `default`, `prefault`, or `catch`. Primitives and other schemas are skipped because freezing
-them has no effect.
+them has no effect. It emits a single mutant per schema value and skips schemas that already apply
+`readonly` anywhere in that chain, so it never produces a redundant double `readonly`.
 
 Boolean and string literal values are left to Stryker’s built-in literal mutators.
 
