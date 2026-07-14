@@ -378,3 +378,49 @@ export function producesFreezableValue(bindings: ZodBindings, expression: Schema
 
     return false;
 }
+
+function isReadonlyApplication(bindings: ZodBindings, call: CallExpression): boolean {
+    return getZodCallName(bindings, call) === 'readonly' || getMemberName(call.callee) === 'readonly';
+}
+
+export function chainAppliesReadonly(bindings: ZodBindings, expression: SchemaExpression): boolean {
+    let current: SchemaExpression | null = expression;
+
+    while (current !== null && babel.isCallExpression(current)) {
+        if (isReadonlyApplication(bindings, current)) {
+            return true;
+        }
+
+        current = underlyingSchemaExpression(bindings, current);
+    }
+
+    return false;
+}
+
+function isReceiverOfMethodCall(path: MutationPath): boolean {
+    const enclosingMember = path.parentPath?.node;
+
+    return babel.isMemberExpression(enclosingMember) && enclosingMember.object === path.node;
+}
+
+function isArgumentOfValuePreservingWrapper(path: MutationPath, bindings: ZodBindings): boolean {
+    const enclosingCall = path.parentPath?.node;
+
+    if (!babel.isCallExpression(enclosingCall)) {
+        return false;
+    }
+
+    const firstArgument = enclosingCall.arguments[0];
+
+    if (!isExpressionNode(firstArgument)) {
+        return false;
+    }
+
+    const wrapsThisNode = firstArgument === path.node;
+
+    return wrapsThisNode && valuePreservingWrapperNames.has(getZodCallName(bindings, enclosingCall) ?? '');
+}
+
+export function isSchemaValueChainRoot(path: MutationPath, bindings: ZodBindings): boolean {
+    return !isReceiverOfMethodCall(path) && !isArgumentOfValuePreservingWrapper(path, bindings);
+}

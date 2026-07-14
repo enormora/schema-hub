@@ -6,10 +6,19 @@ import {
 } from './schema-call-mutations.ts';
 import { isExpressionNode, type MutationPath } from './ast.ts';
 import { createDefinition, type MutationDefinition } from './mutation-definition.ts';
-import { producesFreezableValue, type ZodBindings } from './zod-bindings.ts';
+import {
+    chainAppliesReadonly,
+    isSchemaValueChainRoot,
+    producesFreezableValue,
+    type ZodBindings
+} from './zod-bindings.ts';
 
 function addReadonlyToFreezableSchema(path: MutationPath, bindings: ZodBindings): readonly BabelNode[] {
-    if (!isExpressionNode(path.node) || !producesFreezableValue(bindings, path.node)) {
+    if (!isExpressionNode(path.node) || !isSchemaValueChainRoot(path, bindings)) {
+        return [];
+    }
+
+    if (!producesFreezableValue(bindings, path.node) || chainAppliesReadonly(bindings, path.node)) {
         return [];
     }
 
