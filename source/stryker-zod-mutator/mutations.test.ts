@@ -200,6 +200,60 @@ test('mutates readonly because it freezes parsed values at runtime', function ()
     );
 });
 
+test('adds readonly to collection schemas whose frozen output is observable', function () {
+    assert.ok(
+        collectMutations("import { z } from 'zod/v4'; const schema = z.array(z.string());", 'ZodReadonlyAdd')
+            .includes('z.array(z.string()).readonly()')
+    );
+    assert.ok(
+        collectMutations("import { z } from 'zod/v4'; const schema = z.tuple([z.string()]);", 'ZodReadonlyAdd')
+            .includes('z.tuple([z.string()]).readonly()')
+    );
+    assert.ok(
+        collectMutations(
+            "import { z } from 'zod/v4'; const schema = z.record(z.string(), z.number());",
+            'ZodReadonlyAdd'
+        )
+            .includes('z.record(z.string(), z.number()).readonly()')
+    );
+    assert.ok(
+        collectMutations("import { z } from 'zod/v4'; const schema = z.array(z.string()).min(1);", 'ZodReadonlyAdd')
+            .includes('z.array(z.string()).min(1).readonly()')
+    );
+});
+
+test('adds readonly through wrappers around a collection schema', function () {
+    assert.ok(
+        collectMutations(
+            "import { z } from 'zod/v4'; const schema = z.object({ a: z.string() }).optional();",
+            'ZodReadonlyAdd'
+        )
+            .includes('z.object({\n  a: z.string()\n}).optional().readonly()')
+    );
+    assert.ok(
+        collectMutations(
+            "import * as z from 'zod/mini'; const schema = z.optional(z.object({ a: z.string() }));",
+            'ZodReadonlyAdd'
+        )
+            .includes('z.readonly(z.optional(z.object({\n  a: z.string()\n})))')
+    );
+});
+
+test('does not add readonly where freezing has no observable effect', function () {
+    const nonFreezableSources = [
+        "import { z } from 'zod/v4'; const schema = z.string();",
+        "import { z } from 'zod/v4'; const schema = z.number().check(z.gt(0));",
+        "import { z } from 'zod/v4'; const schema = z.enum(['a', 'b']);",
+        "import { z } from 'zod/v4'; const schema = z.literal('a');",
+        "import { z } from 'zod/v4'; const schema = z.string().optional();",
+        "import { string } from 'zod/mini'; const schema = string();"
+    ];
+
+    for (const source of nonFreezableSources) {
+        assert.deepStrictEqual(collectMutations(source, 'ZodReadonlyAdd'), []);
+    }
+});
+
 test('replaces coercion with strict schemas', function () {
     const mutations = collectMutations(
         "import { z } from 'zod/v4'; const schema = z.coerce.number();",
@@ -627,8 +681,8 @@ test('covers alias forms across phase one operators', function () {
         },
         {
             operator: 'ZodReadonlyAdd',
-            source: "import zod from 'zod/v4'; const schema = zod.string();",
-            expected: 'zod.string().readonly()'
+            source: "import zod from 'zod/v4'; const schema = zod.object({});",
+            expected: 'zod.object({}).readonly()'
         },
         {
             operator: 'ZodObjectFactorySwap',

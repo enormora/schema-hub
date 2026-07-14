@@ -324,3 +324,57 @@ export function firstExpressionArgument(call: CallExpression): SchemaExpression 
 export function isObjectLikeFactory(name: string): boolean {
     return [ 'object', 'strictObject', 'looseObject' ].includes(name);
 }
+
+const freezableSchemaFactoryNames = new Set([
+    'object',
+    'strictObject',
+    'looseObject',
+    'array',
+    'tuple',
+    'record',
+    'partialRecord',
+    'looseRecord'
+]);
+
+const valuePreservingWrapperNames = new Set([
+    'optional',
+    'nullable',
+    'nullish',
+    'nonoptional',
+    '_default',
+    'prefault',
+    'catch',
+    'readonly'
+]);
+
+function isFreezableFactoryCall(bindings: ZodBindings, call: CallExpression): boolean {
+    const callName = getZodCallName(bindings, call);
+
+    return callName !== null && freezableSchemaFactoryNames.has(callName);
+}
+
+function underlyingSchemaExpression(bindings: ZodBindings, call: CallExpression): SchemaExpression | null {
+    const callName = getZodCallName(bindings, call);
+
+    if (callName !== null && valuePreservingWrapperNames.has(callName)) {
+        return firstExpressionArgument(call);
+    }
+
+    return babel.isMemberExpression(call.callee) && isExpressionNode(call.callee.object)
+        ? call.callee.object
+        : null;
+}
+
+export function producesFreezableValue(bindings: ZodBindings, expression: SchemaExpression): boolean {
+    let current: SchemaExpression | null = expression;
+
+    while (current !== null && babel.isCallExpression(current)) {
+        if (isFreezableFactoryCall(bindings, current)) {
+            return true;
+        }
+
+        current = underlyingSchemaExpression(bindings, current);
+    }
+
+    return false;
+}

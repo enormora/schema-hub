@@ -1,9 +1,20 @@
+import type { Node as BabelNode } from '@babel/types';
 import {
     addWrapperOrMethod,
     removeMethodOrWrapper,
     replaceNullish
 } from './schema-call-mutations.ts';
+import { isExpressionNode, type MutationPath } from './ast.ts';
 import { createDefinition, type MutationDefinition } from './mutation-definition.ts';
+import { producesFreezableValue, type ZodBindings } from './zod-bindings.ts';
+
+function addReadonlyToFreezableSchema(path: MutationPath, bindings: ZodBindings): readonly BabelNode[] {
+    if (!isExpressionNode(path.node) || !producesFreezableValue(bindings, path.node)) {
+        return [];
+    }
+
+    return addWrapperOrMethod(path, bindings, 'readonly');
+}
 
 export const presenceMutationDefinitions: readonly MutationDefinition[] = [
     createDefinition('ZodOptionalAdd', function (path, bindings) {
@@ -30,9 +41,7 @@ export const presenceMutationDefinitions: readonly MutationDefinition[] = [
     createDefinition('ZodNonoptionalRemove', function (path, bindings) {
         return removeMethodOrWrapper(path, bindings, new Set([ 'nonoptional' ]));
     }),
-    createDefinition('ZodReadonlyAdd', function (path, bindings) {
-        return addWrapperOrMethod(path, bindings, 'readonly');
-    }),
+    createDefinition('ZodReadonlyAdd', addReadonlyToFreezableSchema),
     createDefinition('ZodReadonlyRemove', function (path, bindings) {
         return removeMethodOrWrapper(path, bindings, new Set([ 'readonly' ]));
     })
