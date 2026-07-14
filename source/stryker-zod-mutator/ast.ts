@@ -118,7 +118,7 @@ export function numericArgumentMutations(
 
     return [ -1, 1 ].map(function (offset) {
         const clone = babel.cloneNode<babel.CallExpression>(call, true);
-        clone.arguments[argumentIndex] = babel.numericLiteral(argument.value + offset);
+        clone.arguments[argumentIndex] = babel.valueToNode(argument.value + offset);
         return clone;
     });
 }

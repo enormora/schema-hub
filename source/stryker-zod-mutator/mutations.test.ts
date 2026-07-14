@@ -137,6 +137,31 @@ test('removes and changes string checks', function () {
     assert.ok(collectMutations(source, 'ZodStringBoundaryChange').includes('z.string().min(3)'));
 });
 
+test('changes boundaries and literals to negative values without aborting', function () {
+    assert.ok(
+        collectMutations(
+            "import { z } from 'zod'; const schema = z.number().check(z.gt(0));",
+            'ZodNumberBoundaryChange'
+        )
+            .includes('z.number().check(z.gt(-1))')
+    );
+    assert.ok(
+        collectMutations("import { z } from 'zod/v4'; const schema = z.string().min(0);", 'ZodStringBoundaryChange')
+            .includes('z.string().min(-1)')
+    );
+    assert.ok(
+        collectMutations(
+            "import { z } from 'zod/mini'; const schema = z.array(z.string()).check(z.minSize(0));",
+            'ZodCollectionBoundaryChange'
+        )
+            .includes('z.array(z.string()).check(z.minSize(-1))')
+    );
+    assert.ok(
+        collectMutations("import { z } from 'zod/v4'; const schema = z.literal(0);", 'ZodNumericLiteralChange')
+            .includes('z.literal(-1)')
+    );
+});
+
 test('removes mini checks inside check calls', function () {
     const mutations = collectMutations(
         "import { z } from 'zod/mini'; const schema = z.string().check(z.minLength(2));",
