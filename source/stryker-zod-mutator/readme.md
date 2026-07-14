@@ -164,6 +164,11 @@ The default set enables every operator below.
 `z.boolean()`, `z.date()`, `z.symbol()`, `z.null()`, `z.undefined()`, `z.void()`, `z.never()`, `z.any()`,
 and `z.unknown()`.
 
+`ZodReadonlyAdd` only targets schemas whose parsed value is frozen observably at runtime, namely the
+object, `array`, `tuple`, and record families, including those wrapped in `optional`, `nullable`, `nullish`,
+`nonoptional`, `default`, `prefault`, or `catch`. Primitives and other schemas are skipped because freezing
+them has no effect.
+
 Boolean and string literal values are left to Stryker’s built-in literal mutators.
 
 ## Limits
