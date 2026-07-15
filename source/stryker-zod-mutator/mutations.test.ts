@@ -273,15 +273,8 @@ test('changes boundaries and literals to negative values without aborting', func
             .includes('z.number().check(z.gt(-1))')
     );
     assert.ok(
-        collectMutations("import { z } from 'zod/v4'; const schema = z.string().min(0);", 'ZodStringBoundaryChange')
-            .includes('z.string().min(-1)')
-    );
-    assert.ok(
-        collectMutations(
-            "import { z } from 'zod/mini'; const schema = z.array(z.string()).check(z.minSize(0));",
-            'ZodCollectionBoundaryChange'
-        )
-            .includes('z.array(z.string()).check(z.minSize(-1))')
+        collectMutations("import { z } from 'zod/v4'; const schema = z.number().min(0);", 'ZodNumberBoundaryChange')
+            .includes('z.number().min(-1)')
     );
     assert.ok(
         collectMutations("import { z } from 'zod/v4'; const schema = z.literal(0);", 'ZodNumericLiteralChange')
@@ -296,6 +289,43 @@ test('removes mini checks inside check calls', function () {
     );
 
     assert.ok(mutations.includes('z.string().check()'));
+});
+
+test('does not remove readonly when the frozen value is a primitive', function () {
+    assert.deepStrictEqual(
+        collectMutations("import { z } from 'zod/v4'; const schema = z.string().readonly();", 'ZodReadonlyRemove'),
+        []
+    );
+    assert.ok(
+        collectMutations("import { z } from 'zod/v4'; const schema = z.object({}).readonly();", 'ZodReadonlyRemove')
+            .includes('z.object({})')
+    );
+});
+
+test('does not mutate a vacuous length lower bound', function () {
+    assert.deepStrictEqual(
+        collectMutations("import { z } from 'zod/v4'; const schema = z.string().min(0);", 'ZodStringCheckRemove'),
+        []
+    );
+    assert.deepStrictEqual(
+        collectMutations("import { z } from 'zod/v4'; const schema = z.string().min(0);", 'ZodStringBoundaryChange'),
+        [ 'z.string().min(1)' ]
+    );
+    assert.deepStrictEqual(
+        collectMutations(
+            "import { z } from 'zod/mini'; const schema = z.array(z.string()).check(z.minSize(0));",
+            'ZodCollectionBoundaryChange'
+        ),
+        [ 'z.array(z.string()).check(z.minSize(1))' ]
+    );
+    assert.ok(
+        collectMutations("import { z } from 'zod/v4'; const schema = z.string().min(2);", 'ZodStringCheckRemove')
+            .includes('z.string()')
+    );
+    assert.ok(
+        collectMutations("import { z } from 'zod/v4'; const schema = z.number().min(0);", 'ZodNumberCheckRemove')
+            .includes('z.number()')
+    );
 });
 
 test('mutates tuple rest schemas', function () {
@@ -838,6 +868,22 @@ test('ignores non-schema and incomplete Zod-looking nodes', function () {
         {
             operator: 'ZodCustomBehaviorRemove',
             source: "import { z } from 'zod/mini'; const schema = z.string().check(other.custom(() => true));"
+        },
+        {
+            operator: 'ZodStringCheckRemove',
+            source: "import { z } from 'zod/mini'; const schema = z.string().check(customCheck);"
+        },
+        {
+            operator: 'ZodStringBoundaryChange',
+            source: "import { z } from 'zod/mini'; const schema = z.string().check(customCheck);"
+        },
+        {
+            operator: 'ZodStringCheckRemove',
+            source: "import { string } from 'zod/mini'; const schema = string();"
+        },
+        {
+            operator: 'ZodStringBoundaryChange',
+            source: "import { string } from 'zod/mini'; const schema = string();"
         }
     ];
 
