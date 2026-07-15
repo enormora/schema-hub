@@ -175,6 +175,12 @@ adds the policy that already matches the factory default (`strip` for `object`, 
 `looseRecord` behave identically for an unbounded string key domain (the swap only matters for finite keys
 such as an `enum`).
 
+`ZodStringCheckRemove`, `ZodCollectionCheckRemove`, `ZodStringBoundaryChange`, and
+`ZodCollectionBoundaryChange` treat a length lower bound of zero or less (`min(0)`, `minLength(0)`,
+`minSize(0)`) as vacuous: removing it changes nothing, and lowering it further keeps it vacuous, so neither
+mutation is emitted. Raising it (e.g. `min(0)` to `min(1)`) is still emitted, and numeric bounds such as
+`z.number().min(0)` are untouched because there negative values are meaningful.
+
 `ZodOptionalAdd` and `ZodObjectFieldOptionalAdd` skip schemas that already accept `undefined` (`z.any()`,
 `z.unknown()`, `z.undefined()`, `z.void()`, `z.nullish()`, and anything already `optional`), and
 `ZodNullableAdd` and `ZodObjectFieldNullableAdd` skip schemas that already accept `null` (`z.any()`,
@@ -188,7 +194,9 @@ and `ZodNullableAdd` also wrap only at the root of a schema value chain, so `z.s
 object, `array`, `tuple`, and record families, including those wrapped in `optional`, `nullable`, `nullish`,
 `nonoptional`, `default`, `prefault`, or `catch`. Primitives and other schemas are skipped because freezing
 them has no effect. It emits a single mutant per schema value and skips schemas that already apply
-`readonly` anywhere in that chain, so it never produces a redundant double `readonly`.
+`readonly` anywhere in that chain, so it never produces a redundant double `readonly`. `ZodReadonlyRemove`
+mirrors this: it removes `readonly` only when the underlying value is one of those freezable families, since
+removing it from a frozen primitive has no observable effect.
 
 Boolean and string literal values are left to Stryker’s built-in literal mutators.
 

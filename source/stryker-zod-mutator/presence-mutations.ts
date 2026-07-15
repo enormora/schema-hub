@@ -36,6 +36,12 @@ function removeRedundantPresenceWrapper(
     });
 }
 
+function removeObservableReadonly(path: MutationPath, bindings: ZodBindings): readonly BabelNode[] {
+    return removeMethodOrWrapper(path, bindings, new Set([ 'readonly' ])).filter(function (inner) {
+        return isExpressionNode(inner) && producesFreezableValue(bindings, inner);
+    });
+}
+
 export const presenceMutationDefinitions: readonly MutationDefinition[] = [
     createDefinition('ZodOptionalAdd', function (path, bindings) {
         return addWrapperOrMethod(path, bindings, 'optional');
@@ -62,7 +68,5 @@ export const presenceMutationDefinitions: readonly MutationDefinition[] = [
         return removeMethodOrWrapper(path, bindings, new Set([ 'nonoptional' ]));
     }),
     createDefinition('ZodReadonlyAdd', addReadonlyToFreezableSchema),
-    createDefinition('ZodReadonlyRemove', function (path, bindings) {
-        return removeMethodOrWrapper(path, bindings, new Set([ 'readonly' ]));
-    })
+    createDefinition('ZodReadonlyRemove', removeObservableReadonly)
 ];
