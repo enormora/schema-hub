@@ -64,18 +64,87 @@ const strictnessSwaps = new Map([
     [ 'negative', 'nonpositive' ],
     [ 'nonpositive', 'negative' ]
 ]);
+const stringLengthLowerBoundNames = new Set([ 'min', 'minLength' ]);
+const collectionLengthLowerBoundNames = new Set([ 'min', 'minSize', 'minLength' ]);
+const noLengthLowerBoundNames: ReadonlySet<string> = new Set();
+
+type CheckNames = {
+    readonly methodNames: ReadonlySet<string>;
+    readonly miniNames: ReadonlySet<string>;
+    readonly lengthLowerBoundNames: ReadonlySet<string>;
+};
+
+const stringCheckConfig: CheckNames = {
+    methodNames: stringCheckNames,
+    miniNames: stringMiniCheckNames,
+    lengthLowerBoundNames: stringLengthLowerBoundNames
+};
+const numberCheckConfig: CheckNames = {
+    methodNames: numberCheckNames,
+    miniNames: numberMiniCheckNames,
+    lengthLowerBoundNames: noLengthLowerBoundNames
+};
+const collectionCheckConfig: CheckNames = {
+    methodNames: collectionCheckNames,
+    miniNames: collectionMiniCheckNames,
+    lengthLowerBoundNames: collectionLengthLowerBoundNames
+};
+
+function numericArgumentValue(call: CallExpression): number | null {
+    const argument = call.arguments[0];
+
+    if (babel.isNumericLiteral(argument)) {
+        return argument.value;
+    }
+
+    if (babel.isUnaryExpression(argument) && argument.operator === '-' && babel.isNumericLiteral(argument.argument)) {
+        return -argument.argument.value;
+    }
+
+    return null;
+}
+
+function isVacuousLengthBound(
+    name: string | null,
+    call: CallExpression,
+    lengthLowerBoundNames: ReadonlySet<string>
+): boolean {
+    const value = numericArgumentValue(call);
+
+    return name !== null && value !== null && value <= 0 && lengthLowerBoundNames.has(name);
+}
+
+function meaningfulBoundaryMutants(
+    mutants: readonly babel.CallExpression[],
+    name: string | null,
+    call: CallExpression,
+    lengthLowerBoundNames: ReadonlySet<string>
+): readonly babel.CallExpression[] {
+    if (!isVacuousLengthBound(name, call, lengthLowerBoundNames)) {
+        return mutants;
+    }
+
+    return mutants.filter(function (mutant) {
+        return (numericArgumentValue(mutant) ?? 1) > 0;
+    });
+}
 
 function removeChecksFromCheckCall(
     call: CallExpression,
     bindings: ZodBindings,
-    names: ReadonlySet<string>
+    names: ReadonlySet<string>,
+    lengthLowerBoundNames: ReadonlySet<string>
 ): readonly BabelNode[] {
     if (!babel.isMemberExpression(call.callee) || getMemberName(call.callee) !== 'check') {
         return [];
     }
 
     return call.arguments.flatMap(function (argument, index) {
-        if (!babel.isCallExpression(argument) || !names.has(getZodCallName(bindings, argument) ?? '')) {
+        if (
+            !babel.isCallExpression(argument) ||
+            !names.has(getZodCallName(bindings, argument) ?? '') ||
+            isVacuousLengthBound(getZodCallName(bindings, argument), argument, lengthLowerBoundNames)
+        ) {
             return [];
         }
 
@@ -90,7 +159,8 @@ function removeChecksFromCheckCall(
 function mutateCheckCallBoundaries(
     call: CallExpression,
     bindings: ZodBindings,
-    names: ReadonlySet<string>
+    names: ReadonlySet<string>,
+    lengthLowerBoundNames: ReadonlySet<string>
 ): readonly BabelNode[] {
     if (!babel.isMemberExpression(call.callee) || getMemberName(call.callee) !== 'check') {
         return [];
@@ -101,7 +171,14 @@ function mutateCheckCallBoundaries(
             return [];
         }
 
-        return numericArgumentMutations(argument, 0).map(function (mutatedCheck) {
+        const mutants = meaningfulBoundaryMutants(
+            numericArgumentMutations(argument, 0),
+            getZodCallName(bindings, argument),
+            argument,
+            lengthLowerBoundNames
+        );
+
+        return mutants.map(function (mutatedCheck) {
             const clone = babel.cloneNode<babel.CallExpression>(call, true);
             clone.arguments[index] = mutatedCheck;
             return clone;
@@ -109,41 +186,41 @@ function mutateCheckCallBoundaries(
     });
 }
 
-function removeSchemaMethodChecks(
-    path: MutationPath,
-    bindings: ZodBindings,
-    methodNames: ReadonlySet<string>,
-    miniNames: ReadonlySet<string>
-): readonly BabelNode[] {
+function removeSchemaMethodChecks(path: MutationPath, bindings: ZodBindings, config: CheckNames): readonly BabelNode[] {
     const call = callNode(path);
 
     if (call === null) {
         return [];
     }
 
+    const methodName = babel.isMemberExpression(call.callee) ? getMemberName(call.callee) : null;
+    const methodRemovals = isVacuousLengthBound(methodName, call, config.lengthLowerBoundNames)
+        ? []
+        : removeMethod(call, bindings, config.methodNames);
+
     return [
-        ...removeMethod(call, bindings, methodNames),
-        ...removeChecksFromCheckCall(call, bindings, miniNames)
+        ...methodRemovals,
+        ...removeChecksFromCheckCall(call, bindings, config.miniNames, config.lengthLowerBoundNames)
     ];
 }
 
-function mutateSchemaBoundaries(
-    path: MutationPath,
-    bindings: ZodBindings,
-    methodNames: ReadonlySet<string>,
-    miniNames: ReadonlySet<string>
-): readonly BabelNode[] {
+function mutateSchemaBoundaries(path: MutationPath, bindings: ZodBindings, config: CheckNames): readonly BabelNode[] {
     const call = callNode(path);
 
     if (call === null) {
         return [];
     }
 
-    if (babel.isMemberExpression(call.callee) && methodNames.has(getMemberName(call.callee) ?? '')) {
-        return numericArgumentMutations(call, 0);
+    if (babel.isMemberExpression(call.callee) && config.methodNames.has(getMemberName(call.callee) ?? '')) {
+        return meaningfulBoundaryMutants(
+            numericArgumentMutations(call, 0),
+            getMemberName(call.callee),
+            call,
+            config.lengthLowerBoundNames
+        );
     }
 
-    return mutateCheckCallBoundaries(call, bindings, miniNames);
+    return mutateCheckCallBoundaries(call, bindings, config.miniNames, config.lengthLowerBoundNames);
 }
 
 function memberCallName(call: CallExpression | null): string | null {
@@ -191,23 +268,23 @@ function replaceStringFormat(path: MutationPath, bindings: ZodBindings): readonl
 
 export const checkMutationDefinitions: readonly MutationDefinition[] = [
     createDefinition('ZodStringCheckRemove', function (path, bindings) {
-        return removeSchemaMethodChecks(path, bindings, stringCheckNames, stringMiniCheckNames);
+        return removeSchemaMethodChecks(path, bindings, stringCheckConfig);
     }),
     createDefinition('ZodStringBoundaryChange', function (path, bindings) {
-        return mutateSchemaBoundaries(path, bindings, stringCheckNames, stringMiniCheckNames);
+        return mutateSchemaBoundaries(path, bindings, stringCheckConfig);
     }),
     createDefinition('ZodStringFormatToString', replaceStringFormat),
     createDefinition('ZodNumberCheckRemove', function (path, bindings) {
-        return removeSchemaMethodChecks(path, bindings, numberCheckNames, numberMiniCheckNames);
+        return removeSchemaMethodChecks(path, bindings, numberCheckConfig);
     }),
     createDefinition('ZodNumberBoundaryChange', function (path, bindings) {
-        return mutateSchemaBoundaries(path, bindings, numberCheckNames, numberMiniCheckNames);
+        return mutateSchemaBoundaries(path, bindings, numberCheckConfig);
     }),
     createDefinition('ZodNumberStrictnessSwap', swapStrictness),
     createDefinition('ZodCollectionCheckRemove', function (path, bindings) {
-        return removeSchemaMethodChecks(path, bindings, collectionCheckNames, collectionMiniCheckNames);
+        return removeSchemaMethodChecks(path, bindings, collectionCheckConfig);
     }),
     createDefinition('ZodCollectionBoundaryChange', function (path, bindings) {
-        return mutateSchemaBoundaries(path, bindings, collectionCheckNames, collectionMiniCheckNames);
+        return mutateSchemaBoundaries(path, bindings, collectionCheckConfig);
     })
 ];
