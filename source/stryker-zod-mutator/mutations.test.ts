@@ -349,6 +349,53 @@ test('swaps direct mini primitive factories through available imports', function
     assert.deepStrictEqual(mutations, [ 'number()', 'nil()' ]);
 });
 
+test('does not swap primitives to a runtime-equivalent factory', function () {
+    const fromAny = collectMutations("import { z } from 'zod/v4'; const schema = z.any();", 'ZodPrimitiveFactorySwap');
+    const fromVoid = collectMutations(
+        "import { z } from 'zod/v4'; const schema = z.void();",
+        'ZodPrimitiveFactorySwap'
+    );
+
+    assert.ok(!fromAny.includes('z.unknown()'));
+    assert.ok(fromAny.includes('z.string()'));
+    assert.ok(
+        !collectMutations("import { z } from 'zod/v4'; const schema = z.unknown();", 'ZodPrimitiveFactorySwap')
+            .includes('z.any()')
+    );
+    assert.ok(!fromVoid.includes('z.undefined()'));
+    assert.ok(fromVoid.includes('z.any()'));
+    assert.ok(
+        !collectMutations("import { z } from 'zod/v4'; const schema = z.undefined();", 'ZodPrimitiveFactorySwap')
+            .includes('z.void()')
+    );
+});
+
+test('adds only behavior-changing object policies', function () {
+    assert.deepStrictEqual(
+        collectMutations("import { z } from 'zod/v4'; const schema = z.object({});", 'ZodObjectPolicyAdd'),
+        [ 'z.object({}).strict()', 'z.object({}).passthrough()' ]
+    );
+    assert.deepStrictEqual(
+        collectMutations("import { z } from 'zod/v4'; const schema = z.strictObject({});", 'ZodObjectPolicyAdd'),
+        [ 'z.strictObject({}).passthrough()', 'z.strictObject({}).strip()' ]
+    );
+    assert.deepStrictEqual(
+        collectMutations("import { z } from 'zod/v4'; const schema = z.looseObject({});", 'ZodObjectPolicyAdd'),
+        [ 'z.looseObject({}).strict()', 'z.looseObject({}).strip()' ]
+    );
+});
+
+test('does not add object policies to non-object schemas', function () {
+    assert.deepStrictEqual(
+        collectMutations("import { z } from 'zod/v4'; const schema = z.number();", 'ZodObjectPolicyAdd'),
+        []
+    );
+    assert.deepStrictEqual(
+        collectMutations("import { z } from 'zod/v4'; const schema = z.string().min(2);", 'ZodObjectPolicyAdd'),
+        []
+    );
+});
+
 test('covers phase one presence and object operators', function () {
     const cases: readonly OperatorCase[] = [
         {
