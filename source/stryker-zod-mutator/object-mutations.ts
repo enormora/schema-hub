@@ -12,6 +12,7 @@ import {
 } from './ast.ts';
 import { callNode, createDefinition, type MutationDefinition } from './mutation-definition.ts';
 import {
+    addingWrapperHasNoEffect,
     buildZodCall,
     expressionStyle,
     getZodCallName,
@@ -93,12 +94,16 @@ function objectFieldValue(objectExpression: ObjectExpression, index: number): Sc
         : null;
 }
 
-function wrapObjectField(
+type FieldWrapTarget = {
+    readonly value: SchemaExpression;
+    readonly style: ZodApiStyle;
+};
+
+function fieldWrapTarget(
     bindings: ZodBindings,
     objectExpression: ObjectExpression,
-    index: number,
-    wrapperName: string
-): ObjectExpression | null {
+    index: number
+): FieldWrapTarget | null {
     const value = objectFieldValue(objectExpression, index);
     const style = value === null ? null : expressionStyle(bindings, value);
 
@@ -106,7 +111,22 @@ function wrapObjectField(
         return null;
     }
 
-    const wrapper = buildFieldWrapper(bindings, value, style, wrapperName);
+    return { value, style };
+}
+
+function wrapObjectField(
+    bindings: ZodBindings,
+    objectExpression: ObjectExpression,
+    index: number,
+    wrapperName: string
+): ObjectExpression | null {
+    const target = fieldWrapTarget(bindings, objectExpression, index);
+
+    if (target === null || addingWrapperHasNoEffect(bindings, target.value, wrapperName)) {
+        return null;
+    }
+
+    const wrapper = buildFieldWrapper(bindings, target.value, target.style, wrapperName);
 
     return wrapper === null ? null : replaceObjectProperty(objectExpression, index, wrapper);
 }
