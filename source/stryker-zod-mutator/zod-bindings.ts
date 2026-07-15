@@ -424,3 +424,27 @@ function isArgumentOfValuePreservingWrapper(path: MutationPath, bindings: ZodBin
 export function isSchemaValueChainRoot(path: MutationPath, bindings: ZodBindings): boolean {
     return !isReceiverOfMethodCall(path) && !isArgumentOfValuePreservingWrapper(path, bindings);
 }
+
+const factoryNamesAcceptingUndefined = new Set([ 'any', 'unknown', 'undefined', 'void' ]);
+const factoryNamesAcceptingNull = new Set([ 'any', 'unknown', 'null' ]);
+
+const alreadyAcceptedValueByWrapper = new Map<string, ReadonlySet<string>>([
+    [ 'optional', factoryNamesAcceptingUndefined ],
+    [ 'nullable', factoryNamesAcceptingNull ]
+]);
+
+export function addingWrapperHasNoEffect(
+    bindings: ZodBindings,
+    expression: SchemaExpression,
+    wrapperName: string
+): boolean {
+    const acceptingFactories = alreadyAcceptedValueByWrapper.get(wrapperName);
+
+    if (acceptingFactories === undefined || !babel.isCallExpression(expression)) {
+        return false;
+    }
+
+    const factoryName = getZodCallName(bindings, expression);
+
+    return factoryName !== null && acceptingFactories.has(factoryName);
+}

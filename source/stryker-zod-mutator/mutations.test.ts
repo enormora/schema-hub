@@ -118,6 +118,51 @@ test('adds mini optional as a wrapper', function () {
     assert.ok(mutations.includes('schema.optional(schema.string())'));
 });
 
+test('does not add optional to schemas that already accept undefined', function () {
+    for (const factory of [ 'any', 'unknown', 'undefined', 'void' ]) {
+        assert.deepStrictEqual(
+            collectMutations(`import { z } from 'zod/v4'; const schema = z.${factory}();`, 'ZodOptionalAdd'),
+            []
+        );
+    }
+
+    assert.ok(
+        collectMutations("import { z } from 'zod/v4'; const schema = z.null();", 'ZodOptionalAdd')
+            .includes('z.null().optional()')
+    );
+});
+
+test('does not add nullable to schemas that already accept null', function () {
+    for (const factory of [ 'any', 'unknown', 'null' ]) {
+        assert.deepStrictEqual(
+            collectMutations(`import { z } from 'zod/v4'; const schema = z.${factory}();`, 'ZodNullableAdd'),
+            []
+        );
+    }
+
+    assert.ok(
+        collectMutations("import { z } from 'zod/v4'; const schema = z.undefined();", 'ZodNullableAdd')
+            .includes('z.undefined().nullable()')
+    );
+});
+
+test('does not add a no-effect presence wrapper to object fields', function () {
+    assert.deepStrictEqual(
+        collectMutations(
+            "import { z } from 'zod/v4'; const schema = z.object({ a: z.any(), b: z.string() });",
+            'ZodObjectFieldOptionalAdd'
+        ),
+        [ 'z.object({\n  a: z.any(),\n  b: z.string().optional()\n})' ]
+    );
+    assert.deepStrictEqual(
+        collectMutations(
+            "import { z } from 'zod/v4'; const schema = z.object({ a: z.null(), b: z.string() });",
+            'ZodObjectFieldNullableAdd'
+        ),
+        [ 'z.object({\n  a: z.null(),\n  b: z.string().nullable()\n})' ]
+    );
+});
+
 test('removes object fields and wraps object fields', function () {
     const source = "import { z } from 'zod/v4'; const schema = z.object({ a: z.string(), b: z.number() });";
 

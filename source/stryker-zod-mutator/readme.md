@@ -170,6 +170,11 @@ mutants.
 adds the policy that already matches the factory default (`strip` for `object`, `strict` for
 `strictObject`, `passthrough` for `looseObject`), since that has no runtime effect.
 
+`ZodOptionalAdd` and `ZodObjectFieldOptionalAdd` skip schemas that already accept `undefined` (`z.any()`,
+`z.unknown()`, `z.undefined()`, `z.void()`), and `ZodNullableAdd` and `ZodObjectFieldNullableAdd` skip
+schemas that already accept `null` (`z.any()`, `z.unknown()`, `z.null()`), because wrapping them changes
+nothing at runtime.
+
 `ZodReadonlyAdd` only targets schemas whose parsed value is frozen observably at runtime, namely the
 object, `array`, `tuple`, and record families, including those wrapped in `optional`, `nullable`, `nullish`,
 `nonoptional`, `default`, `prefault`, or `catch`. Primitives and other schemas are skipped because freezing

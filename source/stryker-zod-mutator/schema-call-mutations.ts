@@ -12,6 +12,7 @@ import {
 } from './ast.ts';
 import { callNode } from './mutation-definition.ts';
 import {
+    addingWrapperHasNoEffect,
     buildZodCall,
     expressionStyle,
     firstExpressionArgument,
@@ -90,6 +91,10 @@ function buildWrapperMutation(
     return wrapped === null ? [] : [ wrapped ];
 }
 
+function wrapperAlreadyApplied(expression: SchemaExpression, name: string): boolean {
+    return babel.isCallExpression(expression) && getCallName(expression.callee) === name;
+}
+
 export function addWrapperOrMethod(
     path: MutationPath,
     bindings: ZodBindings,
@@ -98,11 +103,11 @@ export function addWrapperOrMethod(
     const expression = zodSchemaExpression(path, bindings);
     const style = expression === null ? null : expressionStyle(bindings, expression);
 
-    if (
-        expression === null ||
-        style === null ||
-        babel.isCallExpression(expression) && getCallName(expression.callee) === name
-    ) {
+    if (expression === null || style === null) {
+        return [];
+    }
+
+    if (wrapperAlreadyApplied(expression, name) || addingWrapperHasNoEffect(bindings, expression, name)) {
         return [];
     }
 
