@@ -11,8 +11,19 @@ import type { MutationPath } from './ast.ts';
 
 const primitiveFactoryNameSet = new Set<string>(primitiveFactoryNames);
 
-function isPrimitiveFactoryCall(callName: string | null): boolean {
+const runtimeEquivalentFactories = new Map<string, ReadonlySet<string>>([
+    [ 'any', new Set([ 'unknown' ]) ],
+    [ 'unknown', new Set([ 'any' ]) ],
+    [ 'void', new Set([ 'undefined' ]) ],
+    [ 'undefined', new Set([ 'void' ]) ]
+]);
+
+function isPrimitiveFactoryCall(callName: string | null): callName is string {
     return callName !== null && primitiveFactoryNameSet.has(callName);
+}
+
+function isRuntimeEquivalentSwap(sourceName: string, targetName: string): boolean {
+    return runtimeEquivalentFactories.get(sourceName)?.has(targetName) ?? false;
 }
 
 function mutatePrimitiveFactory(path: MutationPath, bindings: ZodBindings): readonly BabelNode[] {
@@ -30,7 +41,7 @@ function mutatePrimitiveFactory(path: MutationPath, bindings: ZodBindings): read
 
     return primitiveFactoryNames
         .filter(function (target) {
-            return target !== callName;
+            return target !== callName && !isRuntimeEquivalentSwap(callName, target);
         })
         .flatMap(function (target) {
             return replaceZodCallee(bindings, call, target) ?? [];

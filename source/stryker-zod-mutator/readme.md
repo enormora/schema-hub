@@ -162,7 +162,13 @@ The default set enables every operator below.
 
 `ZodPrimitiveFactorySwap` swaps zero-argument calls among `z.string()`, `z.number()`, `z.bigint()`,
 `z.boolean()`, `z.date()`, `z.symbol()`, `z.null()`, `z.undefined()`, `z.void()`, `z.never()`, `z.any()`,
-and `z.unknown()`.
+and `z.unknown()`. It skips swaps between `z.any()` and `z.unknown()`, and between `z.void()` and
+`z.undefined()`, because those pairs validate identically at runtime and would only produce equivalent
+mutants.
+
+`ZodObjectPolicyAdd` applies only to the `object`, `strictObject`, and `looseObject` factories, and never
+adds the policy that already matches the factory default (`strip` for `object`, `strict` for
+`strictObject`, `passthrough` for `looseObject`), since that has no runtime effect.
 
 `ZodReadonlyAdd` only targets schemas whose parsed value is frozen observably at runtime, namely the
 object, `array`, `tuple`, and record families, including those wrapped in `optional`, `nullable`, `nullish`,

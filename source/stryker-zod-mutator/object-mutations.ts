@@ -111,20 +111,41 @@ function wrapObjectField(
     return wrapper === null ? null : replaceObjectProperty(objectExpression, index, wrapper);
 }
 
+const objectPolicyNames = [ 'strict', 'passthrough', 'strip' ];
+
+const defaultPolicyByObjectFactory = new Map([
+    [ 'object', 'strip' ],
+    [ 'strictObject', 'strict' ],
+    [ 'looseObject', 'passthrough' ]
+]);
+
+function classicObjectFactoryName(bindings: ZodBindings, expression: SchemaExpression): string | null {
+    if (!babel.isCallExpression(expression) || expressionStyle(bindings, expression) !== 'classic') {
+        return null;
+    }
+
+    const callName = getZodCallName(bindings, expression);
+
+    return callName !== null && isObjectLikeFactory(callName) ? callName : null;
+}
+
 function addObjectPolicy(path: MutationPath, bindings: ZodBindings): readonly BabelNode[] {
     const expression = isExpressionNode(path.node) ? path.node : null;
+    const factoryName = expression === null ? null : classicObjectFactoryName(bindings, expression);
 
-    if (
-        expression === null ||
-        expressionStyle(bindings, expression) !== 'classic' ||
-        !isZodSchemaExpression(bindings, expression)
-    ) {
+    if (expression === null || factoryName === null) {
         return [];
     }
 
-    return [ 'strict', 'passthrough', 'strip' ].map(function (name) {
-        return memberCall(cloneExpression(expression), name, []);
-    });
+    const defaultPolicy = defaultPolicyByObjectFactory.get(factoryName);
+
+    return objectPolicyNames
+        .filter(function (name) {
+            return name !== defaultPolicy;
+        })
+        .map(function (name) {
+            return memberCall(cloneExpression(expression), name, []);
+        });
 }
 
 export const objectMutationDefinitions: readonly MutationDefinition[] = [
