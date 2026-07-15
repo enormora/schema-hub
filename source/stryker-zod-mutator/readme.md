@@ -173,7 +173,9 @@ adds the policy that already matches the factory default (`strip` for `object`, 
 `ZodOptionalAdd` and `ZodObjectFieldOptionalAdd` skip schemas that already accept `undefined` (`z.any()`,
 `z.unknown()`, `z.undefined()`, `z.void()`), and `ZodNullableAdd` and `ZodObjectFieldNullableAdd` skip
 schemas that already accept `null` (`z.any()`, `z.unknown()`, `z.null()`), because wrapping them changes
-nothing at runtime.
+nothing at runtime. `ZodOptionalAdd` and `ZodNullableAdd` also wrap only at the root of a schema value
+chain, so `z.string().min(2)` yields `z.string().min(2).optional()` rather than the invalid
+`z.string().optional().min(2)`.
 
 `ZodReadonlyAdd` only targets schemas whose parsed value is frozen observably at runtime, namely the
 object, `array`, `tuple`, and record families, including those wrapped in `optional`, `nullable`, `nullish`,

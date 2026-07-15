@@ -163,6 +163,17 @@ test('does not add a no-effect presence wrapper to object fields', function () {
     );
 });
 
+test('adds a presence wrapper only at the schema value chain root', function () {
+    assert.deepStrictEqual(
+        collectMutations("import { z } from 'zod/v4'; const schema = z.string().min(2);", 'ZodOptionalAdd'),
+        [ 'z.string().min(2).optional()' ]
+    );
+    assert.deepStrictEqual(
+        collectMutations("import { z } from 'zod/v4'; const schema = z.array(z.string()).min(1);", 'ZodNullableAdd'),
+        [ 'z.array(z.string()).min(1).nullable()', 'z.string().nullable()' ]
+    );
+});
+
 test('removes object fields and wraps object fields', function () {
     const source = "import { z } from 'zod/v4'; const schema = z.object({ a: z.string(), b: z.number() });";
 
