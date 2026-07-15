@@ -114,11 +114,21 @@ function removeTupleRest(path: MutationPath, bindings: ZodBindings): readonly Ba
     return [ clone ];
 }
 
+function hasInfiniteStringKey(bindings: ZodBindings, call: CallExpression): boolean {
+    const key = call.arguments[0];
+
+    return isExpressionNode(key) && babel.isCallExpression(key) && getZodCallName(bindings, key) === 'string';
+}
+
 function swapRecordFactory(path: MutationPath, bindings: ZodBindings): readonly BabelNode[] {
     const call = callNode(path);
     const currentName = call === null ? null : getZodCallName(bindings, call);
 
     if (call === null || currentName === null || ![ 'record', 'partialRecord', 'looseRecord' ].includes(currentName)) {
+        return [];
+    }
+
+    if (hasInfiniteStringKey(bindings, call)) {
         return [];
     }
 

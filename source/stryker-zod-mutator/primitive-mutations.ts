@@ -3,6 +3,7 @@ import { callNode, createDefinition, type MutationDefinition } from './mutation-
 import {
     getZodCallName,
     isCoerceCall,
+    isRecordKeyPosition,
     primitiveFactoryNames,
     replaceZodCallee,
     type ZodBindings
@@ -26,6 +27,12 @@ function isRuntimeEquivalentSwap(sourceName: string, targetName: string): boolea
     return runtimeEquivalentFactories.get(sourceName)?.has(targetName) ?? false;
 }
 
+const acceptsAnyKeyFactoryNames = new Set([ 'any', 'unknown' ]);
+
+function isStringRecordKey(path: MutationPath, bindings: ZodBindings, callName: string): boolean {
+    return callName === 'string' && isRecordKeyPosition(path, bindings);
+}
+
 function mutatePrimitiveFactory(path: MutationPath, bindings: ZodBindings): readonly BabelNode[] {
     const call = callNode(path);
     const callName = call === null ? null : getZodCallName(bindings, call);
@@ -39,9 +46,13 @@ function mutatePrimitiveFactory(path: MutationPath, bindings: ZodBindings): read
         return [];
     }
 
+    const skipAcceptsAnyKey = isStringRecordKey(path, bindings, callName);
+
     return primitiveFactoryNames
         .filter(function (target) {
-            return target !== callName && !isRuntimeEquivalentSwap(callName, target);
+            const wouldNotChangeStringKey = skipAcceptsAnyKey && acceptsAnyKeyFactoryNames.has(target);
+
+            return target !== callName && !isRuntimeEquivalentSwap(callName, target) && !wouldNotChangeStringKey;
         })
         .flatMap(function (target) {
             return replaceZodCallee(bindings, call, target) ?? [];
