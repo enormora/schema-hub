@@ -174,6 +174,77 @@ test('adds a presence wrapper only at the schema value chain root', function () 
     );
 });
 
+test('does not re-wrap an already-optional or already-nullable object field', function () {
+    assert.deepStrictEqual(
+        collectMutations(
+            "import { z } from 'zod/v4'; const schema = z.object({ a: z.string().optional(), b: z.number() });",
+            'ZodObjectFieldOptionalAdd'
+        ),
+        [ 'z.object({\n  a: z.string().optional(),\n  b: z.number().optional()\n})' ]
+    );
+    assert.deepStrictEqual(
+        collectMutations(
+            "import { z } from 'zod/v4'; const schema = z.object({ a: z.string().nullable(), b: z.number() });",
+            'ZodObjectFieldNullableAdd'
+        ),
+        [ 'z.object({\n  a: z.string().nullable(),\n  b: z.number().nullable()\n})' ]
+    );
+});
+
+test('does not add a presence wrapper when nullish already admits the value', function () {
+    assert.deepStrictEqual(
+        collectMutations("import { z } from 'zod/v4'; const schema = z.string().nullish();", 'ZodOptionalAdd'),
+        []
+    );
+    assert.deepStrictEqual(
+        collectMutations("import { z } from 'zod/v4'; const schema = z.string().nullish();", 'ZodNullableAdd'),
+        []
+    );
+});
+
+test('does not swap record factories for infinite string keys', function () {
+    assert.deepStrictEqual(
+        collectMutations(
+            "import { z } from 'zod/v4'; const schema = z.record(z.string(), z.number());",
+            'ZodRecordFactorySwap'
+        ),
+        []
+    );
+    assert.ok(
+        collectMutations(
+            "import { z } from 'zod/v4'; const schema = z.record(z.enum(['a']), z.number());",
+            'ZodRecordFactorySwap'
+        )
+            .includes("z.partialRecord(z.enum(['a']), z.number())")
+    );
+});
+
+test('does not swap a string record key to an accepts-anything schema', function () {
+    const keyMutations = collectMutations(
+        "import { z } from 'zod/v4'; const schema = z.record(z.string(), z.literal(1));",
+        'ZodPrimitiveFactorySwap'
+    );
+
+    assert.ok(!keyMutations.includes('z.any()'));
+    assert.ok(!keyMutations.includes('z.unknown()'));
+    assert.ok(keyMutations.includes('z.number()'));
+});
+
+test('does not remove a presence wrapper when the inner schema already admits the value', function () {
+    assert.deepStrictEqual(
+        collectMutations("import { z } from 'zod/v4'; const schema = z.unknown().optional();", 'ZodOptionalRemove'),
+        []
+    );
+    assert.deepStrictEqual(
+        collectMutations("import { z } from 'zod/v4'; const schema = z.unknown().nullable();", 'ZodNullableRemove'),
+        []
+    );
+    assert.ok(
+        collectMutations("import { z } from 'zod/v4'; const schema = z.string().optional();", 'ZodOptionalRemove')
+            .includes('z.string()')
+    );
+});
+
 test('removes object fields and wraps object fields', function () {
     const source = "import { z } from 'zod/v4'; const schema = z.object({ a: z.string(), b: z.number() });";
 
@@ -573,8 +644,8 @@ test('covers phase one check, collection, union, fallback, and coercion operator
         },
         {
             operator: 'ZodRecordFactorySwap',
-            source: "import { z } from 'zod/v4'; const schema = z.record(z.string(), z.string());",
-            expected: 'z.partialRecord(z.string(), z.string())'
+            source: "import { z } from 'zod/v4'; const schema = z.record(z.enum(['a', 'b']), z.string());",
+            expected: "z.partialRecord(z.enum(['a', 'b']), z.string())"
         },
         {
             operator: 'ZodUnionOptionRemove',

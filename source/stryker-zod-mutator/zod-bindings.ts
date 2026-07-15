@@ -403,7 +403,11 @@ function isReceiverOfMethodCall(path: MutationPath): boolean {
     return babel.isMemberExpression(enclosingMember) && enclosingMember.object === path.node;
 }
 
-function isArgumentOfValuePreservingWrapper(path: MutationPath, bindings: ZodBindings): boolean {
+function isFirstArgumentOfCallNamed(
+    path: MutationPath,
+    bindings: ZodBindings,
+    callNames: ReadonlySet<string>
+): boolean {
     const enclosingCall = path.parentPath?.node;
 
     if (!babel.isCallExpression(enclosingCall)) {
@@ -416,17 +420,23 @@ function isArgumentOfValuePreservingWrapper(path: MutationPath, bindings: ZodBin
         return false;
     }
 
-    const wrapsThisNode = firstArgument === path.node;
+    const isFirstArgument = firstArgument === path.node;
 
-    return wrapsThisNode && valuePreservingWrapperNames.has(getZodCallName(bindings, enclosingCall) ?? '');
+    return isFirstArgument && callNames.has(getZodCallName(bindings, enclosingCall) ?? '');
 }
 
 export function isSchemaValueChainRoot(path: MutationPath, bindings: ZodBindings): boolean {
-    return !isReceiverOfMethodCall(path) && !isArgumentOfValuePreservingWrapper(path, bindings);
+    return !isReceiverOfMethodCall(path) && !isFirstArgumentOfCallNamed(path, bindings, valuePreservingWrapperNames);
 }
 
-const factoryNamesAcceptingUndefined = new Set([ 'any', 'unknown', 'undefined', 'void' ]);
-const factoryNamesAcceptingNull = new Set([ 'any', 'unknown', 'null' ]);
+const recordFactoryNames = new Set([ 'record', 'partialRecord', 'looseRecord' ]);
+
+export function isRecordKeyPosition(path: MutationPath, bindings: ZodBindings): boolean {
+    return isFirstArgumentOfCallNamed(path, bindings, recordFactoryNames);
+}
+
+const factoryNamesAcceptingUndefined = new Set([ 'any', 'unknown', 'undefined', 'void', 'nullish' ]);
+const factoryNamesAcceptingNull = new Set([ 'any', 'unknown', 'null', 'nullish' ]);
 
 const alreadyAcceptedValueByWrapper = new Map<string, ReadonlySet<string>>([
     [ 'optional', factoryNamesAcceptingUndefined ],
@@ -444,7 +454,7 @@ export function addingWrapperHasNoEffect(
         return false;
     }
 
-    const factoryName = getZodCallName(bindings, expression);
+    const outerName = getZodCallName(bindings, expression) ?? getMemberName(expression.callee) ?? '';
 
-    return factoryName !== null && acceptingFactories.has(factoryName);
+    return outerName === wrapperName || acceptingFactories.has(outerName);
 }

@@ -164,18 +164,25 @@ The default set enables every operator below.
 `z.boolean()`, `z.date()`, `z.symbol()`, `z.null()`, `z.undefined()`, `z.void()`, `z.never()`, `z.any()`,
 and `z.unknown()`. It skips swaps between `z.any()` and `z.unknown()`, and between `z.void()` and
 `z.undefined()`, because those pairs validate identically at runtime and would only produce equivalent
-mutants.
+mutants. A `z.string()` used as a record key is never swapped to `z.any()` or `z.unknown()`, because object
+keys are always strings, so those accept exactly the same keys.
 
 `ZodObjectPolicyAdd` applies only to the `object`, `strictObject`, and `looseObject` factories, and never
 adds the policy that already matches the factory default (`strip` for `object`, `strict` for
 `strictObject`, `passthrough` for `looseObject`), since that has no runtime effect.
 
+`ZodRecordFactorySwap` skips records whose key is `z.string()`, because `record`, `partialRecord`, and
+`looseRecord` behave identically for an unbounded string key domain (the swap only matters for finite keys
+such as an `enum`).
+
 `ZodOptionalAdd` and `ZodObjectFieldOptionalAdd` skip schemas that already accept `undefined` (`z.any()`,
-`z.unknown()`, `z.undefined()`, `z.void()`), and `ZodNullableAdd` and `ZodObjectFieldNullableAdd` skip
-schemas that already accept `null` (`z.any()`, `z.unknown()`, `z.null()`), because wrapping them changes
-nothing at runtime. `ZodOptionalAdd` and `ZodNullableAdd` also wrap only at the root of a schema value
-chain, so `z.string().min(2)` yields `z.string().min(2).optional()` rather than the invalid
-`z.string().optional().min(2)`.
+`z.unknown()`, `z.undefined()`, `z.void()`, `z.nullish()`, and anything already `optional`), and
+`ZodNullableAdd` and `ZodObjectFieldNullableAdd` skip schemas that already accept `null` (`z.any()`,
+`z.unknown()`, `z.null()`, `z.nullish()`, and anything already `nullable`), because wrapping them changes
+nothing at runtime. `ZodOptionalRemove` and `ZodNullableRemove` likewise skip removals whose remaining
+schema still admits the value (e.g. removing `.optional()` from `z.unknown().optional()`). `ZodOptionalAdd`
+and `ZodNullableAdd` also wrap only at the root of a schema value chain, so `z.string().min(2)` yields
+`z.string().min(2).optional()` rather than the invalid `z.string().optional().min(2)`.
 
 `ZodReadonlyAdd` only targets schemas whose parsed value is frozen observably at runtime, namely the
 object, `array`, `tuple`, and record families, including those wrapped in `optional`, `nullable`, `nullish`,
