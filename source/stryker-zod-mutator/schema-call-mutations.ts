@@ -17,6 +17,7 @@ import {
     expressionStyle,
     firstExpressionArgument,
     getZodCallName,
+    isSchemaValueChainRoot,
     isZodSchemaExpression,
     type ZodApiStyle,
     type ZodBindings
@@ -95,6 +96,17 @@ function wrapperAlreadyApplied(expression: SchemaExpression, name: string): bool
     return babel.isCallExpression(expression) && getCallName(expression.callee) === name;
 }
 
+function shouldSkipWrapping(
+    path: MutationPath,
+    bindings: ZodBindings,
+    expression: SchemaExpression,
+    name: string
+): boolean {
+    return !isSchemaValueChainRoot(path, bindings) ||
+        wrapperAlreadyApplied(expression, name) ||
+        addingWrapperHasNoEffect(bindings, expression, name);
+}
+
 export function addWrapperOrMethod(
     path: MutationPath,
     bindings: ZodBindings,
@@ -107,7 +119,7 @@ export function addWrapperOrMethod(
         return [];
     }
 
-    if (wrapperAlreadyApplied(expression, name) || addingWrapperHasNoEffect(bindings, expression, name)) {
+    if (shouldSkipWrapping(path, bindings, expression, name)) {
         return [];
     }
 
