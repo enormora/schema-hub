@@ -11,6 +11,7 @@ import {
     type SchemaExpression
 } from './ast.ts';
 import { callNode } from './mutation-definition.ts';
+import { presenceWrapperMaskedByEveryUse } from './masked-schema-references.ts';
 import {
     addingWrapperHasNoEffect,
     buildZodCall,
@@ -106,7 +107,8 @@ function shouldSkipWrapping(
     return !isSchemaValueChainRoot(path, bindings) ||
         wrapperAlreadyApplied(expression, name) ||
         addingWrapperHasNoEffect(bindings, expression, name) ||
-        isStringTemplateLiteralPart(path, bindings);
+        isStringTemplateLiteralPart(path, bindings) ||
+        presenceWrapperMaskedByEveryUse(path, bindings, name);
 }
 
 export function addWrapperOrMethod(

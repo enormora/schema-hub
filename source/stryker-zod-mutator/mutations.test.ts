@@ -254,6 +254,113 @@ test('does not add a presence wrapper over a wrapped accept-anything schema', fu
     );
 });
 
+test('does not add a presence wrapper masked by every use of a module const', function () {
+    assert.deepStrictEqual(
+        collectMutations(
+            "import * as z from 'zod/mini'; const t = z.union([z.literal('w'), z.literal('b')]); export const s = z.nullable(t);",
+            'ZodNullableAdd'
+        ),
+        []
+    );
+    assert.deepStrictEqual(
+        collectMutations(
+            "import { z } from 'zod/v4'; const t = z.union([z.literal('w'), z.literal('b')]); export const s = t.nullable();",
+            'ZodNullableAdd'
+        ),
+        []
+    );
+    assert.deepStrictEqual(
+        collectMutations(
+            "import * as z from 'zod/mini'; const t = z.union([z.string()]); export const s = z.optional(t);",
+            'ZodOptionalAdd'
+        ),
+        []
+    );
+    assert.deepStrictEqual(
+        collectMutations(
+            "import * as z from 'zod/mini'; const t = z.union([z.literal('w')]); const other = { t: 1 }; export const s = z.nullable(t);",
+            'ZodNullableAdd'
+        ),
+        []
+    );
+    assert.deepStrictEqual(
+        collectMutations(
+            "import * as z from 'zod/mini'; const t = z.union([z.literal('w')]); const holder = {}; export const s = z.nullable(t); export const x = holder.t;",
+            'ZodNullableAdd'
+        ),
+        []
+    );
+});
+
+test('still mutates a const that is not masked by every use', function () {
+    const bareUse = collectMutations(
+        "import * as z from 'zod/mini'; const t = z.union([z.literal('w'), z.literal('b')]); export const s = z.object({ c: z.nullable(t), d: t });",
+        'ZodNullableAdd'
+    );
+    const shadowed = collectMutations(
+        "import * as z from 'zod/mini'; const t = z.union([z.literal('w')]); function read(t) { return t; } export const s = z.nullable(t);",
+        'ZodNullableAdd'
+    );
+    const noReference = collectMutations(
+        "import * as z from 'zod/mini'; export const t = z.union([z.literal('w'), z.literal('b')]);",
+        'ZodNullableAdd'
+    );
+    const nestedField = collectMutations(
+        "import * as z from 'zod/mini'; const t = z.object({ a: z.literal('w') }); export const s = z.nullable(t);",
+        'ZodNullableAdd'
+    );
+    const arrayUse = collectMutations(
+        "import * as z from 'zod/mini'; const t = z.literal('w'); export const s = z.array(t);",
+        'ZodNullableAdd'
+    );
+    const spreadOptions = collectMutations(
+        "import * as z from 'zod/mini'; const options = [ z.literal('w') ]; export const s = z.nullable(z.union(options));",
+        'ZodNullableAdd'
+    );
+    const memberUse = collectMutations(
+        "import * as z from 'zod/mini'; const t = z.union([z.literal('w')]); export const shape = t.def; export const s = z.nullable(t);",
+        'ZodNullableAdd'
+    );
+    const mutableBinding = collectMutations(
+        "import * as z from 'zod/mini'; let t = z.union([z.literal('w')]); export const s = z.nullable(t);",
+        'ZodNullableAdd'
+    );
+    const tupleElement = collectMutations(
+        "import * as z from 'zod/mini'; const t = z.tuple([z.literal('w')]); export const s = z.nullable(t);",
+        'ZodNullableAdd'
+    );
+    const recordValue = collectMutations(
+        "import * as z from 'zod/mini'; const t = z.union([z.literal('w')]); export const s = z.record(z.string(), t);",
+        'ZodNullableAdd'
+    );
+    const destructuredBinding = collectMutations(
+        "import * as z from 'zod/mini'; const [ t ] = z.union([z.literal('w')]); export const s = z.nullable(t);",
+        'ZodNullableAdd'
+    );
+    const nonZodCallUse = collectMutations(
+        "import * as z from 'zod/mini'; const t = z.union([z.literal('w')]); export const s = wrapSchema(t);",
+        'ZodNullableAdd'
+    );
+    const exportedConst = collectMutations(
+        "import * as z from 'zod/mini'; export const t = z.union([z.literal('w')]); export const s = z.nullable(t);",
+        'ZodNullableAdd'
+    );
+
+    assert.ok(exportedConst.includes("z.nullable(z.union([z.literal('w')]))"));
+    assert.ok(nonZodCallUse.includes("z.nullable(z.union([z.literal('w')]))"));
+    assert.ok(destructuredBinding.includes("z.nullable(z.union([z.literal('w')]))"));
+    assert.ok(tupleElement.includes("z.nullable(z.literal('w'))"));
+    assert.ok(recordValue.includes("z.nullable(z.union([z.literal('w')]))"));
+    assert.ok(mutableBinding.includes("z.nullable(z.union([z.literal('w')]))"));
+    assert.ok(memberUse.includes("z.nullable(z.union([z.literal('w')]))"));
+    assert.ok(bareUse.includes("z.nullable(z.union([z.literal('w'), z.literal('b')]))"));
+    assert.ok(shadowed.includes("z.nullable(z.union([z.literal('w')]))"));
+    assert.ok(noReference.includes("z.nullable(z.union([z.literal('w'), z.literal('b')]))"));
+    assert.ok(nestedField.includes("z.nullable(z.literal('w'))"));
+    assert.ok(arrayUse.includes("z.nullable(z.literal('w'))"));
+    assert.ok(spreadOptions.includes("z.nullable(z.literal('w'))"));
+});
+
 test('does not re-wrap an already-optional or already-nullable object field', function () {
     assert.deepStrictEqual(
         collectMutations(
