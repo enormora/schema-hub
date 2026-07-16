@@ -174,6 +174,40 @@ test('adds a presence wrapper only at the schema value chain root', function () 
     );
 });
 
+test('does not add a presence wrapper to a string template literal part', function () {
+    assert.deepStrictEqual(
+        collectMutations(
+            "import * as z from 'zod/mini'; const schema = z.templateLiteral(['f_', z.string()]);",
+            'ZodOptionalAdd'
+        ),
+        []
+    );
+    assert.deepStrictEqual(
+        collectMutations(
+            "import * as z from 'zod/mini'; const schema = z.templateLiteral(['f_', z.string()]);",
+            'ZodNullableAdd'
+        ),
+        []
+    );
+});
+
+test('still wraps a non-string template literal part where it changes behavior', function () {
+    assert.ok(
+        collectMutations(
+            "import * as z from 'zod/mini'; const schema = z.templateLiteral(['p', z.number()]);",
+            'ZodOptionalAdd'
+        )
+            .includes('z.optional(z.number())')
+    );
+    assert.ok(
+        collectMutations(
+            "import * as z from 'zod/mini'; const schema = z.templateLiteral(['p', z.number()]);",
+            'ZodNullableAdd'
+        )
+            .includes('z.nullable(z.number())')
+    );
+});
+
 test('does not re-wrap an already-optional or already-nullable object field', function () {
     assert.deepStrictEqual(
         collectMutations(

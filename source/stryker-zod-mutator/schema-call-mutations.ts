@@ -18,6 +18,7 @@ import {
     firstExpressionArgument,
     getZodCallName,
     isSchemaValueChainRoot,
+    isStringTemplateLiteralPart,
     isZodSchemaExpression,
     type ZodApiStyle,
     type ZodBindings
@@ -104,7 +105,8 @@ function shouldSkipWrapping(
 ): boolean {
     return !isSchemaValueChainRoot(path, bindings) ||
         wrapperAlreadyApplied(expression, name) ||
-        addingWrapperHasNoEffect(bindings, expression, name);
+        addingWrapperHasNoEffect(bindings, expression, name) ||
+        isStringTemplateLiteralPart(path, bindings);
 }
 
 export function addWrapperOrMethod(

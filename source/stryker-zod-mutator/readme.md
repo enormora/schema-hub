@@ -188,7 +188,10 @@ mutation is emitted. Raising it (e.g. `min(0)` to `min(1)`) is still emitted, an
 nothing at runtime. `ZodOptionalRemove` and `ZodNullableRemove` likewise skip removals whose remaining
 schema still admits the value (e.g. removing `.optional()` from `z.unknown().optional()`). `ZodOptionalAdd`
 and `ZodNullableAdd` also wrap only at the root of a schema value chain, so `z.string().min(2)` yields
-`z.string().min(2).optional()` rather than the invalid `z.string().optional().min(2)`.
+`z.string().min(2).optional()` rather than the invalid `z.string().optional().min(2)`. They also skip a
+`z.string()` part of a `z.templateLiteral([...])`, because a template part compiles to a regex fragment
+and `z.string()` already matches both the empty string and `"null"`, so wrapping it changes nothing. Other
+part types (e.g. `z.number()`) are still wrapped, since there the wrappers are observable.
 
 `ZodReadonlyAdd` only targets schemas whose parsed value is frozen observably at runtime, namely the
 object, `array`, `tuple`, and record families, including those wrapped in `optional`, `nullable`, `nullish`,
