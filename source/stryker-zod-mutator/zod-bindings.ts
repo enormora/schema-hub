@@ -435,6 +435,30 @@ export function isRecordKeyPosition(path: MutationPath, bindings: ZodBindings): 
     return isFirstArgumentOfCallNamed(path, bindings, recordFactoryNames);
 }
 
+function grandparentNode(path: MutationPath): BabelNode | null {
+    return path.parentPath?.parentPath?.node ?? null;
+}
+
+function isElementOfTemplateLiteralParts(path: MutationPath, bindings: ZodBindings): boolean {
+    const partsArray = path.parentPath?.node;
+    const templateCall = grandparentNode(path);
+
+    if (!babel.isArrayExpression(partsArray) || !babel.isCallExpression(templateCall)) {
+        return false;
+    }
+
+    const firstArgument = templateCall.arguments[0];
+    const arrayIsFirstArgument = isExpressionNode(firstArgument) && firstArgument === partsArray;
+
+    return arrayIsFirstArgument && getZodCallName(bindings, templateCall) === 'templateLiteral';
+}
+
+export function isStringTemplateLiteralPart(path: MutationPath, bindings: ZodBindings): boolean {
+    return babel.isCallExpression(path.node) &&
+        getZodCallName(bindings, path.node) === 'string' &&
+        isElementOfTemplateLiteralParts(path, bindings);
+}
+
 const factoryNamesAcceptingUndefined = new Set([ 'any', 'unknown', 'undefined', 'void', 'nullish' ]);
 const factoryNamesAcceptingNull = new Set([ 'any', 'unknown', 'null', 'nullish' ]);
 
