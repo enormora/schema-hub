@@ -12,7 +12,6 @@ import {
 } from './ast.ts';
 import { callNode, createDefinition, type MutationDefinition } from './mutation-definition.ts';
 import {
-    addingWrapperHasNoEffect,
     buildZodCall,
     expressionStyle,
     getZodCallName,
@@ -22,6 +21,7 @@ import {
     type ZodApiStyle,
     type ZodBindings
 } from './zod-bindings.ts';
+import { addingWrapperHasNoEffect } from './binding-resolution.ts';
 import { removeMethodOrWrapper } from './schema-call-mutations.ts';
 
 function mutateObjectFactory(path: MutationPath, bindings: ZodBindings): readonly BabelNode[] {

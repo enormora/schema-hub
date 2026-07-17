@@ -1,6 +1,7 @@
 import * as babel from '@babel/types';
-import type { Node as BabelNode } from '@babel/types';
+import type { Node as BabelNode, Program } from '@babel/types';
 import {
+    fileNameOf,
     findProgram,
     getMemberName,
     isExpressionNode,
@@ -8,6 +9,7 @@ import {
     type MutationPath,
     type SchemaExpression
 } from './ast.ts';
+import type { ResolverEnv } from './binding-resolution.ts';
 
 export type ZodApiStyle = 'classic' | 'mini';
 
@@ -35,6 +37,9 @@ type SourceStatement = Readonly<babel.Statement>;
 export type ZodBindings = {
     readonly namespaces: readonly NamespaceBinding[];
     readonly directBindings: readonly DirectBinding[];
+    readonly program: Program;
+    readonly fileName: string | null;
+    readonly env: ResolverEnv;
 };
 
 const zodSourceStyles = new Map<string, ZodApiStyle>([
@@ -142,9 +147,8 @@ function readZodImport(statement: SourceStatement): ZodImportBindings {
     };
 }
 
-export function readZodBindings(path: MutationPath): ZodBindings {
-    const program = findProgram(path);
-    const imports = program?.body.map(readZodImport) ?? [];
+export function buildZodBindings(program: Program, fileName: string | null, env: ResolverEnv): ZodBindings {
+    const imports = program.body.map(readZodImport);
 
     return {
         namespaces: imports.flatMap(function (binding) {
@@ -152,8 +156,15 @@ export function readZodBindings(path: MutationPath): ZodBindings {
         }),
         directBindings: imports.flatMap(function (binding) {
             return binding.directBindings;
-        })
+        }),
+        program,
+        fileName,
+        env
     };
+}
+
+export function readZodBindings(path: MutationPath, env: ResolverEnv): ZodBindings {
+    return buildZodBindings(findProgram(path) ?? babel.program([]), fileNameOf(path), env);
 }
 
 export function getDirectBinding(bindings: ZodBindings, localName: string): DirectBinding | null {
@@ -325,18 +336,7 @@ export function isObjectLikeFactory(name: string): boolean {
     return [ 'object', 'strictObject', 'looseObject' ].includes(name);
 }
 
-const freezableSchemaFactoryNames = new Set([
-    'object',
-    'strictObject',
-    'looseObject',
-    'array',
-    'tuple',
-    'record',
-    'partialRecord',
-    'looseRecord'
-]);
-
-const valuePreservingWrapperNames = new Set([
+export const valuePreservingWrapperNames = new Set([
     'optional',
     'nullable',
     'nullish',
@@ -346,56 +346,6 @@ const valuePreservingWrapperNames = new Set([
     'catch',
     'readonly'
 ]);
-
-function isFreezableFactoryCall(bindings: ZodBindings, call: CallExpression): boolean {
-    const callName = getZodCallName(bindings, call);
-
-    return callName !== null && freezableSchemaFactoryNames.has(callName);
-}
-
-function underlyingSchemaExpression(bindings: ZodBindings, call: CallExpression): SchemaExpression | null {
-    const callName = getZodCallName(bindings, call);
-
-    if (callName !== null && valuePreservingWrapperNames.has(callName)) {
-        return firstExpressionArgument(call);
-    }
-
-    return babel.isMemberExpression(call.callee) && isExpressionNode(call.callee.object)
-        ? call.callee.object
-        : null;
-}
-
-export function producesFreezableValue(bindings: ZodBindings, expression: SchemaExpression): boolean {
-    let current: SchemaExpression | null = expression;
-
-    while (current !== null && babel.isCallExpression(current)) {
-        if (isFreezableFactoryCall(bindings, current)) {
-            return true;
-        }
-
-        current = underlyingSchemaExpression(bindings, current);
-    }
-
-    return false;
-}
-
-function isReadonlyApplication(bindings: ZodBindings, call: CallExpression): boolean {
-    return getZodCallName(bindings, call) === 'readonly' || getMemberName(call.callee) === 'readonly';
-}
-
-export function chainAppliesReadonly(bindings: ZodBindings, expression: SchemaExpression): boolean {
-    let current: SchemaExpression | null = expression;
-
-    while (current !== null && babel.isCallExpression(current)) {
-        if (isReadonlyApplication(bindings, current)) {
-            return true;
-        }
-
-        current = underlyingSchemaExpression(bindings, current);
-    }
-
-    return false;
-}
 
 function isReceiverOfMethodCall(path: MutationPath): boolean {
     const enclosingMember = path.parentPath?.node;
@@ -457,64 +407,4 @@ export function isStringTemplateLiteralPart(path: MutationPath, bindings: ZodBin
     return babel.isCallExpression(path.node) &&
         getZodCallName(bindings, path.node) === 'string' &&
         isElementOfTemplateLiteralParts(path, bindings);
-}
-
-const factoryNamesAcceptingUndefined = new Set([
-    'any',
-    'unknown',
-    'undefined',
-    'void',
-    'nullish',
-    'prefault',
-    'default',
-    '_default'
-]);
-const factoryNamesAcceptingNull = new Set([ 'any', 'unknown', 'null', 'nullish' ]);
-const acceptAnythingFactoryNames = new Set([ 'any', 'unknown' ]);
-
-const alreadyAcceptedValueByWrapper = new Map<string, ReadonlySet<string>>([
-    [ 'optional', factoryNamesAcceptingUndefined ],
-    [ 'nullable', factoryNamesAcceptingNull ]
-]);
-
-function outerSchemaName(bindings: ZodBindings, call: CallExpression): string {
-    return getZodCallName(bindings, call) ?? getMemberName(call.callee) ?? '';
-}
-
-function resolvesToAcceptAnything(bindings: ZodBindings, expression: SchemaExpression): boolean {
-    let current: SchemaExpression | null = expression;
-
-    while (current !== null && babel.isCallExpression(current)) {
-        const name = outerSchemaName(bindings, current);
-
-        if (acceptAnythingFactoryNames.has(name)) {
-            return true;
-        }
-
-        if (!valuePreservingWrapperNames.has(name)) {
-            return false;
-        }
-
-        current = underlyingSchemaExpression(bindings, current);
-    }
-
-    return false;
-}
-
-export function addingWrapperHasNoEffect(
-    bindings: ZodBindings,
-    expression: SchemaExpression,
-    wrapperName: string
-): boolean {
-    const acceptingFactories = alreadyAcceptedValueByWrapper.get(wrapperName);
-
-    if (acceptingFactories === undefined || !babel.isCallExpression(expression)) {
-        return false;
-    }
-
-    const outerName = outerSchemaName(bindings, expression);
-
-    return outerName === wrapperName ||
-        acceptingFactories.has(outerName) ||
-        resolvesToAcceptAnything(bindings, expression);
 }

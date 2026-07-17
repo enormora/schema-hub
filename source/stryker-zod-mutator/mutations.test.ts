@@ -9,13 +9,14 @@ import {
     withZodMutators,
     type ZodMutatorSettings
 } from './entry-point.ts';
-import { createZodMutators } from './mutations.ts';
+import { createZodMutators, createZodMutatorsWithResolver } from './mutations.ts';
 import {
     zodMutationCategories,
     zodMutationOperators,
     type ZodMutationOperator
 } from './operator.ts';
-import type { MutationPath } from './ast.ts';
+import { fileNameOf, type MutationPath } from './ast.ts';
+import { inertResolverEnv, type ResolvedModule, type ResolverEnv } from './binding-resolution.ts';
 
 type StrykerMutatorRegistry = {
     readonly allMutators: readonly { readonly name: string; }[];
@@ -79,6 +80,48 @@ function assertIncludesMutation(testCase: OperatorCase): void {
         mutations.includes(testCase.expected),
         `${testCase.operator} did not include ${testCase.expected}. Found ${JSON.stringify(mutations)}`
     );
+}
+
+function parseModule(source: string, fileName: string): ReturnType<typeof parse>['program'] {
+    return parse(source, { plugins: [ 'typescript', 'jsx' ], sourceType: 'module', sourceFilename: fileName }).program;
+}
+
+function moduleResolverEnv(modules: Readonly<Record<string, string>>): ResolverEnv {
+    return {
+        loadModule(specifier: string): ResolvedModule | null {
+            const source = modules[specifier];
+
+            if (source === undefined) {
+                return null;
+            }
+
+            const fileName = `/virtual/${specifier}.ts`;
+
+            return { program: parseModule(source, fileName), fileName };
+        }
+    };
+}
+
+function collectResolvedMutations(
+    source: string,
+    operator: ZodMutationOperator,
+    env: ResolverEnv
+): readonly string[] {
+    const program = parseModule(source, '/virtual/entry.ts');
+    const mutator = createZodMutatorsWithResolver([ operator ], env)[0];
+    const mutations: string[] = [];
+
+    if (mutator === undefined) {
+        assert.fail(`Could not find ${operator}`);
+    }
+
+    visitAst(program, null, function (path) {
+        for (const mutation of mutator.mutate(path)) {
+            mutations.push(generate(mutation).code);
+        }
+    });
+
+    return unique(mutations);
 }
 
 async function readStrykerMutatorNames(): Promise<readonly string[]> {
@@ -1206,4 +1249,285 @@ test('patches Stryker mutators with selected operators once', async function () 
 
     assert.strictEqual(optionalAddCount, 1);
     assert.ok(names.includes('ZodCoercionRemove'));
+});
+
+test('adds readonly through an aliased freezable schema binding', function () {
+    const mutations = collectMutations(
+        "import { z } from 'zod/v4'; const fields = z.object({ id: z.string() }); const schema = z.optional(fields);",
+        'ZodReadonlyAdd'
+    );
+
+    assert.ok(mutations.includes('z.optional(fields).readonly()'));
+});
+
+test('adds readonly through a member-access schema binding', function () {
+    const mutations = collectMutations(
+        "import { z } from 'zod/v4'; const shapes = { user: z.object({ id: z.string() }) }; const schema = z.optional(shapes.user);",
+        'ZodReadonlyAdd'
+    );
+
+    assert.ok(mutations.includes('z.optional(shapes.user).readonly()'));
+});
+
+test('adds readonly through a destructured schema binding', function () {
+    const mutations = collectMutations(
+        "import { z } from 'zod/v4'; const { user } = { user: z.object({ id: z.string() }) }; const schema = z.optional(user);",
+        'ZodReadonlyAdd'
+    );
+
+    assert.ok(mutations.includes('z.optional(user).readonly()'));
+});
+
+test('adds readonly through an alias chain of schema bindings', function () {
+    const mutations = collectMutations(
+        "import { z } from 'zod/v4'; const base = z.object({ id: z.string() }); const alias = base; const schema = z.optional(alias);",
+        'ZodReadonlyAdd'
+    );
+
+    assert.ok(mutations.includes('z.optional(alias).readonly()'));
+});
+
+test('skips an optional wrapper that a binding proves has no effect', function () {
+    const mutations = collectMutations(
+        "import { z } from 'zod/v4'; const loose = z.any(); const schema = z.nullable(loose);",
+        'ZodOptionalAdd'
+    );
+
+    assert.ok(!mutations.includes('z.nullable(loose).optional()'));
+});
+
+test('still adds a wrapper when a binding resolves to a distinguishable schema', function () {
+    const mutations = collectMutations(
+        "import { z } from 'zod/v4'; const inner = z.string(); const schema = z.nullable(inner);",
+        'ZodOptionalAdd'
+    );
+
+    assert.ok(mutations.includes('z.nullable(inner).optional()'));
+});
+
+test('does not add readonly when a binding resolves to a non-freezable schema', function () {
+    const mutations = collectMutations(
+        "import { z } from 'zod/v4'; const inner = z.string(); const schema = z.optional(inner);",
+        'ZodReadonlyAdd'
+    );
+
+    assert.ok(!mutations.includes('z.optional(inner).readonly()'));
+});
+
+test('does not add readonly when a binding resolves to a non-schema value', function () {
+    const mutations = collectMutations(
+        "import { z } from 'zod/v4'; const label = 'plain'; const schema = z.optional(label);",
+        'ZodReadonlyAdd'
+    );
+
+    assert.deepStrictEqual(mutations, []);
+});
+
+test('adds readonly through a schema binding imported from another module', function () {
+    const env = moduleResolverEnv({
+        './fields': "import { z } from 'zod/v4'; export const fields = z.object({ id: z.string() });"
+    });
+    const mutations = collectResolvedMutations(
+        "import { z } from 'zod/v4'; import { fields } from './fields'; const schema = z.optional(fields);",
+        'ZodReadonlyAdd',
+        env
+    );
+
+    assert.ok(mutations.includes('z.optional(fields).readonly()'));
+});
+
+test('follows an aliased export name across a module boundary', function () {
+    const env = moduleResolverEnv({
+        './fields': "import { z } from 'zod/v4'; const base = z.object({ id: z.string() }); export { base as fields };"
+    });
+    const mutations = collectResolvedMutations(
+        "import { z } from 'zod/v4'; import { fields } from './fields'; const schema = z.optional(fields);",
+        'ZodReadonlyAdd',
+        env
+    );
+
+    assert.ok(mutations.includes('z.optional(fields).readonly()'));
+});
+
+test('follows a default import across a module boundary', function () {
+    const env = moduleResolverEnv({
+        './fields': "import { z } from 'zod/v4'; const fields = z.object({ id: z.string() }); export default fields;"
+    });
+    const mutations = collectResolvedMutations(
+        "import { z } from 'zod/v4'; import fields from './fields'; const schema = z.optional(fields);",
+        'ZodReadonlyAdd',
+        env
+    );
+
+    assert.ok(mutations.includes('z.optional(fields).readonly()'));
+});
+
+test('emits the wrapper when a cross-module binding cannot be resolved', function () {
+    const mutations = collectResolvedMutations(
+        "import { z } from 'zod/v4'; import { missing } from './absent'; const schema = z.nullable(missing);",
+        'ZodOptionalAdd',
+        moduleResolverEnv({})
+    );
+
+    assert.ok(mutations.includes('z.nullable(missing).optional()'));
+});
+
+test('ignores a namespace import used as a schema reference', function () {
+    const mutations = collectResolvedMutations(
+        "import { z } from 'zod/v4'; import * as shapes from './shapes'; const schema = z.optional(shapes);",
+        'ZodReadonlyAdd',
+        moduleResolverEnv({ './shapes': "import { z } from 'zod/v4'; export const a = z.object({});" })
+    );
+
+    assert.deepStrictEqual(mutations, []);
+});
+
+test('adds readonly through an array-destructured schema binding', function () {
+    const mutations = collectMutations(
+        "import { z } from 'zod/v4'; const [ first ] = [ z.object({ id: z.string() }) ]; const schema = z.optional(first);",
+        'ZodReadonlyAdd'
+    );
+
+    assert.ok(mutations.includes('z.optional(first).readonly()'));
+});
+
+test('resolves a quoted object property key', function () {
+    const mutations = collectMutations(
+        'import { z } from \'zod/v4\'; const shapes = { "user": z.object({ id: z.string() }) }; const schema = z.optional(shapes.user);',
+        'ZodReadonlyAdd'
+    );
+
+    assert.ok(mutations.includes('z.optional(shapes.user).readonly()'));
+});
+
+test('does not resolve a missing object property', function () {
+    const mutations = collectMutations(
+        "import { z } from 'zod/v4'; const shapes = { user: z.object({}) }; const schema = z.optional(shapes.missing);",
+        'ZodReadonlyAdd'
+    );
+
+    assert.ok(!mutations.includes('z.optional(shapes.missing).readonly()'));
+});
+
+test('stops at a self-referential binding cycle', function () {
+    const mutations = collectMutations(
+        "import { z } from 'zod/v4'; const a = b; const b = a; const schema = z.optional(a);",
+        'ZodReadonlyAdd'
+    );
+
+    assert.deepStrictEqual(mutations, []);
+});
+
+test('does not resolve cross-module bindings with an inert resolver', function () {
+    const mutations = collectResolvedMutations(
+        "import { z } from 'zod/v4'; import { fields } from './fields'; const schema = z.optional(fields);",
+        'ZodReadonlyAdd',
+        inertResolverEnv
+    );
+
+    assert.ok(!mutations.includes('z.optional(fields).readonly()'));
+});
+
+test('does not resolve imported bindings when the current file name is unknown', function () {
+    const mutations = collectMutations(
+        "import { z } from 'zod/v4'; import { fields } from './fields'; const schema = z.optional(fields);",
+        'ZodReadonlyAdd'
+    );
+
+    assert.ok(!mutations.includes('z.optional(fields).readonly()'));
+});
+
+test('bails when a default import has no matching default export', function () {
+    const mutations = collectResolvedMutations(
+        "import { z } from 'zod/v4'; import fields from './fields'; const schema = z.optional(fields);",
+        'ZodReadonlyAdd',
+        moduleResolverEnv({ './fields': "import { z } from 'zod/v4'; export const other = z.object({});" })
+    );
+
+    assert.ok(!mutations.includes('z.optional(fields).readonly()'));
+});
+
+test('resolves a member binding past a non-identifier sibling key', function () {
+    const mutations = collectMutations(
+        "import { z } from 'zod/v4'; const shapes = { 1: z.number(), user: z.object({ id: z.string() }) }; const schema = z.optional(shapes.user);",
+        'ZodReadonlyAdd'
+    );
+
+    assert.ok(mutations.includes('z.optional(shapes.user).readonly()'));
+});
+
+test('does not resolve an object destructure over a non-object initializer', function () {
+    const mutations = collectMutations(
+        "import { z } from 'zod/v4'; const { user } = z.string(); const schema = z.optional(user);",
+        'ZodReadonlyAdd'
+    );
+
+    assert.ok(!mutations.includes('z.optional(user).readonly()'));
+});
+
+test('does not resolve an array destructure over a non-array initializer', function () {
+    const mutations = collectMutations(
+        "import { z } from 'zod/v4'; const [ first ] = z.string(); const schema = z.optional(first);",
+        'ZodReadonlyAdd'
+    );
+
+    assert.ok(!mutations.includes('z.optional(first).readonly()'));
+});
+
+test('reads the current file name from a Stryker node path hub', function () {
+    const hubPath = { node: identifier('x'), parentPath: null, hub: { file: { opts: { filename: '/module.ts' } } } };
+
+    assert.strictEqual(fileNameOf(hubPath), '/module.ts');
+});
+
+test('follows a string-literal import name across a module boundary', function () {
+    const mutations = collectResolvedMutations(
+        "import { z } from 'zod/v4'; import { 'fields' as f } from './fields'; const schema = z.optional(f);",
+        'ZodReadonlyAdd',
+        moduleResolverEnv({
+            './fields': "import { z } from 'zod/v4'; export const fields = z.object({ id: z.string() });"
+        })
+    );
+
+    assert.ok(mutations.includes('z.optional(f).readonly()'));
+});
+
+test('does not resolve a computed member access', function () {
+    const mutations = collectMutations(
+        "import { z } from 'zod/v4'; const key = 'user'; const shapes = { user: z.object({}) }; const schema = z.optional(shapes[key]);",
+        'ZodReadonlyAdd'
+    );
+
+    assert.ok(!mutations.includes('z.optional(shapes[key]).readonly()'));
+});
+
+test('does not resolve a binding declared without an initializer', function () {
+    const mutations = collectMutations(
+        "import { z } from 'zod/v4'; let holder; const schema = z.optional(holder);",
+        'ZodReadonlyAdd'
+    );
+
+    assert.ok(!mutations.includes('z.optional(holder).readonly()'));
+});
+
+test('does not resolve a destructure with a renamed string-literal key', function () {
+    const mutations = collectMutations(
+        'import { z } from \'zod/v4\'; const { "id": user } = { id: z.object({}) }; const schema = z.optional(user);',
+        'ZodReadonlyAdd'
+    );
+
+    assert.ok(!mutations.includes('z.optional(user).readonly()'));
+});
+
+test('follows a string-literal export name across a module boundary', function () {
+    const mutations = collectResolvedMutations(
+        "import { z } from 'zod/v4'; import { fields } from './fields'; const schema = z.optional(fields);",
+        'ZodReadonlyAdd',
+        moduleResolverEnv({
+            './fields':
+                "import { z } from 'zod/v4'; const base = z.object({ id: z.string() }); export { base as 'fields' };"
+        })
+    );
+
+    assert.ok(mutations.includes('z.optional(fields).readonly()'));
 });

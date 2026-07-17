@@ -33,6 +33,26 @@ export function findProgram(path: MutationPath): babel.Program | null {
     return null;
 }
 
+function readProperty(value: unknown, key: string): unknown {
+    if (typeof value !== 'object' || value === null) {
+        return undefined;
+    }
+
+    return Reflect.get(value, key) as unknown;
+}
+
+function hubFileName(path: MutationPath): string | null {
+    const filename = readProperty(readProperty(readProperty(readProperty(path, 'hub'), 'file'), 'opts'), 'filename');
+
+    return typeof filename === 'string' ? filename : null;
+}
+
+export function fileNameOf(path: MutationPath): string | null {
+    const locationFileName = findProgram(path)?.loc?.filename;
+
+    return hubFileName(path) ?? (typeof locationFileName === 'string' ? locationFileName : null);
+}
+
 export function namedIdentifier(name: string): babel.Identifier {
     return babel.identifier(name);
 }

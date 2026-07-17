@@ -3,6 +3,7 @@ import {
     callExpression,
     identifier,
     memberExpression,
+    program,
     stringLiteral
 } from '@babel/types';
 import { test } from '@sondr3/minitest';
@@ -16,11 +17,21 @@ import {
     replaceZodCallee,
     type ZodBindings
 } from './zod-bindings.ts';
+import { inertResolverEnv } from './binding-resolution.ts';
 
-const emptyBindings: ZodBindings = { namespaces: [], directBindings: [] };
+const emptyBindings: ZodBindings = {
+    namespaces: [],
+    directBindings: [],
+    program: program([]),
+    fileName: null,
+    env: inertResolverEnv
+};
 const classicBindings: ZodBindings = {
     namespaces: [ { name: 'z', style: 'classic' } ],
-    directBindings: [ { localName: 'text', importedName: 'string', style: 'mini' } ]
+    directBindings: [ { localName: 'text', importedName: 'string', style: 'mini' } ],
+    program: program([]),
+    fileName: null,
+    env: inertResolverEnv
 };
 
 test('exposes Zod binding fallbacks without mutating unknown calls', function () {

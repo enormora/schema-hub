@@ -9,14 +9,15 @@
         "url": "git+https://github.com/enormora/schema-hub.git"
     },
     "dependencies": {
+        "@babel/parser": "8.0.4",
         "@babel/types": "8.0.4",
         "graphql": "17.0.2",
         "ky": "2.0.2",
-        "tslib": "2.8.1"
+        "tslib": "2.8.1",
+        "typescript": "6.0.3"
     },
     "devDependencies": {
         "@babel/generator": "8.0.0",
-        "@babel/parser": "8.0.4",
         "@enormora/eslint-config-base": "0.0.51",
         "@enormora/eslint-config-node": "0.0.37",
         "@enormora/eslint-config-typescript": "0.0.58",
@@ -36,7 +37,6 @@
         "rust-just": "1.55.1",
         "sinon": "22.0.0",
         "tstyche": "7.2.1",
-        "typescript": "6.0.3",
         "zod": "4.4.3"
     },
     "engines": {
