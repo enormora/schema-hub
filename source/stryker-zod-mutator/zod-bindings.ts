@@ -459,13 +459,47 @@ export function isStringTemplateLiteralPart(path: MutationPath, bindings: ZodBin
         isElementOfTemplateLiteralParts(path, bindings);
 }
 
-const factoryNamesAcceptingUndefined = new Set([ 'any', 'unknown', 'undefined', 'void', 'nullish' ]);
+const factoryNamesAcceptingUndefined = new Set([
+    'any',
+    'unknown',
+    'undefined',
+    'void',
+    'nullish',
+    'prefault',
+    'default',
+    '_default'
+]);
 const factoryNamesAcceptingNull = new Set([ 'any', 'unknown', 'null', 'nullish' ]);
+const acceptAnythingFactoryNames = new Set([ 'any', 'unknown' ]);
 
 const alreadyAcceptedValueByWrapper = new Map<string, ReadonlySet<string>>([
     [ 'optional', factoryNamesAcceptingUndefined ],
     [ 'nullable', factoryNamesAcceptingNull ]
 ]);
+
+function outerSchemaName(bindings: ZodBindings, call: CallExpression): string {
+    return getZodCallName(bindings, call) ?? getMemberName(call.callee) ?? '';
+}
+
+function resolvesToAcceptAnything(bindings: ZodBindings, expression: SchemaExpression): boolean {
+    let current: SchemaExpression | null = expression;
+
+    while (current !== null && babel.isCallExpression(current)) {
+        const name = outerSchemaName(bindings, current);
+
+        if (acceptAnythingFactoryNames.has(name)) {
+            return true;
+        }
+
+        if (!valuePreservingWrapperNames.has(name)) {
+            return false;
+        }
+
+        current = underlyingSchemaExpression(bindings, current);
+    }
+
+    return false;
+}
 
 export function addingWrapperHasNoEffect(
     bindings: ZodBindings,
@@ -478,7 +512,9 @@ export function addingWrapperHasNoEffect(
         return false;
     }
 
-    const outerName = getZodCallName(bindings, expression) ?? getMemberName(expression.callee) ?? '';
+    const outerName = outerSchemaName(bindings, expression);
 
-    return outerName === wrapperName || acceptingFactories.has(outerName);
+    return outerName === wrapperName ||
+        acceptingFactories.has(outerName) ||
+        resolvesToAcceptAnything(bindings, expression);
 }

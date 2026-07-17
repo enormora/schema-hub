@@ -208,6 +208,52 @@ test('still wraps a non-string template literal part where it changes behavior',
     );
 });
 
+test('does not add optional over a default-bearing schema', function () {
+    for (const factory of [ 'prefault', '_default' ]) {
+        assert.deepStrictEqual(
+            collectMutations(
+                `import * as z from 'zod/mini'; const schema = z.${factory}(z.boolean(), false);`,
+                'ZodOptionalAdd'
+            ),
+            []
+        );
+    }
+
+    assert.deepStrictEqual(
+        collectMutations(
+            "import * as z from 'zod/mini'; const schema = z.object({ a: z.prefault(z.boolean(), false) });",
+            'ZodObjectFieldOptionalAdd'
+        ),
+        []
+    );
+    assert.ok(
+        collectMutations("import * as z from 'zod/mini'; const schema = z.catch(z.boolean(), false);", 'ZodOptionalAdd')
+            .includes('z.optional(z.catch(z.boolean(), false))')
+    );
+});
+
+test('does not add a presence wrapper over a wrapped accept-anything schema', function () {
+    assert.deepStrictEqual(
+        collectMutations("import * as z from 'zod/mini'; const schema = z.optional(z.unknown());", 'ZodNullableAdd'),
+        []
+    );
+    assert.deepStrictEqual(
+        collectMutations(
+            "import * as z from 'zod/mini'; const schema = z.object({ a: z.optional(z.unknown()) });",
+            'ZodObjectFieldNullableAdd'
+        ),
+        []
+    );
+    assert.ok(
+        collectMutations("import * as z from 'zod/mini'; const schema = z.optional(z.string());", 'ZodNullableAdd')
+            .includes('z.nullable(z.optional(z.string()))')
+    );
+    assert.ok(
+        collectMutations("import * as z from 'zod/mini'; const schema = z.optional(inner);", 'ZodNullableAdd')
+            .includes('z.nullable(z.optional(inner))')
+    );
+});
+
 test('does not re-wrap an already-optional or already-nullable object field', function () {
     assert.deepStrictEqual(
         collectMutations(

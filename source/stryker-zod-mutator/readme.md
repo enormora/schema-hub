@@ -182,10 +182,12 @@ mutation is emitted. Raising it (e.g. `min(0)` to `min(1)`) is still emitted, an
 `z.number().min(0)` are untouched because there negative values are meaningful.
 
 `ZodOptionalAdd` and `ZodObjectFieldOptionalAdd` skip schemas that already accept `undefined` (`z.any()`,
-`z.unknown()`, `z.undefined()`, `z.void()`, `z.nullish()`, and anything already `optional`), and
-`ZodNullableAdd` and `ZodObjectFieldNullableAdd` skip schemas that already accept `null` (`z.any()`,
-`z.unknown()`, `z.null()`, `z.nullish()`, and anything already `nullable`), because wrapping them changes
-nothing at runtime. `ZodOptionalRemove` and `ZodNullableRemove` likewise skip removals whose remaining
+`z.unknown()`, `z.undefined()`, `z.void()`, `z.nullish()`, a `default`/`prefault` schema, and anything
+already `optional`), and `ZodNullableAdd` and `ZodObjectFieldNullableAdd` skip schemas that already accept
+`null` (`z.any()`, `z.unknown()`, `z.null()`, `z.nullish()`, and anything already `nullable`), because
+wrapping them changes nothing at runtime. Both also see through `optional`/`nullable` (and other
+value-preserving wrappers) to an `z.any()`/`z.unknown()` leaf, so e.g. `z.nullable(z.optional(z.unknown()))`
+is not emitted. `ZodOptionalRemove` and `ZodNullableRemove` likewise skip removals whose remaining
 schema still admits the value (e.g. removing `.optional()` from `z.unknown().optional()`). `ZodOptionalAdd`
 and `ZodNullableAdd` also wrap only at the root of a schema value chain, so `z.string().min(2)` yields
 `z.string().min(2).optional()` rather than the invalid `z.string().optional().min(2)`. They also skip a
@@ -208,3 +210,9 @@ Boolean and string literal values are left to Stryker’s built-in literal mutat
 This package monkeypatches Stryker internals because StrykerJS does not currently expose a custom mutator
 plugin API. It intentionally avoids cross-statement data-flow analysis and only mutates schema expressions
 that are visibly rooted in a detected Zod import.
+
+Because the equivalent-mutant checks are local to a single expression, a mutant can still be equivalent
+through a use-site elsewhere. For example a schema defined as `const s = z.union([...])` and consumed only
+as `z.nullable(s)` makes an added `nullable` inside `s` unobservable, but the added wrapper and the masking
+one live in different statements, so it is not detected here. Suppress such cases with a Stryker disable
+comment on the definition, or inline the schema at its use-site.
