@@ -208,11 +208,16 @@ Boolean and string literal values are left to Stryker’s built-in literal mutat
 ## Limits
 
 This package monkeypatches Stryker internals because StrykerJS does not currently expose a custom mutator
-plugin API. It intentionally avoids cross-statement data-flow analysis and only mutates schema expressions
-that are visibly rooted in a detected Zod import.
+plugin API. It only mutates schema expressions that are visibly rooted in a detected Zod import.
 
-Because the equivalent-mutant checks are local to a single expression, a mutant can still be equivalent
-through a use-site elsewhere. For example a schema defined as `const s = z.union([...])` and consumed only
-as `z.nullable(s)` makes an added `nullable` inside `s` unobservable, but the added wrapper and the masking
-one live in different statements, so it is not detected here. Suppress such cases with a Stryker disable
-comment on the definition, or inline the schema at its use-site.
+The guiding rule for every operator: emit a mutant unless it can be _proven_ unkillable from the current
+module. A mutant we cannot prove equivalent is always emitted, even if it duplicates a wrapper already
+applied elsewhere. Suppressing a mutant that some test could kill is never acceptable.
+
+`ZodOptionalAdd` and `ZodNullableAdd` apply this with a module-local check: when the mutated node is the
+whole value of, or a `union`/`discriminatedUnion` branch of, a **non-exported** `const`, and every
+reference to that `const` in the module already applies the same wrapper (e.g. `const t = z.union([...])`
+used only as `z.nullable(t)`), no test can observe the added wrapper, so it is skipped. Because the `const`
+is not exported (nor re-exported via `export { t }` or `export default t`, both of which count as unmasked
+uses), every use is visible in the one module and the proof is sound. Exported consts, or any unmasked or
+unresolved reference, cause the mutant to be emitted.
