@@ -1,7 +1,11 @@
 {
-    "extends": ["config:base"],
+    "extends": [
+        "config:base"
+    ],
     "commitMessagePrefix": "⬆️ ",
-    "labels": ["renovate"],
+    "labels": [
+        "renovate"
+    ],
     "dependencyDashboard": false,
     "rebaseStalePrs": true,
     "automerge": true,
@@ -11,9 +15,13 @@
     },
     "packageRules": [
         {
-            "matchPackagePatterns": ["^@enormora/eslint-config"],
+            "matchPackagePatterns": [
+                "^@enormora/eslint-config"
+            ],
             "groupName": "@enormora/eslint-config",
             "groupSlug": "enormora-eslint-config"
         }
-    ]
+    ],
+    "platformAutomerge": true,
+    "automergeStrategy": "merge-commit"
 }
