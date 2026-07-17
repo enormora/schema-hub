@@ -3,6 +3,7 @@ import type { Node as BabelNode } from '@babel/types';
 import type { CallExpression, MutationPath } from './ast.ts';
 import type { ZodMutationOperator } from './operator.ts';
 import { readZodBindings, type ZodBindings } from './zod-bindings.ts';
+import type { ResolverEnv } from './binding-resolution.ts';
 
 export type ZodMutator = {
     readonly name: ZodMutationOperator;
@@ -25,11 +26,11 @@ export function callNode(path: MutationPath): CallExpression | null {
     return babel.isCallExpression(path.node) ? path.node : null;
 }
 
-export function createZodMutator(definition: MutationDefinition): ZodMutator {
+export function createZodMutator(definition: MutationDefinition, env: ResolverEnv): ZodMutator {
     return {
         name: definition.name,
         mutate(path: MutationPath): Iterable<BabelNode> {
-            return definition.mutate(path, readZodBindings(path));
+            return definition.mutate(path, readZodBindings(path, env));
         }
     };
 }

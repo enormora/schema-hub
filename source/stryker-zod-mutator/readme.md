@@ -221,3 +221,21 @@ used only as `z.nullable(t)`), no test can observe the added wrapper, so it is s
 is not exported (nor re-exported via `export { t }` or `export default t`, both of which count as unmasked
 uses), every use is visible in the one module and the proof is sound. Exported consts, or any unmasked or
 unresolved reference, cause the mutant to be emitted.
+
+## Binding resolution
+
+Deciding whether a mutant is equivalent often needs the schema's real shape, which is not always written
+inline. When an operator reaches a reference instead of a schema call (for example `z.optional(user)` where
+`user` is a `const`), it resolves that reference back to its definition and continues the analysis there.
+Resolution follows aliases (`const t = other`), object and array destructuring (`const { t } = shapes`),
+member access into object literals (`const t = shapes.user`), and imports, including across modules: an
+imported name is resolved by loading the source module, mapping the export back to its local definition
+(named, aliased, or default), and recursing.
+
+Cross-module resolution reads and parses the imported file. Module specifiers are resolved with the
+TypeScript compiler API using the nearest discovered `tsconfig.json`, so `paths`, `baseUrl`, and extension
+rewriting behave as they do in the project. This stays faithful to the guiding rule: anything that cannot
+be resolved (a missing file, a `paths` alias with no matching config, a reference that turns out not to be
+a schema, or a namespace import) is treated as unknown and the mutant is emitted rather than suppressed.
+Only same-module (`export`) analysis is complete; a schema imported elsewhere and tested there is never
+assumed unkillable.

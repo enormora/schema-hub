@@ -13,7 +13,6 @@ import {
 import { callNode } from './mutation-definition.ts';
 import { presenceWrapperMaskedByEveryUse } from './masked-schema-references.ts';
 import {
-    addingWrapperHasNoEffect,
     buildZodCall,
     expressionStyle,
     firstExpressionArgument,
@@ -24,6 +23,7 @@ import {
     type ZodApiStyle,
     type ZodBindings
 } from './zod-bindings.ts';
+import { addingWrapperHasNoEffect } from './binding-resolution.ts';
 
 export function removeMethod(
     call: CallExpression,
