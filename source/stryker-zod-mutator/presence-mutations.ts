@@ -1,12 +1,13 @@
+import * as babel from '@babel/types';
 import type { Node as BabelNode } from '@babel/types';
 import {
     addWrapperOrMethod,
     removeMethodOrWrapper,
     replaceNullish
 } from './schema-call-mutations.ts';
-import { isExpressionNode, type MutationPath } from './ast.ts';
+import { getMemberName, isExpressionNode, type CallExpression, type MutationPath } from './ast.ts';
 import { createDefinition, type MutationDefinition } from './mutation-definition.ts';
-import { isSchemaValueChainRoot, type ZodBindings } from './zod-bindings.ts';
+import { getZodCallName, isSchemaValueChainRoot, type ZodBindings } from './zod-bindings.ts';
 import {
     addingWrapperHasNoEffect,
     chainAppliesReadonly,
@@ -35,7 +36,51 @@ function removeRedundantPresenceWrapper(
     });
 }
 
+type OutputRelation = 'none' | 'pipe' | 'readonly';
+
+function lastArgument(call: CallExpression): BabelNode | null {
+    return call.arguments.at(-1) ?? null;
+}
+
+function enclosingOutputRelation(child: BabelNode, parent: BabelNode, bindings: ZodBindings): OutputRelation {
+    if (!babel.isCallExpression(parent) || lastArgument(parent) !== child) {
+        return 'none';
+    }
+
+    const name = getZodCallName(bindings, parent) ?? getMemberName(parent.callee);
+
+    if (name === 'readonly') {
+        return 'readonly';
+    }
+
+    return name === 'pipe' ? 'pipe' : 'none';
+}
+
+function refrozenByEnclosingReadonly(path: MutationPath, bindings: ZodBindings): boolean {
+    let current = path;
+
+    for (;;) {
+        const parent = current.parentPath;
+
+        if (parent === null) {
+            return false;
+        }
+
+        const relation = enclosingOutputRelation(current.node, parent.node, bindings);
+
+        if (relation !== 'pipe') {
+            return relation === 'readonly';
+        }
+
+        current = parent;
+    }
+}
+
 function removeObservableReadonly(path: MutationPath, bindings: ZodBindings): readonly BabelNode[] {
+    if (refrozenByEnclosingReadonly(path, bindings)) {
+        return [];
+    }
+
     return removeMethodOrWrapper(path, bindings, new Set([ 'readonly' ])).filter(function (inner) {
         return isExpressionNode(inner) && producesFreezableValue(bindings, inner);
     });

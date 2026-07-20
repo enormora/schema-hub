@@ -214,6 +214,11 @@ The guiding rule for every operator: emit a mutant unless it can be _proven_ unk
 module. A mutant we cannot prove equivalent is always emitted, even if it duplicates a wrapper already
 applied elsewhere. Suppressing a mutant that some test could kill is never acceptable.
 
+`ZodReadonlyRemove` applies the same rule to nested `readonly`s: when a `readonly`'s value flows unchanged
+to an enclosing `readonly` (directly, or as the output stage of a `z.pipe`), the outer one re-freezes the
+same value, so removing the inner one is unobservable and is skipped. A `readonly` on a pipe's input stage
+is not skipped, because a transform could observe or mutate the frozen value.
+
 `ZodOptionalAdd` and `ZodNullableAdd` apply this with a module-local check: when the mutated node is the
 whole value of, or a `union`/`discriminatedUnion` branch of, a **non-exported** `const`, and every
 reference to that `const` in the module already applies the same wrapper (e.g. `const t = z.union([...])`
