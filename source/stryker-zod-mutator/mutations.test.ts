@@ -333,6 +333,13 @@ test('does not add a presence wrapper masked by every use of a module const', fu
         ),
         []
     );
+    assert.deepStrictEqual(
+        collectMutations(
+            "import * as z from 'zod/mini'; const t = z.union([z.literal('w'), z.literal('b')]); type T = z.infer<typeof t>; export const s = z.nullable(t);",
+            'ZodNullableAdd'
+        ),
+        []
+    );
 });
 
 test('still mutates a const that is not masked by every use', function () {
