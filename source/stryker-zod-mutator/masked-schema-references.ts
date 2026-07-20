@@ -106,6 +106,10 @@ function isPropertyOrMemberName(use: IdentifierUse): boolean {
     return babel.isMemberExpression(parent) && parent.property === node && !parent.computed;
 }
 
+function isTypeOnlyReference(use: IdentifierUse): boolean {
+    return babel.isTSTypeQuery(use.parent);
+}
+
 function isReference(use: IdentifierUse): boolean {
     return babel.isReferenced(use.node, use.parent, use.grandparent);
 }
@@ -165,7 +169,9 @@ export function presenceWrapperMaskedByEveryUse(
         return false;
     }
 
-    const uses = collectIdentifierUses(program, constId.name, []);
+    const uses = collectIdentifierUses(program, constId.name, []).filter(function (use) {
+        return !isTypeOnlyReference(use);
+    });
     const references = uses.filter(isReference);
     const hasForeignBinding = uses.some(function (use) {
         return isForeignBinding(use, constId);
