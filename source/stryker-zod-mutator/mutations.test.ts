@@ -1538,3 +1538,58 @@ test('follows a string-literal export name across a module boundary', function (
 
     assert.ok(mutations.includes('z.optional(fields).readonly()'));
 });
+
+test('does not remove a readonly re-frozen by an enclosing readonly through a pipe', function () {
+    const mutations = collectMutations(
+        "import * as z from 'zod/mini'; const channelSchema = z.string(); export const s = z.readonly(z.pipe(z.string(), z.readonly(z.array(channelSchema))));",
+        'ZodReadonlyRemove'
+    );
+
+    assert.ok(!mutations.includes('z.array(channelSchema)'));
+});
+
+test('still removes a readonly that feeds a transform as pipe input', function () {
+    const mutations = collectMutations(
+        "import * as z from 'zod/mini'; export const s = z.readonly(z.pipe(z.readonly(z.array(z.unknown())), z.transform(function (channels) { return channels; })));",
+        'ZodReadonlyRemove'
+    );
+
+    assert.ok(mutations.includes('z.array(z.unknown())'));
+});
+
+test('does not remove a readonly nested directly in another readonly', function () {
+    const mutations = collectMutations(
+        "import * as z from 'zod/mini'; export const s = z.readonly(z.readonly(z.object({ a: z.string() })));",
+        'ZodReadonlyRemove'
+    );
+
+    assert.ok(!mutations.includes('z.object({\n  a: z.string()\n})'));
+});
+
+test('removes a readonly nested in a non-readonly wrapper', function () {
+    const mutations = collectMutations(
+        "import * as z from 'zod/mini'; export const s = z.array(z.readonly(z.object({ a: z.string() })));",
+        'ZodReadonlyRemove'
+    );
+
+    assert.ok(mutations.includes('z.object({\n  a: z.string()\n})'));
+});
+
+test('handles a readonly-removal path without a parent', function () {
+    const mutator = createZodMutators([ 'ZodReadonlyRemove' ])[0];
+
+    if (mutator === undefined) {
+        assert.fail('Expected ZodReadonlyRemove to exist');
+    }
+
+    assert.deepStrictEqual(Array.from(mutator.mutate({ node: identifier('schema'), parentPath: null })), []);
+});
+
+test('detects an enclosing readonly through a classic pipe method call', function () {
+    const mutations = collectMutations(
+        "import * as z from 'zod/mini'; export const s = z.readonly(z.string().pipe(z.readonly(z.array(z.string()))));",
+        'ZodReadonlyRemove'
+    );
+
+    assert.ok(!mutations.includes('z.array(z.string())'));
+});
