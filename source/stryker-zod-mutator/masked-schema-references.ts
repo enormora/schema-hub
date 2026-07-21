@@ -1,6 +1,7 @@
 import * as babel from '@babel/types';
 import type { Node as BabelNode } from '@babel/types';
 import { findProgram, getMemberName, isExpressionNode, type MutationPath } from './ast.ts';
+import { declaratorInitId } from './declarator-init-id.ts';
 import { getZodCallName, type ZodBindings } from './zod-bindings.ts';
 
 const unionFactoryNames = new Set([ 'union', 'discriminatedUnion' ]);
@@ -17,20 +18,6 @@ function isNonExportedModuleConst(declarationPath: MutationPath | null): boolean
     return babel.isVariableDeclaration(declaration) &&
         declaration.kind === 'const' &&
         babel.isProgram(container);
-}
-
-function declaratorInitId(declaratorPath: MutationPath | null, node: BabelNode): babel.Identifier | null {
-    if (declaratorPath === null || !babel.isVariableDeclarator(declaratorPath.node)) {
-        return null;
-    }
-
-    const { init, id } = declaratorPath.node;
-
-    if (!isExpressionNode(init) || !babel.isIdentifier(id)) {
-        return null;
-    }
-
-    return init === node ? id : null;
 }
 
 function constIdForInit(path: MutationPath): babel.Identifier | null {
