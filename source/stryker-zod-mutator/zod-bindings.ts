@@ -129,7 +129,7 @@ function readZodImport(statement: SourceStatement): ZodImportBindings {
         ? zodSourceStyles.get(statement.source.value)
         : undefined;
 
-    if (!babel.isImportDeclaration(statement) || style === undefined) {
+    if (style === undefined || !babel.isImportDeclaration(statement)) {
         return { namespaces: [], directBindings: [] };
     }
 

@@ -196,7 +196,7 @@ function singleTupleItem(call: CallExpression): readonly SchemaExpression[] | nu
     const items = tupleArray(call);
     const item = items?.elements[0];
 
-    if (!hasSingleTupleItem(call, items) || item === undefined || !isExpressionNode(item)) {
+    if (item === undefined || !hasSingleTupleItem(call, items) || !isExpressionNode(item)) {
         return null;
     }
 

@@ -364,7 +364,7 @@ function tryFactoredCollapse(
     const anyReducedEmpty = reducedAlternatives.some(function (bucket) {
         return bucket.length === 0;
     });
-    if (commonRendered.length > 0 && anyReducedEmpty) {
+    if (anyReducedEmpty && commonRendered.length > 0) {
         return commonRendered.join('; ');
     }
     const reducedCollapsed = tryCollapseToOneOfMessage(reducedAlternatives, inputAtUnion);

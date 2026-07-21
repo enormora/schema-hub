@@ -26,7 +26,11 @@ function declaratorInitId(declaratorPath: MutationPath | null, node: BabelNode):
 
     const { init, id } = declaratorPath.node;
 
-    return isExpressionNode(init) && init === node && babel.isIdentifier(id) ? id : null;
+    if (!isExpressionNode(init) || !babel.isIdentifier(id)) {
+        return null;
+    }
+
+    return init === node ? id : null;
 }
 
 function constIdForInit(path: MutationPath): babel.Identifier | null {
@@ -84,7 +88,7 @@ function collectIdentifierUses(
     ancestors: readonly BabelNode[]
 ): readonly IdentifierUse[] {
     const [ parent, grandparent ] = ancestors;
-    const here: readonly IdentifierUse[] = babel.isIdentifier(node) && node.name === name && parent !== undefined
+    const here: readonly IdentifierUse[] = parent !== undefined && babel.isIdentifier(node) && node.name === name
         ? [ { node, parent, grandparent } ]
         : [];
     const deeper = [ node, ...ancestors ];
@@ -131,7 +135,11 @@ function maskedAsWrapperArgument(
 
     const firstArgument = parent.arguments[0];
 
-    if (!isExpressionNode(firstArgument) || firstArgument !== node) {
+    if (!isExpressionNode(firstArgument)) {
+        return false;
+    }
+
+    if (firstArgument !== node) {
         return false;
     }
 
