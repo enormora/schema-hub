@@ -5,6 +5,7 @@ import {
     buildZodBindings,
     firstExpressionArgument,
     getZodCallName,
+    isZodSchemaExpression,
     valuePreservingWrapperNames,
     type ZodBindings
 } from './zod-bindings.ts';
@@ -423,6 +424,10 @@ export function resolvesToZodSchema(bindings: ZodBindings, expression: SchemaExp
     return Array.from(schemaChain(expression, bindings)).some(function (step) {
         return getZodCallName(step.bindings, step.node) !== null;
     });
+}
+
+export function isZodSchemaOrReference(bindings: ZodBindings, expression: SchemaExpression): boolean {
+    return isZodSchemaExpression(bindings, expression) || resolvesToZodSchema(bindings, expression);
 }
 
 function appliesReadonly(step: ChainStep): boolean {

@@ -284,6 +284,10 @@ export function expressionStyle(bindings: ZodBindings, expression: SchemaExpress
     }
 }
 
+export function moduleStyle(bindings: ZodBindings): ZodApiStyle {
+    return bindings.namespaces[0]?.style ?? bindings.directBindings[0]?.style ?? 'classic';
+}
+
 export function buildZodCall(
     bindings: ZodBindings,
     style: ZodApiStyle,

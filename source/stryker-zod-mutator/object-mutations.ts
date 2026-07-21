@@ -16,12 +16,12 @@ import {
     expressionStyle,
     getZodCallName,
     isObjectLikeFactory,
-    isZodSchemaExpression,
+    moduleStyle,
     replaceZodCallee,
     type ZodApiStyle,
     type ZodBindings
 } from './zod-bindings.ts';
-import { addingWrapperHasNoEffect } from './binding-resolution.ts';
+import { addingWrapperHasNoEffect, isZodSchemaOrReference } from './binding-resolution.ts';
 import { removeMethodOrWrapper } from './schema-call-mutations.ts';
 
 function mutateObjectFactory(path: MutationPath, bindings: ZodBindings): readonly BabelNode[] {
@@ -105,13 +105,12 @@ function fieldWrapTarget(
     index: number
 ): FieldWrapTarget | null {
     const value = objectFieldValue(objectExpression, index);
-    const style = value === null ? null : expressionStyle(bindings, value);
 
-    if (value === null || style === null || !isZodSchemaExpression(bindings, value)) {
+    if (value === null || !isZodSchemaOrReference(bindings, value)) {
         return null;
     }
 
-    return { value, style };
+    return { value, style: expressionStyle(bindings, value) ?? moduleStyle(bindings) };
 }
 
 function wrapObjectField(

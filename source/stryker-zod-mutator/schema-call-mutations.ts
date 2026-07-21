@@ -23,7 +23,7 @@ import {
     type ZodApiStyle,
     type ZodBindings
 } from './zod-bindings.ts';
-import { addingWrapperHasNoEffect } from './binding-resolution.ts';
+import { addingWrapperHasNoEffect, isZodSchemaOrReference } from './binding-resolution.ts';
 
 export function removeMethod(
     call: CallExpression,
@@ -41,7 +41,7 @@ export function removeMethod(
         return [];
     }
 
-    return isZodSchemaExpression(bindings, object) ? [ cloneExpression(object) ] : [];
+    return isZodSchemaOrReference(bindings, object) ? [ cloneExpression(object) ] : [];
 }
 
 function removeWrapper(
@@ -56,7 +56,7 @@ function removeWrapper(
         return [];
     }
 
-    return isZodSchemaExpression(bindings, schema) ? [ cloneExpression(schema) ] : [];
+    return isZodSchemaOrReference(bindings, schema) ? [ cloneExpression(schema) ] : [];
 }
 
 export function removeMethodOrWrapper(
