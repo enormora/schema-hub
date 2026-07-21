@@ -395,7 +395,12 @@ test('still mutates a const that is not masked by every use', function () {
         "import * as z from 'zod/mini'; export const t = z.union([z.literal('w')]); export const s = z.nullable(t);",
         'ZodNullableAdd'
     );
+    const spreadWrapperArgument = collectMutations(
+        "import * as z from 'zod/mini'; const extra = [ z.literal('x') ]; const t = z.union([z.literal('w')]); export const s = z.nullable(...extra, t);",
+        'ZodNullableAdd'
+    );
 
+    assert.ok(spreadWrapperArgument.includes("z.nullable(z.union([z.literal('w')]))"));
     assert.ok(exportedConst.includes("z.nullable(z.union([z.literal('w')]))"));
     assert.ok(nonZodCallUse.includes("z.nullable(z.union([z.literal('w')]))"));
     assert.ok(destructuredBinding.includes("z.nullable(z.union([z.literal('w')]))"));

@@ -48,10 +48,10 @@ type GraphqlErrorShape = {
 
 function classifyPersistedQueryError(error: GraphqlErrorShape): PersistedQueryRetryReason | undefined {
     const code = error.extensions?.code;
-    if (error.message === persistedQueryNotFoundMessage || code === persistedQueryNotFoundCode) {
+    if (code === persistedQueryNotFoundCode || error.message === persistedQueryNotFoundMessage) {
         return 'not-found';
     }
-    if (error.message === persistedQueryNotSupportedMessage || code === persistedQueryNotSupportedCode) {
+    if (code === persistedQueryNotSupportedCode || error.message === persistedQueryNotSupportedMessage) {
         return 'not-supported';
     }
     return undefined;

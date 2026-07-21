@@ -154,7 +154,7 @@ function replaceNullishWrapper(
     const schema = firstExpressionArgument(call);
     const style = expressionStyle(bindings, call);
 
-    if (getZodCallName(bindings, call) !== 'nullish' || schema === null || style === null) {
+    if (schema === null || style === null || getZodCallName(bindings, call) !== 'nullish') {
         return [];
     }
 
