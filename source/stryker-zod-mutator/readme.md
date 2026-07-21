@@ -262,3 +262,9 @@ reference resolves to a schema that does not already accept everything, so the w
 distinguishable from the original. It intentionally does not re-assert the referenced schema's internal
 constraints at each use site; that stays the dedicated schema's own tests' responsibility. Disable the
 `reference` category or the operator to opt out.
+
+The object field presence operators use the same resolution to reach references. `ZodObjectFieldOptionalAdd`
+and `ZodObjectFieldNullableAdd` wrap a reference-valued field (`f: fooSchema` becomes `f: z.optional(fooSchema)`),
+and `ZodOptionalRemove`/`ZodNullableRemove` unwrap one applied to a reference (`f: fooSchema.optional()` becomes
+`f: fooSchema`). Both skip the mutant when the resolved reference already accepts the added or removed value,
+so no equivalent mutant is produced.

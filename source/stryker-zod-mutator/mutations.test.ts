@@ -1715,3 +1715,70 @@ test('does not widen a reference inside a non-Zod call object', function () {
 
     assert.deepStrictEqual(mutations, []);
 });
+
+test('adds a presence wrapper to a reference-valued object field', function () {
+    const optional = collectMutations(
+        "import * as z from 'zod/mini'; const foo = z.string(); export const s = z.object({ f: foo });",
+        'ZodObjectFieldOptionalAdd'
+    );
+    const nullable = collectMutations(
+        "import * as z from 'zod/mini'; const foo = z.string(); export const s = z.object({ f: foo });",
+        'ZodObjectFieldNullableAdd'
+    );
+    const classic = collectMutations(
+        "import { z } from 'zod/v4'; const foo = z.string(); export const s = z.object({ f: foo });",
+        'ZodObjectFieldOptionalAdd'
+    );
+
+    assert.deepStrictEqual(optional, [ 'z.object({\n  f: z.optional(foo)\n})' ]);
+    assert.deepStrictEqual(nullable, [ 'z.object({\n  f: z.nullable(foo)\n})' ]);
+    assert.deepStrictEqual(classic, [ 'z.object({\n  f: foo.optional()\n})' ]);
+});
+
+test('does not add a presence wrapper to a reference that already accepts the value', function () {
+    const mutations = collectMutations(
+        "import * as z from 'zod/mini'; const foo = z.any(); export const s = z.object({ f: foo });",
+        'ZodObjectFieldOptionalAdd'
+    );
+
+    assert.deepStrictEqual(mutations, []);
+});
+
+test('removes a presence wrapper applied to a reference-valued field', function () {
+    const methodForm = collectMutations(
+        "import * as z from 'zod/mini'; const foo = z.string(); export const s = z.object({ f: foo.optional() });",
+        'ZodOptionalRemove'
+    );
+    const wrapperForm = collectMutations(
+        "import * as z from 'zod/mini'; const foo = z.string(); export const s = z.object({ f: z.nullable(foo) });",
+        'ZodNullableRemove'
+    );
+
+    assert.deepStrictEqual(methodForm, [ 'foo' ]);
+    assert.deepStrictEqual(wrapperForm, [ 'foo' ]);
+});
+
+test('does not remove a presence wrapper that a reference makes redundant', function () {
+    const mutations = collectMutations(
+        "import * as z from 'zod/mini'; const foo = z.any(); export const s = z.object({ f: foo.optional() });",
+        'ZodOptionalRemove'
+    );
+
+    assert.deepStrictEqual(mutations, []);
+});
+
+test('adds and removes presence wrappers on schema references imported from another module', function () {
+    const added = collectResolvedMutations(
+        "import * as z from 'zod/mini'; import { foo } from './foo'; export const s = z.object({ f: foo });",
+        'ZodObjectFieldOptionalAdd',
+        moduleResolverEnv({ './foo': "import * as z from 'zod/mini'; export const foo = z.string();" })
+    );
+    const removed = collectResolvedMutations(
+        "import * as z from 'zod/mini'; import { foo } from './foo'; export const s = z.object({ f: foo.optional() });",
+        'ZodOptionalRemove',
+        moduleResolverEnv({ './foo': "import * as z from 'zod/mini'; export const foo = z.string();" })
+    );
+
+    assert.ok(added.includes('z.object({\n  f: z.optional(foo)\n})'));
+    assert.ok(removed.includes('foo'));
+});

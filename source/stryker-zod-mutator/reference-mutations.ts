@@ -6,14 +6,10 @@ import {
     buildZodCall,
     getZodCallName,
     isObjectLikeFactory,
-    type ZodApiStyle,
+    moduleStyle,
     type ZodBindings
 } from './zod-bindings.ts';
 import { resolvesToAcceptAnything, resolvesToZodSchema } from './binding-resolution.ts';
-
-function moduleStyle(bindings: ZodBindings): ZodApiStyle {
-    return bindings.namespaces[0]?.style ?? bindings.directBindings[0]?.style ?? 'classic';
-}
 
 const ancestorDepth = { property: 1, optionsCall: 2, objectFactory: 3 };
 
