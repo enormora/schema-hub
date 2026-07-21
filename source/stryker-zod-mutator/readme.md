@@ -40,7 +40,8 @@ Use `await` in the config file. Stryker’s mutator registry is ESM-only and not
         'collection',
         'union',
         'fallback',
-        'coercion'
+        'coercion',
+        'reference'
     ],
     includedOperators: [
         'ZodPrimitiveFactorySwap',
@@ -80,7 +81,8 @@ Use `await` in the config file. Stryker’s mutator registry is ESM-only and not
         'ZodNumericLiteralChange',
         'ZodFallbackRemove',
         'ZodCustomBehaviorRemove',
-        'ZodCoercionRemove'
+        'ZodCoercionRemove',
+        'ZodReferencedSchemaWiden'
     ]
 }
 ```
@@ -101,7 +103,7 @@ export default await withZodMutators({
 ```
 
 Available categories are `primitive`, `presence`, `readonly`, `object`, `string`, `number`, `collection`,
-`union`, `fallback`, and `coercion`.
+`union`, `fallback`, `coercion`, and `reference`.
 
 ## Supported Zod Imports
 
@@ -159,6 +161,7 @@ The default set enables every operator below.
 | `ZodFallbackRemove`           | `z.string().default('x')`                    | `z.string()`                              |
 | `ZodCustomBehaviorRemove`     | `z.string().transform(String)`               | `z.string()`                              |
 | `ZodCoercionRemove`           | `z.coerce.number()`                          | `z.number()`                              |
+| `ZodReferencedSchemaWiden`    | `z.object({ f: fooSchema })`                 | `z.object({ f: z.unknown() })`            |
 
 `ZodPrimitiveFactorySwap` swaps zero-argument calls among `z.string()`, `z.number()`, `z.bigint()`,
 `z.boolean()`, `z.date()`, `z.symbol()`, `z.null()`, `z.undefined()`, `z.void()`, `z.never()`, `z.any()`,
@@ -244,3 +247,18 @@ be resolved (a missing file, a `paths` alias with no matching config, a referenc
 a schema, or a namespace import) is treated as unknown and the mutant is emitted rather than suppressed.
 Only same-module (`export`) analysis is complete; a schema imported elsewhere and tested there is never
 assumed unkillable.
+
+## Widening referenced schemas
+
+A field, wrapper argument, or union option whose value is a schema written inline (`f: z.string()`) is
+already mutated in place by the type and check operators. When that value is instead a reference to a schema
+defined elsewhere (`f: fooSchema`), those operators fire only at the definition, so nothing at the use site
+forces a test that the field actually validates its input. `ZodReferencedSchemaWiden` closes that gap: it
+replaces such a reference with `z.unknown()`, which a test kills by feeding a value the referenced schema
+rejects.
+
+To stay faithful to the guiding rule, it uses binding resolution and emits the mutant only when the
+reference resolves to a schema that does not already accept everything, so the widened mutant is always
+distinguishable from the original. It intentionally does not re-assert the referenced schema's internal
+constraints at each use site; that stays the dedicated schema's own tests' responsibility. Disable the
+`reference` category or the operator to opt out.
