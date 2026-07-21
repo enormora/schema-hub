@@ -8,7 +8,8 @@ export const zodMutationCategories = [
     'collection',
     'union',
     'fallback',
-    'coercion'
+    'coercion',
+    'reference'
 ] as const;
 
 export type ZodMutationCategory = typeof zodMutationCategories[number];
@@ -51,7 +52,8 @@ export const zodMutationOperators = [
     'ZodNumericLiteralChange',
     'ZodFallbackRemove',
     'ZodCustomBehaviorRemove',
-    'ZodCoercionRemove'
+    'ZodCoercionRemove',
+    'ZodReferencedSchemaWiden'
 ] as const;
 
 export type ZodMutationOperator = typeof zodMutationOperators[number];
@@ -94,5 +96,6 @@ export const zodMutationOperatorCategories: Record<ZodMutationOperator, ZodMutat
     ZodNumericLiteralChange: 'union',
     ZodFallbackRemove: 'fallback',
     ZodCustomBehaviorRemove: 'fallback',
-    ZodCoercionRemove: 'coercion'
+    ZodCoercionRemove: 'coercion',
+    ZodReferencedSchemaWiden: 'reference'
 };

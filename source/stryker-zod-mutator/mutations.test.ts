@@ -1598,3 +1598,120 @@ test('detects an enclosing readonly through a classic pipe method call', functio
 
     assert.ok(!mutations.includes('z.array(z.string())'));
 });
+
+test('widens a constraining schema reference in an object field', function () {
+    const mutations = collectMutations(
+        "import * as z from 'zod/mini'; const foo = z.string(); export const s = z.object({ f: foo });",
+        'ZodReferencedSchemaWiden'
+    );
+
+    assert.deepStrictEqual(mutations, [ 'z.unknown()' ]);
+});
+
+test('widens constraining schema references in union options and wrapper arguments', function () {
+    const unionMutations = collectMutations(
+        "import * as z from 'zod/mini'; const bar = z.string(); const baz = z.number(); export const s = z.union([bar, baz]);",
+        'ZodReferencedSchemaWiden'
+    );
+    const wrapperMutations = collectMutations(
+        "import * as z from 'zod/mini'; const foo = z.string(); export const s = z.array(foo);",
+        'ZodReferencedSchemaWiden'
+    );
+
+    assert.deepStrictEqual(unionMutations, [ 'z.unknown()' ]);
+    assert.deepStrictEqual(wrapperMutations, [ 'z.unknown()' ]);
+});
+
+test('widens a referenced schema using the classic import style', function () {
+    const mutations = collectMutations(
+        "import { z } from 'zod/v4'; const foo = z.string(); export const s = z.object({ f: foo });",
+        'ZodReferencedSchemaWiden'
+    );
+
+    assert.deepStrictEqual(mutations, [ 'z.unknown()' ]);
+});
+
+test('does not widen a reference that already accepts anything', function () {
+    const mutations = collectMutations(
+        "import * as z from 'zod/mini'; const foo = z.any(); export const s = z.object({ f: foo });",
+        'ZodReferencedSchemaWiden'
+    );
+
+    assert.deepStrictEqual(mutations, []);
+});
+
+test('does not widen a reference that resolves to a non-schema', function () {
+    const mutations = collectMutations(
+        "import * as z from 'zod/mini'; const foo = 'plain'; export const s = z.object({ f: foo });",
+        'ZodReferencedSchemaWiden'
+    );
+
+    assert.deepStrictEqual(mutations, []);
+});
+
+test('does not widen an inline schema or a non-Zod object field', function () {
+    const inlineMutations = collectMutations(
+        "import * as z from 'zod/mini'; export const s = z.object({ f: z.string() });",
+        'ZodReferencedSchemaWiden'
+    );
+    const plainObjectMutations = collectMutations(
+        "import * as z from 'zod/mini'; const foo = z.string(); export const opts = { f: foo };",
+        'ZodReferencedSchemaWiden'
+    );
+
+    assert.deepStrictEqual(inlineMutations, []);
+    assert.deepStrictEqual(plainObjectMutations, []);
+});
+
+test('widens a schema reference imported from another module', function () {
+    const widened = collectResolvedMutations(
+        "import * as z from 'zod/mini'; import { foo } from './foo'; export const s = z.object({ f: foo });",
+        'ZodReferencedSchemaWiden',
+        moduleResolverEnv({ './foo': "import * as z from 'zod/mini'; export const foo = z.string();" })
+    );
+    const permissive = collectResolvedMutations(
+        "import * as z from 'zod/mini'; import { foo } from './foo'; export const s = z.object({ f: foo });",
+        'ZodReferencedSchemaWiden',
+        moduleResolverEnv({ './foo': "import * as z from 'zod/mini'; export const foo = z.any();" })
+    );
+
+    assert.deepStrictEqual(widened, [ 'z.unknown()' ]);
+    assert.deepStrictEqual(permissive, []);
+});
+
+test('widens a reference using direct mini imports when unknown is importable', function () {
+    const mutations = collectMutations(
+        "import { object, string, unknown } from 'zod/mini'; const foo = string(); export const s = object({ f: foo });",
+        'ZodReferencedSchemaWiden'
+    );
+
+    assert.deepStrictEqual(mutations, [ 'unknown()' ]);
+});
+
+test('does not widen when the module cannot construct an unknown schema', function () {
+    const mutations = collectMutations(
+        "import { object, string } from 'zod/mini'; const foo = string(); export const s = object({ f: foo });",
+        'ZodReferencedSchemaWiden'
+    );
+
+    assert.deepStrictEqual(mutations, []);
+});
+
+test('handles a widen path without a parent', function () {
+    const mutator = createZodMutators([ 'ZodReferencedSchemaWiden' ])[0];
+
+    if (mutator === undefined) {
+        assert.fail('Expected ZodReferencedSchemaWiden to exist');
+    }
+
+    assert.deepStrictEqual(Array.from(mutator.mutate({ node: identifier('schema'), parentPath: null })), []);
+});
+
+test('does not widen a reference inside a non-Zod call object', function () {
+    const mutations = collectMutations(
+        "import * as z from 'zod/mini'; const foo = z.string(); export const s = notZod({ f: foo });",
+        'ZodReferencedSchemaWiden'
+    );
+
+    assert.deepStrictEqual(mutations, []);
+});

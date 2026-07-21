@@ -419,6 +419,12 @@ export function producesFreezableValue(bindings: ZodBindings, expression: Schema
     return Array.from(schemaChain(expression, bindings)).some(isFreezableFactoryCall);
 }
 
+export function resolvesToZodSchema(bindings: ZodBindings, expression: SchemaExpression): boolean {
+    return Array.from(schemaChain(expression, bindings)).some(function (step) {
+        return getZodCallName(step.bindings, step.node) !== null;
+    });
+}
+
 function appliesReadonly(step: ChainStep): boolean {
     return getZodCallName(step.bindings, step.node) === 'readonly' || getMemberName(step.node.callee) === 'readonly';
 }
