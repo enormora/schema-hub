@@ -1782,3 +1782,65 @@ test('adds and removes presence wrappers on schema references imported from anot
     assert.ok(added.includes('z.object({\n  f: z.optional(foo)\n})'));
     assert.ok(removed.includes('foo'));
 });
+
+test('does not add nullable when an inner nullable is reached through presence wrappers', function () {
+    const optNull = collectMutations(
+        "import * as z from 'zod/mini'; const foo = z.string(); export const s = z.optional(z.nullable(foo));",
+        'ZodNullableAdd'
+    );
+    const field = collectMutations(
+        "import * as z from 'zod/mini'; const foo = z.string(); export const s = z.object({ f: z.optional(z.nullable(foo)) });",
+        'ZodObjectFieldNullableAdd'
+    );
+
+    assert.deepStrictEqual(optNull, []);
+    assert.deepStrictEqual(field, []);
+});
+
+test('does not add optional when an inner optional is reached through presence wrappers', function () {
+    const nullOpt = collectMutations(
+        "import * as z from 'zod/mini'; const foo = z.string(); export const s = z.nullable(z.optional(foo));",
+        'ZodOptionalAdd'
+    );
+
+    assert.deepStrictEqual(nullOpt, []);
+});
+
+test('sees through a resolved reference when skipping a redundant presence wrapper', function () {
+    const nullableAdd = collectResolvedMutations(
+        "import * as z from 'zod/mini'; import { foo } from './foo'; export const s = z.optional(z.nullable(foo));",
+        'ZodNullableAdd',
+        moduleResolverEnv({ './foo': "import * as z from 'zod/mini'; export const foo = z.string();" })
+    );
+
+    assert.deepStrictEqual(nullableAdd, []);
+});
+
+test('still adds a presence wrapper when a transform can observe the added value', function () {
+    const mutations = collectMutations(
+        "import * as z from 'zod/mini'; const foo = z.string(); export const s = z.optional(z.pipe(z.nullable(foo), z.transform(function (v) { return v; })));",
+        'ZodNullableAdd'
+    );
+
+    assert.ok(mutations.some(function (mutation) {
+        return mutation.startsWith('z.nullable(');
+    }));
+});
+
+test('still adds optional across a nonoptional that re-rejects undefined', function () {
+    const throughNonoptional = collectMutations(
+        "import * as z from 'zod/mini'; const foo = z.string(); export const s = z.nonoptional(z.optional(foo));",
+        'ZodOptionalAdd'
+    );
+    const nonoptionalAny = collectMutations(
+        "import * as z from 'zod/mini'; export const s = z.nonoptional(z.any());",
+        'ZodOptionalAdd'
+    );
+
+    assert.ok(throughNonoptional.some(function (mutation) {
+        return mutation.startsWith('z.optional(z.nonoptional(');
+    }));
+    assert.ok(nonoptionalAny.some(function (mutation) {
+        return mutation.startsWith('z.optional(z.nonoptional(');
+    }));
+});
