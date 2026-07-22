@@ -438,57 +438,89 @@ export function chainAppliesReadonly(bindings: ZodBindings, expression: SchemaEx
     return Array.from(schemaChain(expression, bindings)).some(appliesReadonly);
 }
 
-const acceptAnythingFactoryNames = new Set([ 'any', 'unknown' ]);
-
 function schemaName(step: ChainStep): string {
     return getZodCallName(step.bindings, step.node) ?? getMemberName(step.node.callee) ?? '';
 }
 
-function isBreakingWrapper(step: ChainStep): boolean {
-    return !valuePreservingWrapperNames.has(schemaName(step));
+// A wrapper that re-restricts presence: `nonoptional` passes `null` through unchanged but rejects
+// `undefined`, so it is transparent when reasoning about `null` yet breaks reasoning about `undefined`.
+const presenceRestrictingWrappers = new Set([ 'nonoptional' ]);
+
+const acceptAnythingPreservingWrappers = new Set(
+    Array.from(valuePreservingWrapperNames).filter(function (name) {
+        return !presenceRestrictingWrappers.has(name);
+    })
+);
+
+type PresenceAcceptance = {
+    readonly alreadyAccepting: ReadonlySet<string>;
+    readonly transparent: ReadonlySet<string>;
+};
+
+const presenceAcceptanceByWrapper = new Map<string, PresenceAcceptance>([
+    [
+        'nullable',
+        {
+            alreadyAccepting: new Set([ 'nullable', 'nullish', 'null', 'any', 'unknown' ]),
+            transparent: valuePreservingWrapperNames
+        }
+    ],
+    [
+        'optional',
+        {
+            alreadyAccepting: new Set([
+                'optional',
+                'nullish',
+                'undefined',
+                'void',
+                'default',
+                '_default',
+                'prefault',
+                'any',
+                'unknown'
+            ]),
+            transparent: acceptAnythingPreservingWrappers
+        }
+    ]
+]);
+
+function chainAcceptsBefore(
+    bindings: ZodBindings,
+    expression: SchemaExpression,
+    alreadyAccepting: ReadonlySet<string>,
+    transparent: ReadonlySet<string>
+): boolean {
+    for (const step of schemaChain(expression, bindings)) {
+        const name = schemaName(step);
+
+        if (alreadyAccepting.has(name)) {
+            return true;
+        }
+
+        if (!transparent.has(name)) {
+            return false;
+        }
+    }
+
+    return false;
 }
 
 export function resolvesToAcceptAnything(bindings: ZodBindings, expression: SchemaExpression): boolean {
-    const steps = Array.from(schemaChain(expression, bindings));
-    const decisive = steps.find(function (step) {
-        return acceptAnythingFactoryNames.has(schemaName(step)) || isBreakingWrapper(step);
-    });
-
-    return decisive !== undefined && acceptAnythingFactoryNames.has(schemaName(decisive));
+    return chainAcceptsBefore(
+        bindings,
+        expression,
+        new Set([ 'any', 'unknown' ]),
+        acceptAnythingPreservingWrappers
+    );
 }
-
-const factoryNamesAcceptingUndefined = new Set([
-    'any',
-    'unknown',
-    'undefined',
-    'void',
-    'nullish',
-    'prefault',
-    'default',
-    '_default'
-]);
-const factoryNamesAcceptingNull = new Set([ 'any', 'unknown', 'null', 'nullish' ]);
-
-const alreadyAcceptedValueByWrapper = new Map<string, ReadonlySet<string>>([
-    [ 'optional', factoryNamesAcceptingUndefined ],
-    [ 'nullable', factoryNamesAcceptingNull ]
-]);
 
 export function addingWrapperHasNoEffect(
     bindings: ZodBindings,
     expression: SchemaExpression,
     wrapperName: string
 ): boolean {
-    const acceptingFactories = alreadyAcceptedValueByWrapper.get(wrapperName);
-    const [ outer ] = Array.from(schemaChain(expression, bindings));
+    const acceptance = presenceAcceptanceByWrapper.get(wrapperName);
 
-    if (acceptingFactories === undefined || outer === undefined) {
-        return false;
-    }
-
-    const outerName = schemaName(outer);
-
-    return outerName === wrapperName ||
-        acceptingFactories.has(outerName) ||
-        resolvesToAcceptAnything(bindings, expression);
+    return acceptance !== undefined &&
+        chainAcceptsBefore(bindings, expression, acceptance.alreadyAccepting, acceptance.transparent);
 }

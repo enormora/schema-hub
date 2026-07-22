@@ -188,9 +188,13 @@ mutation is emitted. Raising it (e.g. `min(0)` to `min(1)`) is still emitted, an
 `z.unknown()`, `z.undefined()`, `z.void()`, `z.nullish()`, a `default`/`prefault` schema, and anything
 already `optional`), and `ZodNullableAdd` and `ZodObjectFieldNullableAdd` skip schemas that already accept
 `null` (`z.any()`, `z.unknown()`, `z.null()`, `z.nullish()`, and anything already `nullable`), because
-wrapping them changes nothing at runtime. Both also see through `optional`/`nullable` (and other
-value-preserving wrappers) to an `z.any()`/`z.unknown()` leaf, so e.g. `z.nullable(z.optional(z.unknown()))`
-is not emitted. `ZodOptionalRemove` and `ZodNullableRemove` likewise skip removals whose remaining
+wrapping them changes nothing at runtime. Both walk outward through the value-preserving wrapper chain
+looking for a step that already admits the value, so a redundant wrapper is skipped even when it sits
+under other wrappers, e.g. `z.optional(z.nullable(X))` gets no `nullable` add and `z.nullable(z.optional(X))`
+gets no `optional` add. The walk stops at anything that could make the added wrapper observable: a
+value-transforming step (`transform`, `pipe`) stops both, and `nonoptional` stops the `optional` walk
+because it re-rejects `undefined`, so `z.nonoptional(z.optional(X))` still gets an `optional` add (it is
+killable). `ZodOptionalRemove` and `ZodNullableRemove` likewise skip removals whose remaining
 schema still admits the value (e.g. removing `.optional()` from `z.unknown().optional()`). `ZodOptionalAdd`
 and `ZodNullableAdd` also wrap only at the root of a schema value chain, so `z.string().min(2)` yields
 `z.string().min(2).optional()` rather than the invalid `z.string().optional().min(2)`. They also skip a
