@@ -5,7 +5,7 @@ on:
     schedule:
         # GitHub Actions throttles scheduled workflows hard at the top of the hour.
         # Spreading entries across off-peak minutes gives the cron a better shot at firing
-        # as a fallback for the self-rechain below.
+        # within the publish gate's quiet-period window.
         - cron: "17 * * * *"
         - cron: "47 * * * *"
     workflow_dispatch:
@@ -28,11 +28,3 @@ jobs:
                   GH_TOKEN: ${{ github.token }}
                   GH_REPO: ${{ github.repository }}
               run: gh workflow run publish.yml --ref main
-            - name: Wait then redispatch the scheduler as a cron-drift fallback
-              if: always()
-              env:
-                  GH_TOKEN: ${{ github.token }}
-                  GH_REPO: ${{ github.repository }}
-              run: |
-                  sleep 1800
-                  gh workflow run scheduler.yml --ref main
