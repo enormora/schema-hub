@@ -1,14 +1,10 @@
 import assert from 'node:assert';
 import { test } from '@sondr3/minitest';
 import { z } from 'zod/v4';
-import {
-    defineMutation,
-    defineQuery,
-    defineVariables,
-    graphqlFieldOptions,
-    type OperationHandle
-} from '../zod-graphql-client/entry-point.ts';
+import { defineVariables } from '../zod-graphql-client/define-variables.ts';
 import type { GraphqlOperationError } from '../zod-graphql-client/operation-error.ts';
+import { defineMutation, defineQuery, type OperationHandle } from '../zod-graphql-client/operation-handle.ts';
+import { graphqlFieldOptions } from '../zod-graphql-query-builder/default-query-builder.ts';
 import { createFakeGraphqlClient } from './fake-client.ts';
 
 const simpleSchema = z.object({ foo: z.string() }).strict();

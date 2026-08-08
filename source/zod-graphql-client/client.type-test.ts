@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'tstyche';
 import { z } from 'zod';
-import { graphqlFieldOptions, variablePlaceholder } from '../zod-graphql-query-builder/entry-point.ts';
+import { graphqlFieldOptions } from '../zod-graphql-query-builder/default-query-builder.ts';
+import { variablePlaceholder } from '../zod-graphql-query-builder/values/variable-placeholder.ts';
 import type { GraphqlClient } from './client.ts';
 import { defineVariables } from './define-variables.ts';
 import { defineMutation, defineQuery } from './operation-handle.ts';

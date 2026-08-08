@@ -1,4 +1,5 @@
-import { buildGraphqlMutation, buildGraphqlQuery, type QuerySchema } from '../zod-graphql-query-builder/entry-point.ts';
+import { buildGraphqlMutation, buildGraphqlQuery } from '../zod-graphql-query-builder/default-query-builder.ts';
+import type { QuerySchema } from '../zod-graphql-query-builder/query-schema.ts';
 import {
     type AnyVariableMapHandle,
     getVariableMapMetadata,
