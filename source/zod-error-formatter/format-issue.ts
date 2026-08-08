@@ -5,7 +5,10 @@ import type {
     $ZodIssueInvalidKey,
     $ZodIssueInvalidUnion
 } from 'zod/v4/core';
-import {
+import { issueSpecificFormatters } from './issue-specific/issue-specific-formatters.ts';
+import { formatPath, isNonEmptyPath } from './path.ts';
+
+const {
     formatInvalidElementIssueMessage,
     formatInvalidKeyIssueMessage,
     formatInvalidStringIssueMessage,
@@ -16,8 +19,7 @@ import {
     formatTooBigIssueMessage,
     formatTooSmallIssueMessage,
     formatUnrecognizedKeysIssueMessage
-} from './issue-specific/entry-point.ts';
-import { formatPath, isNonEmptyPath } from './path.ts';
+} = issueSpecificFormatters;
 
 type ZodIssueCode = Exclude<$ZodIssue['code'], undefined>;
 

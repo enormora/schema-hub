@@ -1,5 +1,5 @@
 import type { output as TypeOf } from 'zod/v4/core';
-import type { QuerySchema } from '../zod-graphql-query-builder/entry-point.ts';
+import type { QuerySchema } from '../zod-graphql-query-builder/query-schema.ts';
 import type { OperationErrorDetails } from './operation-error.ts';
 
 export type OperationFailureResult = {

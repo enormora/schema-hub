@@ -1,7 +1,9 @@
 import { describe, expect, test } from 'tstyche';
 import { z } from 'zod';
 import type { output as TypeOf } from 'zod/v4/core';
-import { buildGraphqlMutation, buildGraphqlQuery, customScalar, type QuerySchema } from './entry-point.ts';
+import { createCustomScalarSchema as customScalar } from './custom-scalar.ts';
+import { buildGraphqlMutation, buildGraphqlQuery } from './default-query-builder.ts';
+import type { QuerySchema } from './query-schema.ts';
 
 describe('buildGraphqlQuery / buildGraphqlMutation accept simple root schemas', function () {
     test('strict object with primitive fields', function () {

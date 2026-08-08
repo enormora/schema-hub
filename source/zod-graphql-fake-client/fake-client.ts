@@ -1,12 +1,7 @@
 import type { output as TypeOf } from 'zod/v4/core';
-import { extractDataOrThrow } from '../zod-graphql-client/client.ts';
+import { extractDataOrThrow, type GraphqlClient } from '../zod-graphql-client/client.ts';
 import type { MaybeVariables } from '../zod-graphql-client/define-variables.ts';
-import type {
-    GraphqlClient,
-    OperationErrorDetails,
-    OperationResult,
-    QuerySchema
-} from '../zod-graphql-client/entry-point.ts';
+import type { OperationErrorDetails } from '../zod-graphql-client/operation-error.ts';
 import type { OperationHandle } from '../zod-graphql-client/operation-handle.ts';
 import {
     buildOperationPayload,
@@ -17,6 +12,8 @@ import {
     type OperationType,
     resolveOperationInputs
 } from '../zod-graphql-client/operation-payload.ts';
+import type { OperationResult } from '../zod-graphql-client/operation-result.ts';
+import type { QuerySchema } from '../zod-graphql-query-builder/query-schema.ts';
 
 export type RecordedOperation = {
     readonly type: OperationType;
