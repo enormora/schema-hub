@@ -1,24 +1,16 @@
 import assert from 'node:assert';
 import { test } from '@sondr3/minitest';
 import { TimeoutError } from 'ky';
-import { fake, type SinonSpy, stub } from 'sinon';
+import { fake, type SinonSpy } from 'sinon';
 import { z } from 'zod/v4';
-import { variablePlaceholder } from '../zod-graphql-query-builder/entry-point.ts';
 import {
     type ClientOptions,
     type CreateClientDependencies,
     createClientFactory,
     type GraphqlClient
 } from './client.ts';
-import {
-    defineMutation,
-    defineQuery,
-    defineVariables,
-    graphqlFieldOptions,
-    GraphqlOperationError,
-    variable
-} from './entry-point.ts';
-import { computePersistedQueryHash } from './persisted-query.ts';
+import { GraphqlOperationError } from './operation-error.ts';
+import { defineMutation, defineQuery } from './operation-handle.ts';
 
 type KyOverrides = {
     responseStatus?: number;
@@ -40,37 +32,20 @@ function createFakeKyMethod(kyOverrides: KyOverrides = {}): SinonSpy {
     return fake.resolves(response);
 }
 
-type Overrides = {
+type ClientFactoryOverrides = {
     post?: SinonSpy;
     options?: ClientOptions;
 };
 
-function clientFactory(overrides: Overrides): GraphqlClient {
+function clientFactory(overrides: ClientFactoryOverrides): GraphqlClient {
     const { post = createFakeKyMethod(), options = { endpoint: '' } } = overrides;
     const createClient = createClientFactory({ ky: { post } } as unknown as CreateClientDependencies);
     return createClient(options);
 }
 
-function createKyMethodReturningResponses(responseBodies: readonly unknown[]): SinonSpy {
-    const sequence = stub();
-    responseBodies.forEach(function (body, index) {
-        sequence.onCall(index).resolves({ status: 200, json: fake.resolves(body) });
-    });
-    return sequence;
-}
-
 const simpleQuerySchema = z.strictObject({ foo: z.string() });
 const simpleQueryHandle = defineQuery({ schema: simpleQuerySchema });
 const simpleMutationHandle = defineMutation({ schema: simpleQuerySchema });
-const numericValueForTypeMismatch = 22;
-
-const variablesForQuery = defineVariables({ bar: variable('Foo!', z.string()) });
-const queryWithVariablesSchema = z
-    .strictObject({ foo: graphqlFieldOptions(z.string(), { parameters: { bar: variablePlaceholder('$bar') } }) });
-const queryWithVariables = defineQuery({
-    variables: variablesForQuery,
-    schema: queryWithVariablesSchema
-});
 
 test('query() sends the query derived from the given schema to the configured endpoint', async function () {
     const post = createFakeKyMethod();
@@ -208,134 +183,6 @@ test('query() merges the headers from the query options into the headers from th
     assert.deepStrictEqual(post.firstCall.args, [ 'http://example/the-endpoint', {
         headers: { foo: 'bar', bar: 'qux', qux: 'quux' },
         json: { operationName: undefined, query: 'query { foo }', variables: {} },
-        retry: 0,
-        throwHttpErrors: false,
-        timeout: 10_000
-    } ]);
-});
-
-test('query() with a handle sends the variable definitions and values', async function () {
-    const post = createFakeKyMethod();
-    const client = clientFactory({ post, options: { endpoint: 'http://example/the-endpoint' } });
-    await client.query(queryWithVariables, { bar: 'foo' });
-
-    assert.strictEqual(post.callCount, 1);
-    assert.deepStrictEqual(post.firstCall.args, [ 'http://example/the-endpoint', {
-        headers: {},
-        json: { operationName: undefined, query: 'query ($bar: Foo!) { foo(bar: $bar) }', variables: { bar: 'foo' } },
-        retry: 0,
-        throwHttpErrors: false,
-        timeout: 10_000
-    } ]);
-});
-
-test('query() with a handle returns a validation failure when values don’t match the variable schema', async function () {
-    const post = createFakeKyMethod();
-    const client = clientFactory({ post, options: { endpoint: 'http://example/the-endpoint' } });
-    const result = await client.query(queryWithVariables, { bar: numericValueForTypeMismatch as unknown as string });
-
-    assert.strictEqual(post.callCount, 0);
-    assert.deepStrictEqual(result, {
-        success: false,
-        errorDetails: {
-            type: 'validation',
-            message: 'GraphQL variable values don’t match the expected schema',
-            issues: [ 'at bar: expected string, but got number' ]
-        }
-    });
-});
-
-const nestedFilterSchema = z.strictObject({
-    q: z.string(),
-    pagination: z.strictObject({ limit: z.int(), offset: z.int() })
-});
-const variablesForNestedInput = defineVariables({
-    filter: variable('FilterInput!', nestedFilterSchema)
-});
-const queryWithNestedInputSchema = z.strictObject({
-    foo: graphqlFieldOptions(z.string(), { parameters: { filter: variablePlaceholder('$filter') } })
-});
-const queryWithNestedInput = defineQuery({
-    variables: variablesForNestedInput,
-    schema: queryWithNestedInputSchema
-});
-
-test('query() sends a nested input object as a variable value', async function () {
-    const post = createFakeKyMethod();
-    const client = clientFactory({ post, options: { endpoint: 'http://example/the-endpoint' } });
-    await client.query(queryWithNestedInput, {
-        filter: { q: 'hello', pagination: { limit: 10, offset: 20 } }
-    });
-
-    assert.strictEqual(post.callCount, 1);
-    assert.deepStrictEqual(post.firstCall.args, [ 'http://example/the-endpoint', {
-        headers: {},
-        json: {
-            operationName: undefined,
-            query: 'query ($filter: FilterInput!) { foo(filter: $filter) }',
-            variables: { filter: { q: 'hello', pagination: { limit: 10, offset: 20 } } }
-        },
-        retry: 0,
-        throwHttpErrors: false,
-        timeout: 10_000
-    } ]);
-});
-
-test('query() with a nested input variable reports validation issues with a nested path', async function () {
-    const post = createFakeKyMethod();
-    const client = clientFactory({ post, options: { endpoint: 'http://example/the-endpoint' } });
-    const result = await client.query(queryWithNestedInput, {
-        filter: {
-            q: 'hello',
-            pagination: { limit: 'ten' as unknown as number, offset: 20 }
-        }
-    });
-
-    assert.strictEqual(post.callCount, 0);
-    assert.deepStrictEqual(result, {
-        success: false,
-        errorDetails: {
-            type: 'validation',
-            message: 'GraphQL variable values don’t match the expected schema',
-            issues: [ 'at filter.pagination.limit: expected number, but got string' ]
-        }
-    });
-});
-
-const variablesForListInput = defineVariables({
-    filters: variable('[FilterInput!]!', z.array(nestedFilterSchema))
-});
-const queryWithListInputSchema = z.strictObject({
-    foo: graphqlFieldOptions(z.string(), { parameters: { filters: variablePlaceholder('$filters') } })
-});
-const queryWithListInput = defineQuery({
-    variables: variablesForListInput,
-    schema: queryWithListInputSchema
-});
-
-test('query() sends a list of input objects as a variable value', async function () {
-    const post = createFakeKyMethod();
-    const client = clientFactory({ post, options: { endpoint: 'http://example/the-endpoint' } });
-    await client.query(queryWithListInput, {
-        filters: [
-            { q: 'hello', pagination: { limit: 10, offset: 0 } },
-            { q: 'world', pagination: { limit: 5, offset: 10 } }
-        ]
-    });
-
-    assert.strictEqual(post.callCount, 1);
-    assert.deepStrictEqual(post.firstCall.args, [ 'http://example/the-endpoint', {
-        headers: {},
-        json: {
-            operationName: undefined,
-            query: 'query ($filters: [FilterInput!]!) { foo(filters: $filters) }',
-            variables: {
-                filters: [
-                    { q: 'hello', pagination: { limit: 10, offset: 0 } },
-                    { q: 'world', pagination: { limit: 5, offset: 10 } }
-                ]
-            }
-        },
         retry: 0,
         throwHttpErrors: false,
         timeout: 10_000
@@ -583,184 +430,4 @@ test('queryOrThrow() forwards the underlying network error as cause', async func
         assert.strictEqual(error instanceof GraphqlOperationError, true);
         assert.strictEqual((error as GraphqlOperationError).cause, networkError);
     }
-});
-
-const simpleQueryHash = computePersistedQueryHash('query { foo }');
-const mutationHash = computePersistedQueryHash('mutation { foo }');
-const persistedQueryEndpoint = 'http://example/endpoint';
-const persistedQueryOptions: ClientOptions = { endpoint: persistedQueryEndpoint, persistedQueries: true };
-
-function buildExpectedRequestArgs(json: unknown): [string, unknown] {
-    return [ persistedQueryEndpoint, {
-        headers: {},
-        json,
-        retry: 0,
-        throwHttpErrors: false,
-        timeout: 10_000
-    } ];
-}
-
-test('query() with persistedQueries sends only the hash on the first attempt', async function () {
-    const post = createKyMethodReturningResponses([ { data: { foo: 'bar' } } ]);
-    const client = clientFactory({ post, options: persistedQueryOptions });
-
-    const result = await client.query(simpleQueryHandle);
-
-    assert.deepStrictEqual(
-        post.firstCall.args,
-        buildExpectedRequestArgs({
-            operationName: undefined,
-            variables: {},
-            extensions: { persistedQuery: { version: 1, sha256Hash: simpleQueryHash } }
-        })
-    );
-    assert.strictEqual(post.secondCall, null);
-    assert.deepStrictEqual(result, { success: true, data: { foo: 'bar' } });
-});
-
-test('query() with persistedQueries retries with the full query on PersistedQueryNotFound', async function () {
-    const post = createKyMethodReturningResponses([
-        { errors: [ { message: 'PersistedQueryNotFound' } ] },
-        { data: { foo: 'bar' } }
-    ]);
-    const client = clientFactory({ post, options: persistedQueryOptions });
-
-    const result = await client.query(simpleQueryHandle);
-
-    assert.deepStrictEqual(
-        post.firstCall.args,
-        buildExpectedRequestArgs({
-            operationName: undefined,
-            variables: {},
-            extensions: { persistedQuery: { version: 1, sha256Hash: simpleQueryHash } }
-        })
-    );
-    assert.deepStrictEqual(
-        post.secondCall.args,
-        buildExpectedRequestArgs({
-            operationName: undefined,
-            query: 'query { foo }',
-            variables: {},
-            extensions: { persistedQuery: { version: 1, sha256Hash: simpleQueryHash } }
-        })
-    );
-    assert.strictEqual(post.thirdCall, null);
-    assert.deepStrictEqual(result, { success: true, data: { foo: 'bar' } });
-});
-
-test('query() with persistedQueries retries with the plain query on PersistedQueryNotSupported', async function () {
-    const post = createKyMethodReturningResponses([
-        { errors: [ { message: 'PersistedQueryNotSupported' } ] },
-        { data: { foo: 'bar' } }
-    ]);
-    const client = clientFactory({ post, options: persistedQueryOptions });
-
-    const result = await client.query(simpleQueryHandle);
-
-    assert.deepStrictEqual(
-        post.secondCall.args,
-        buildExpectedRequestArgs({
-            operationName: undefined,
-            query: 'query { foo }',
-            variables: {}
-        })
-    );
-    assert.strictEqual(post.thirdCall, null);
-    assert.deepStrictEqual(result, { success: true, data: { foo: 'bar' } });
-});
-
-test('query() with persistedQueries surfaces unrelated GraphQL errors without retrying', async function () {
-    const post = createKyMethodReturningResponses([ { errors: [ { message: 'real failure' } ] } ]);
-    const client = clientFactory({ post, options: persistedQueryOptions });
-
-    const result = await client.query(simpleQueryHandle);
-
-    assert.strictEqual(post.callCount, 1);
-    assert.deepStrictEqual(result, {
-        success: false,
-        errorDetails: {
-            type: 'graphql',
-            message: 'GraphQL response contains errors',
-            errors: [ { message: 'real failure' } ]
-        }
-    });
-});
-
-test('mutate() with persistedQueries follows the same retry-on-not-found behavior as queries', async function () {
-    const post = createKyMethodReturningResponses([
-        { errors: [ { message: 'PersistedQueryNotFound' } ] },
-        { data: { foo: 'bar' } }
-    ]);
-    const client = clientFactory({ post, options: persistedQueryOptions });
-
-    const result = await client.mutate(simpleMutationHandle);
-
-    assert.deepStrictEqual(
-        post.firstCall.args,
-        buildExpectedRequestArgs({
-            operationName: undefined,
-            variables: {},
-            extensions: { persistedQuery: { version: 1, sha256Hash: mutationHash } }
-        })
-    );
-    assert.deepStrictEqual(
-        post.secondCall.args,
-        buildExpectedRequestArgs({
-            operationName: undefined,
-            query: 'mutation { foo }',
-            variables: {},
-            extensions: { persistedQuery: { version: 1, sha256Hash: mutationHash } }
-        })
-    );
-    assert.deepStrictEqual(result, { success: true, data: { foo: 'bar' } });
-});
-
-test('query() with persistedQueries does not retry past one attempt on persistent PersistedQueryNotFound', async function () {
-    const post = createKyMethodReturningResponses([
-        { errors: [ { message: 'PersistedQueryNotFound' } ] },
-        { errors: [ { message: 'PersistedQueryNotFound' } ] }
-    ]);
-    const client = clientFactory({ post, options: persistedQueryOptions });
-
-    const result = await client.query(simpleQueryHandle);
-
-    assert.strictEqual(post.thirdCall, null);
-    assert.deepStrictEqual(result, {
-        success: false,
-        errorDetails: {
-            type: 'graphql',
-            message: 'GraphQL response contains errors',
-            errors: [ { message: 'PersistedQueryNotFound' } ]
-        }
-    });
-});
-
-test('query() with persistedQueries returns the network failure when the first attempt errors', async function () {
-    const networkError = new Error('network down');
-    const post = createFakeKyMethod({ error: networkError });
-    const client = clientFactory({ post, options: persistedQueryOptions });
-
-    const result = await client.query(simpleQueryHandle);
-
-    assert.strictEqual(post.secondCall, null);
-    assert.deepStrictEqual(result, {
-        success: false,
-        errorDetails: { type: 'network', message: 'network down', cause: networkError }
-    });
-});
-
-test('query() without persistedQueries never includes the extensions field', async function () {
-    const post = createFakeKyMethod({ responseJsonBody: { data: { foo: 'bar' } } });
-    const client = clientFactory({ post, options: { endpoint: persistedQueryEndpoint } });
-
-    await client.query(simpleQueryHandle);
-
-    assert.deepStrictEqual(
-        post.firstCall.args,
-        buildExpectedRequestArgs({
-            operationName: undefined,
-            query: 'query { foo }',
-            variables: {}
-        })
-    );
 });

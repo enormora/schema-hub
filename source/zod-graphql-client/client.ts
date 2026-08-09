@@ -1,7 +1,7 @@
 import { type KyInstance, type Options as KyRequestOptions, TimeoutError } from 'ky';
 import type { output as TypeOf } from 'zod/v4/core';
 import { safeParse } from '../zod-error-formatter/formatter.ts';
-import type { QuerySchema } from '../zod-graphql-query-builder/entry-point.ts';
+import type { QuerySchema } from '../zod-graphql-query-builder/query-schema.ts';
 import type { MaybeVariables } from './define-variables.ts';
 import { parseGraphqlResponse } from './graphql-response.ts';
 import { GraphqlOperationError } from './operation-error.ts';

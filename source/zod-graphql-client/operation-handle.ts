@@ -1,4 +1,4 @@
-import type { QuerySchema } from '../zod-graphql-query-builder/entry-point.ts';
+import type { QuerySchema } from '../zod-graphql-query-builder/query-schema.ts';
 import type { AnyVariableMapHandle, ValuesOfVariableMapHandle } from './define-variables.ts';
 
 export type OperationKind = 'mutation' | 'query';
