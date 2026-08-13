@@ -43,7 +43,9 @@ async function listBundledDeclarationFiles() {
     });
 }
 
-/** @returns {Promise<import('@packtory/cli').PacktoryConfig>} */
+/**
+ * @returns {Promise<import('@packtory/cli').PacktoryConfig>}
+ */
 export async function buildConfig() {
     const packageJsonContent = await fs.readFile('./package.json', { encoding: 'utf8' });
     const packageJson = JSON.parse(packageJsonContent);
