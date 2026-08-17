@@ -24,9 +24,9 @@
         "@packtory/cli": "0.0.91",
         "@packtory/github-release-gate": "0.0.54",
         "@sondr3/minitest": "0.1.2",
-        "@stryker-mutator/api": "9.6.1",
-        "@stryker-mutator/core": "9.6.1",
-        "@stryker-mutator/instrumenter": "9.6.1",
+        "@stryker-mutator/api": "10.0.0",
+        "@stryker-mutator/core": "10.0.0",
+        "@stryker-mutator/instrumenter": "10.0.0",
         "@types/babel__generator": "7.27.0",
         "@types/common-tags": "1.8.4",
         "@types/node": "24.13.3",
@@ -43,9 +43,9 @@
         "node": "^24 || ^26"
     },
     "peerDependencies": {
-        "@stryker-mutator/api": ">=9.6.0 <10",
-        "@stryker-mutator/core": ">=9.6.0 <10",
-        "@stryker-mutator/instrumenter": ">=9.6.0 <10",
+        "@stryker-mutator/api": ">=9.6.0 <11",
+        "@stryker-mutator/core": ">=9.6.0 <11",
+        "@stryker-mutator/instrumenter": ">=9.6.0 <11",
         "zod": "^4.0.5"
     },
     "overrides": {
