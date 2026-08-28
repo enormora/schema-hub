@@ -21,7 +21,7 @@
         "@enormora/eslint-config-base": "0.0.61",
         "@enormora/eslint-config-node": "0.0.46",
         "@enormora/eslint-config-typescript": "0.0.69",
-        "@packtory/cli": "0.0.98",
+        "@packtory/cli": "0.0.99",
         "@packtory/github-release-gate": "0.0.61",
         "@sondr3/minitest": "0.1.2",
         "@stryker-mutator/api": "10.0.0",
