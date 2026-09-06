@@ -116,6 +116,8 @@ The mutator detects namespace, `z`, alias, and direct factory imports from:
 - `zod/v4/mini`
 
 It supports classic chains like `z.string().optional()` and mini calls like `z.optional(z.string())`.
+Zod 4.5 schema wrappers such as `z.deepPartial(...)`, `z.exactPartial(...)`, and `z.compile(...)` are
+recognized as schema values.
 
 ## Mutations
 
@@ -209,6 +211,9 @@ them has no effect. It emits a single mutant per schema value and skips schemas 
 `readonly` anywhere in that chain, so it never produces a redundant double `readonly`. `ZodReadonlyRemove`
 mirrors this: it removes `readonly` only when the underlying value is one of those freezable families, since
 removing it from a frozen primitive has no observable effect.
+
+`ZodCustomBehaviorRemove` also removes `z.property(...)` and spread `z.properties(...)` checks from
+`.check(...)` calls.
 
 Boolean and string literal values are left to Stryker’s built-in literal mutators.
 

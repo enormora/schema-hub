@@ -57,6 +57,11 @@ test('findValueByPath() returns a not-found result when the path exists only on 
     assert.deepStrictEqual(value, { found: false, pathItemKind: 'property' });
 });
 
+test('findValueByPath() returns an inherited property from a non-plain object', function () {
+    const value = findValueByPath(new URL('ftp://example.com'), [ 'protocol' ]);
+    assert.deepStrictEqual(value, { found: true, value: 'ftp:' });
+});
+
 test('findValueByPath() returns a not-found result when the path exist in the given array', function () {
     const value = findValueByPath([ 'a' ], [ 1 ]);
     assert.deepStrictEqual(value, { found: false, pathItemKind: 'key' });
@@ -110,6 +115,16 @@ test('findValueByPath() returns not-found result of a nested a array path inside
 test('findValueByPath() returns not-found result for a map when the path is incorrect', function () {
     const value = findValueByPath(new Map([ [ [ 'a' ], { foo: 'bar' } ] ]), [ 0, 'bar', 1 ]);
     assert.deepStrictEqual(value, { found: false, pathItemKind: 'key' });
+});
+
+test('findValueByPath() returns a map property when no entry matches the path item', function () {
+    const value = findValueByPath(new Map(), [ 'size' ]);
+    assert.deepStrictEqual(value, { found: true, value: 0 });
+});
+
+test('findValueByPath() prefers map entries over map properties', function () {
+    const value = findValueByPath(new Map([ [ 'size', 'entry' ] ]), [ 'size' ]);
+    assert.deepStrictEqual(value, { found: true, value: 'entry' });
 });
 
 test('findValueByPath() returns the value directly when it is a map with empty path', function () {
