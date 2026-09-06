@@ -86,11 +86,10 @@ interface ZodUnionGh6015IssueWorkaround<T extends readonly $ZodType[] = readonly
     readonly _zod: $ZodTypeInternals & { readonly def: $ZodUnionDef<T>; };
 }
 interface ZodDiscriminatedUnionGh6015IssueWorkaround<
-    Options extends readonly $ZodType[] = readonly $ZodType[],
-    Discriminator extends string = string
-> extends $ZodDiscriminatedUnion<Options, Discriminator> {
-    readonly _zod: $ZodDiscriminatedUnion<Options, Discriminator>['_zod'] & {
-        readonly def: $ZodDiscriminatedUnionDef<Options, Discriminator>;
+    Options extends readonly $ZodType[] = readonly $ZodType[]
+> extends $ZodType {
+    readonly _zod: $ZodTypeInternals & {
+        readonly def: $ZodDiscriminatedUnionDef<Options>;
         readonly propValues: zodUtil.PropValues;
     };
 }
@@ -110,17 +109,11 @@ export function isStrictObjectSchema(schema: unknown): schema is StrictObjectSch
 type LiteralSchema = $ZodLiteral<boolean> | $ZodLiteral<null> | $ZodLiteral<number> | $ZodLiteral<string>;
 type PrimitiveSchema = $ZodBoolean | $ZodNull | $ZodNumber | $ZodString | $ZodUndefined | LiteralSchema;
 
-export type FragmentTypeName = boolean | number | string | null;
-
 type FragmentUnionOptionShape = FieldShape & {
     readonly __typename: PrimitiveSchema;
 };
 
-export interface FragmentUnionOptionSchema extends StrictObjectSchema<FragmentUnionOptionShape> {
-    readonly _zod: StrictObjectSchema<FragmentUnionOptionShape>['_zod'] & {
-        readonly output: { readonly __typename: FragmentTypeName; };
-    };
-}
+export interface FragmentUnionOptionSchema extends StrictObjectSchema<FragmentUnionOptionShape> {}
 
 interface FieldTuple extends ZodTupleGh6015IssueWorkaround<readonly [FieldSchema, ...(readonly FieldSchema[])]> {}
 export interface FieldArray extends ZodArrayGh6015IssueWorkaround<FieldSchema> {}
@@ -236,10 +229,7 @@ export function isObjectOrListSchema(schema: FieldSchema): schema is ObjectOrLis
     return isStrictObjectSchema(schema) || isFieldArraySchema(schema) || isFieldTupleSchema(schema);
 }
 
-export type FragmentsSchema = ZodDiscriminatedUnionGh6015IssueWorkaround<
-    FragmentUnionOptionSchema[],
-    '__typename'
->;
+export type FragmentsSchema = ZodDiscriminatedUnionGh6015IssueWorkaround<FragmentUnionOptionSchema[]>;
 
 export function isFragmentsSchema(schema: FieldSchema): schema is FragmentsSchema {
     return schema instanceof $ZodDiscriminatedUnion;

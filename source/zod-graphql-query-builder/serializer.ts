@@ -1,7 +1,6 @@
 /* eslint-disable no-underscore-dangle -- we need to access _zod */
 import {
-    $ZodUndefined,
-    getDiscriminatedOption
+    $ZodUndefined
 } from 'zod/v4/core';
 import type { BuildContext } from './build-context.ts';
 import { isCustomScalarSchema } from './custom-scalar.ts';
@@ -365,13 +364,14 @@ function serializeFragments(
 ): NormalizedGraphqlValue {
     let referencedVariables = new Set<string>();
     const serializedFragments: string[] = [];
-    const discriminatorNames = Array.from(unionSchema._zod.propValues.__typename ?? []);
-    const pairedOptions = discriminatorNames.map(function (discriminatorName, index) {
-        const fragmentName = lookupDiscriminatorName(discriminatorName, index);
-        return {
-            discriminatorName: fragmentName,
-            fragmentSchema: getDiscriminatedOption(unionSchema, fragmentName)
-        };
+    const pairedOptions = unionSchema._zod.def.options.flatMap(function (fragmentSchema) {
+        const discriminatorNames = Array.from(fragmentSchema._zod.propValues?.__typename ?? []);
+        return discriminatorNames.map(function (discriminatorName, index) {
+            return {
+                discriminatorName: lookupDiscriminatorName(discriminatorName, index),
+                fragmentSchema
+            };
+        });
     });
     const sortedOptions = pairedOptions.toSorted(function (optionA, optionB) {
         return optionA.discriminatorName.toString().localeCompare(optionB.discriminatorName.toString());
