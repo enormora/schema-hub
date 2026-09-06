@@ -47,6 +47,25 @@ import { checkQuery } from '../test-libraries/check-build-output.ts';
     );
 
     test(
+        `builds a ${operationType} with fragments for multi-value typenames`,
+        checkQuery({
+            type: operationType,
+            buildSchema() {
+                const schema = z
+                    .strictObject({
+                        foo: z.discriminatedUnion('__typename', [
+                            z.strictObject({ __typename: z.literal([ 'A', 'B' ]), shared: z.string() }),
+                            z.strictObject({ __typename: z.literal('C'), other: z.string() })
+                        ])
+                    });
+                return schema;
+            },
+            expectedQuery: oneLine`${operationType} { foo { ... on A { __typename, shared },
+                ... on B { __typename, shared }, ... on C { __typename, other } } }`
+        })
+    );
+
+    test(
         `builds a ${operationType} with nested fragments`,
         checkQuery({
             type: operationType,

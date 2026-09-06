@@ -12,10 +12,26 @@ import {
 } from './zod-bindings.ts';
 
 const removeFallbackNames = new Set([ 'default', '_default', 'prefault', 'catch' ]);
-const removeCustomBehaviorNames = new Set([ 'refine', 'superRefine', 'transform', 'pipe', 'custom' ]);
+const removeCustomBehaviorNames = new Set([ 'refine', 'superRefine', 'transform', 'pipe', 'custom', 'property' ]);
 
 function removeFallback(path: MutationPath, bindings: ZodBindings): readonly BabelNode[] {
     return removeMethodOrWrapper(path, bindings, removeFallbackNames);
+}
+
+function isRemovableCheckArgument(
+    argument: BabelNode,
+    bindings: ZodBindings,
+    names: ReadonlySet<string>
+): boolean {
+    if (babel.isCallExpression(argument)) {
+        return names.has(getZodCallName(bindings, argument) ?? '');
+    }
+
+    if (!babel.isSpreadElement(argument) || !babel.isCallExpression(argument.argument)) {
+        return false;
+    }
+
+    return getZodCallName(bindings, argument.argument) === 'properties';
 }
 
 function removeChecksFromCheckCall(
@@ -28,10 +44,7 @@ function removeChecksFromCheckCall(
     }
 
     return call.arguments.flatMap(function (argument, index) {
-        if (
-            !babel.isCallExpression(argument) ||
-            !names.has(getZodCallName(bindings, argument) ?? '')
-        ) {
+        if (!isRemovableCheckArgument(argument, bindings, names)) {
             return [];
         }
 

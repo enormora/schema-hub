@@ -1,7 +1,6 @@
 /* eslint-disable no-underscore-dangle -- we need to access _zod */
 import {
-    $ZodUndefined,
-    type util
+    $ZodUndefined
 } from 'zod/v4/core';
 import type { BuildContext } from './build-context.ts';
 import { isCustomScalarSchema } from './custom-scalar.ts';
@@ -322,15 +321,14 @@ function wrapFragmentReferenceAsBody(
 }
 
 function lookupDiscriminatorName(
-    discriminatorNames: readonly unknown[],
+    discriminatorName: unknown,
     index: number
 ): DiscriminatorValue {
-    const value = discriminatorNames[index];
-    if (value === undefined || value === null) {
+    if (discriminatorName === undefined || discriminatorName === null) {
         throw new Error(`Fragment name for index ${index} is undefined`);
     }
     // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- discriminator values come from zod's untyped PropValues but are always primitives
-    return value as DiscriminatorValue;
+    return discriminatorName as DiscriminatorValue;
 }
 
 function serializeInlineUnionOption(
@@ -361,16 +359,19 @@ function serializeFragmentUnionOption(
 
 function serializeFragments(
     registry: FieldOptionsRegistry,
-    // eslint-disable-next-line functional/prefer-immutable-types -- discriminatorMap is a third-party zod util type that is only read
-    discriminatorMap: util.PropValues,
-    unionOptions: readonly FragmentUnionOptionSchema[],
+    unionSchema: FragmentsSchema,
     context: BuildContext
 ): NormalizedGraphqlValue {
     let referencedVariables = new Set<string>();
     const serializedFragments: string[] = [];
-    const discriminatorNames = Array.from(discriminatorMap.__typename ?? []);
-    const pairedOptions = unionOptions.map(function (fragmentSchema, index) {
-        return { discriminatorName: lookupDiscriminatorName(discriminatorNames, index), fragmentSchema };
+    const pairedOptions = unionSchema._zod.def.options.flatMap(function (fragmentSchema) {
+        const discriminatorNames = Array.from(fragmentSchema._zod.propValues?.__typename ?? []);
+        return discriminatorNames.map(function (discriminatorName, index) {
+            return {
+                discriminatorName: lookupDiscriminatorName(discriminatorName, index),
+                fragmentSchema
+            };
+        });
     });
     const sortedOptions = pairedOptions.toSorted(function (optionA, optionB) {
         return optionA.discriminatorName.toString().localeCompare(optionB.discriminatorName.toString());
@@ -413,7 +414,7 @@ function serializeUnionField(
 ): NormalizedGraphqlValue {
     return combineFieldSelectorAndFieldBody(
         fieldSelector,
-        serializeFragments(registry, unionSchema._zod.propValues, unionSchema._zod.def.options, context)
+        serializeFragments(registry, unionSchema, context)
     );
 }
 

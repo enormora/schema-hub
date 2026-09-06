@@ -45,37 +45,71 @@ function determinePathItemKind(pathItem: PropertyKey): 'key' | 'property' {
     return typeof pathItem === 'number' ? 'key' : 'property';
 }
 
-function findMapValueByPath(value: ReadonlyMap<unknown, unknown>, path: readonly PropertyKey[]): ValueResult {
-    if (isNonEmptyPath(path)) {
-        const [ mapEntryKey, ...remainingPath ] = path;
-        const entry = value.get(mapEntryKey);
+function prototypeOf(value: Indexable): Indexable | null {
+    const prototype: unknown = Object.getPrototypeOf(value);
+    return isIndexable(prototype) ? prototype : null;
+}
 
-        if (entry !== undefined) {
-            // eslint-disable-next-line @typescript-eslint/no-use-before-define -- recursion
-            return findValueByPath(entry, remainingPath);
-        }
+function hasPlainObjectPrototype(value: Indexable): boolean {
+    const prototype = prototypeOf(value);
+    const plainObjectPrototype: unknown = Object.prototype;
+    return prototype === plainObjectPrototype || prototype === null;
+}
 
-        return { found: false, pathItemKind: determinePathItemKind(mapEntryKey) };
+function hasInheritedProperty(value: Indexable, pathItem: PropertyKey): boolean {
+    if (hasPlainObjectPrototype(value)) {
+        return false;
     }
 
-    return { found: true, value };
+    let currentPrototype = prototypeOf(value);
+    while (currentPrototype !== null) {
+        if (Object.getOwnPropertyDescriptor(currentPrototype, pathItem) !== undefined) {
+            return true;
+        }
+
+        currentPrototype = prototypeOf(currentPrototype);
+    }
+
+    return false;
+}
+
+function findObjectPathItemValue(value: unknown, pathItem: PropertyKey): ValueResult {
+    if (!isIndexable(value) || !Object.hasOwn(value, pathItem) && !hasInheritedProperty(value, pathItem)) {
+        return { found: false, pathItemKind: determinePathItemKind(pathItem) };
+    }
+
+    return { found: true, value: value[pathItem] };
+}
+
+function findMapPathItemValue(value: ReadonlyMap<unknown, unknown>, pathItem: PropertyKey): ValueResult {
+    if (value.has(pathItem)) {
+        return { found: true, value: value.get(pathItem) };
+    }
+
+    return findObjectPathItemValue(value, pathItem);
+}
+
+function findPathItemValue(value: unknown, pathItem: PropertyKey): ValueResult {
+    return isMap(value)
+        ? findMapPathItemValue(value, pathItem)
+        : findObjectPathItemValue(value, pathItem);
 }
 
 export function findValueByPath(value: unknown, path: readonly PropertyKey[]): ValueResult {
     let currentValue = value;
     let currentPath = path;
 
-    while (!isMap(currentValue) && isNonEmptyPath(currentPath)) {
+    while (isNonEmptyPath(currentPath)) {
         const [ currentPathItem, ...remainingPath ] = currentPath;
+        const result = findPathItemValue(currentValue, currentPathItem);
 
-        if (!isIndexable(currentValue) || !Object.hasOwn(currentValue, currentPathItem)) {
-            return { found: false, pathItemKind: determinePathItemKind(currentPathItem) };
+        if (!result.found) {
+            return result;
         }
-        currentValue = currentValue[currentPathItem];
+
+        currentValue = result.value;
         currentPath = remainingPath;
     }
 
-    return isMap(currentValue)
-        ? findMapValueByPath(currentValue, currentPath)
-        : { found: true, value: currentValue };
+    return { found: true, value: currentValue };
 }

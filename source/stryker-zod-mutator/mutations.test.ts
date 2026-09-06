@@ -638,6 +638,30 @@ test('adds readonly through wrappers around a collection schema', function () {
     );
 });
 
+test('recognizes Zod 4.5 schema-returning APIs', function () {
+    assert.ok(
+        collectMutations(
+            "import { z } from 'zod/v4'; const schema = z.deepPartial(z.object({ a: z.string() }));",
+            'ZodOptionalAdd'
+        )
+            .includes('z.deepPartial(z.object({\n  a: z.string()\n})).optional()')
+    );
+    assert.ok(
+        collectMutations(
+            "import { z } from 'zod/mini'; const schema = z.exactPartial(z.object({ a: z.string() }));",
+            'ZodOptionalAdd'
+        )
+            .includes('z.optional(z.exactPartial(z.object({\n  a: z.string()\n})))')
+    );
+    assert.ok(
+        collectMutations(
+            "import { z } from 'zod/v4'; const schema = z.compile(z.object({ a: z.string() }));",
+            'ZodReadonlyAdd'
+        )
+            .includes('z.compile(z.object({\n  a: z.string()\n})).readonly()')
+    );
+});
+
 test('does not add readonly where freezing has no observable effect', function () {
     const nonFreezableSources = [
         "import { z } from 'zod/v4'; const schema = z.string();",
@@ -865,6 +889,23 @@ test('covers phase one presence and object operators', function () {
     ];
 
     cases.forEach(assertIncludesMutation);
+});
+
+test('removes Zod property checks as custom behavior', function () {
+    assert.ok(
+        collectMutations(
+            "import { z } from 'zod/v4'; const schema = z.instanceof(URL).check(z.property('protocol', z.literal('https:')));",
+            'ZodCustomBehaviorRemove'
+        )
+            .includes('z.instanceof(URL).check()')
+    );
+    assert.ok(
+        collectMutations(
+            "import { z } from 'zod/v4'; const schema = z.instanceof(URL).check(...z.properties({ protocol: z.literal('https:') }));",
+            'ZodCustomBehaviorRemove'
+        )
+            .includes('z.instanceof(URL).check()')
+    );
 });
 
 test('covers phase one check, collection, union, fallback, and coercion operators', function () {

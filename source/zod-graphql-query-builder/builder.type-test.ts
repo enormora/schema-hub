@@ -21,6 +21,21 @@ describe('buildGraphqlQuery / buildGraphqlMutation accept simple root schemas', 
         const schema = z.strictObject({ foo: z.string() }).readonly();
         expect(buildGraphqlQuery(schema)).type.toBe<string>();
     });
+
+    test('deep partial root schema', function () {
+        const schema = z.deepPartial(z.strictObject({ foo: z.strictObject({ bar: z.string() }) }));
+        expect(buildGraphqlQuery(schema)).type.toBe<string>();
+    });
+
+    test('exact partial root schema', function () {
+        const schema = z.strictObject({ foo: z.strictObject({ bar: z.string() }) }).exactPartial();
+        expect(buildGraphqlQuery(schema)).type.toBe<string>();
+    });
+
+    test('compiled root schema', function () {
+        const schema = z.compile(z.strictObject({ foo: z.strictObject({ bar: z.string() }) }));
+        expect(buildGraphqlQuery(schema)).type.toBe<string>();
+    });
 });
 
 describe('buildGraphqlQuery accepts wrapped field schemas', function () {

@@ -35,6 +35,9 @@ npm install @schema-hub/zod-graphql-query-builder
 
 ## Usage
 
+Root and field object schemas may be wrapped with `readonly`, `optional`, `deepPartial`, `exactPartial`,
+or `compile`; nested object selections are preserved.
+
 ### Query Name
 
 **Input:**
@@ -133,7 +136,7 @@ query { foo { ... on A { __typename, valueA }, ... on B { __typename, valueB } }
 
 When the same object schema reference is used in more than one place in a single operation, the builder
 automatically hoists its body into a named fragment to keep the produced query small. Two ways to opt in
-to this behavior — both rely on the builder being able to resolve a GraphQL type name for the schema.
+to this behavior, since both rely on the builder being able to resolve a GraphQL type name for the schema.
 
 1. Register a `typeName` explicitly via `graphqlFieldOptions`, or
 2. Include `__typename: z.literal('TheTypeName')` in the strict-object's shape.
@@ -182,8 +185,8 @@ Fragment names follow the pattern `<TypeName>_<index>`, where the index is a cou
 `buildGraphqlQuery` / `buildGraphqlMutation` call. Two distinct schemas registered with the same `typeName`
 are disambiguated by the counter (`User_1`, `User_2`).
 
-**Cyclic schemas.** Self-referential schemas — which would otherwise be inexpressible as a finite inline
-selection — work as long as a type name is resolvable for them. The cyclic reference is emitted as a
+**Cyclic schemas.** Self-referential schemas, which would otherwise be inexpressible as a finite inline
+selection, work as long as a type name is resolvable for them. The cyclic reference is emitted as a
 self-recursive fragment:
 
 ```typescript

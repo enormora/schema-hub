@@ -153,6 +153,39 @@ import { createCustomScalarSchema } from './custom-scalar.ts';
     );
 
     test(
+        `builds a ${operationType} with deep partial objects`,
+        checkQuery({
+            type: operationType,
+            buildSchema() {
+                return z.deepPartial(z.strictObject({ foo: z.strictObject({ bar: z.string() }) }));
+            },
+            expectedQuery: `${operationType} { foo { bar } }`
+        })
+    );
+
+    test(
+        `builds a ${operationType} with exact partial objects`,
+        checkQuery({
+            type: operationType,
+            buildSchema() {
+                return z.exactPartial(z.strictObject({ foo: z.strictObject({ bar: z.string() }) }));
+            },
+            expectedQuery: `${operationType} { foo { bar } }`
+        })
+    );
+
+    test(
+        `builds a ${operationType} with compiled objects`,
+        checkQuery({
+            type: operationType,
+            buildSchema() {
+                return z.compile(z.strictObject({ foo: z.strictObject({ bar: z.string() }) }));
+            },
+            expectedQuery: `${operationType} { foo { bar } }`
+        })
+    );
+
+    test(
         `builds a ${operationType} with union of primitives fields`,
         checkQuery({
             type: operationType,

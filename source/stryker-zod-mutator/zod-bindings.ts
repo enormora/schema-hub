@@ -83,7 +83,10 @@ const schemaFactoryNames = new Set([
     'nullable',
     'nullish',
     'nonoptional',
+    'deepPartial',
+    'exactPartial',
     'readonly',
+    'compile',
     '_default',
     'prefault',
     'catch',
@@ -345,10 +348,13 @@ export const valuePreservingWrapperNames = new Set([
     'nullable',
     'nullish',
     'nonoptional',
+    'deepPartial',
+    'exactPartial',
     '_default',
     'prefault',
     'catch',
-    'readonly'
+    'readonly',
+    'compile'
 ]);
 
 function isReceiverOfMethodCall(path: MutationPath): boolean {

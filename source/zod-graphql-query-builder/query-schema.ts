@@ -18,6 +18,8 @@ import {
     $ZodObject,
     type $ZodObjectConfig,
     type $ZodObjectDef,
+    $ZodOptional,
+    type $ZodOptionalDef,
     $ZodPipe,
     $ZodReadonly,
     type $ZodReadonlyDef,
@@ -39,8 +41,8 @@ import { type CustomScalarSchema, isCustomScalarSchema } from './custom-scalar.t
  * blow the TypeScript instantiation depth when used in a recursive union (see
  * enormora/schema-hub#285). Two upstream bugs are involved:
  *
- *   - colinhacks/zod#4611: the wrappers $ZodLazy/$ZodNullable/$ZodReadonly/
- *     $ZodPipe bubble `optin`/`optout`/`values`/`pattern`/`propValues` from
+ *   - colinhacks/zod#4611: the wrappers $ZodLazy/$ZodNullable/$ZodOptional/
+ *     $ZodReadonly/$ZodPipe bubble `optin`/`optout`/`values`/`pattern`/`propValues` from
  *     their inner generic. The maintainer is "not planning to pursue a fix."
  *
  *   - colinhacks/zod#6015: $ZodObject/$ZodArray/$ZodUnion/$ZodTuple/
@@ -59,6 +61,9 @@ interface ZodLazyGh4611IssueWorkaround<T extends $ZodType = $ZodType> extends $Z
 }
 interface ZodNullableGh4611IssueWorkaround<T extends $ZodType = $ZodType> extends $ZodType {
     readonly _zod: $ZodTypeInternals & { readonly def: $ZodNullableDef<T>; };
+}
+interface ZodOptionalGh4611IssueWorkaround<T extends $ZodType = $ZodType> extends $ZodType {
+    readonly _zod: $ZodTypeInternals & { readonly def: $ZodOptionalDef<T>; };
 }
 interface ZodReadonlyGh4611IssueWorkaround<T extends $ZodType = $ZodType> extends $ZodType {
     readonly _zod: $ZodTypeInternals & { readonly def: $ZodReadonlyDef<T>; };
@@ -104,15 +109,11 @@ export function isStrictObjectSchema(schema: unknown): schema is StrictObjectSch
 type LiteralSchema = $ZodLiteral<boolean> | $ZodLiteral<null> | $ZodLiteral<number> | $ZodLiteral<string>;
 type PrimitiveSchema = $ZodBoolean | $ZodNull | $ZodNumber | $ZodString | $ZodUndefined | LiteralSchema;
 
-export type FragmentTypeName = boolean | number | string | null;
+type FragmentUnionOptionShape = FieldShape & {
+    readonly __typename: PrimitiveSchema;
+};
 
-export interface FragmentUnionOptionSchema extends
-    StrictObjectSchema<
-        & FieldShape
-        & {
-            readonly __typename: PrimitiveSchema;
-        }
-    > {}
+export interface FragmentUnionOptionSchema extends StrictObjectSchema<FragmentUnionOptionShape> {}
 
 interface FieldTuple extends ZodTupleGh6015IssueWorkaround<readonly [FieldSchema, ...(readonly FieldSchema[])]> {}
 export interface FieldArray extends ZodArrayGh6015IssueWorkaround<FieldSchema> {}
@@ -129,11 +130,13 @@ export type NonWrappedFieldSchema =
     | StrictObjectSchema<FieldShape>;
 interface FieldLazy extends ZodLazyGh4611IssueWorkaround<FieldSchema> {}
 interface FieldNullable extends ZodNullableGh4611IssueWorkaround<FieldSchema> {}
+interface FieldOptional extends ZodOptionalGh4611IssueWorkaround<FieldSchema> {}
 interface FieldReadonly extends ZodReadonlyGh4611IssueWorkaround<FieldSchema> {}
 interface FieldPipe extends ZodPipeGh4611IssueWorkaround<FieldSchema, $ZodTransform> {}
 export type WrappedFieldSchema =
     | FieldLazy
     | FieldNullable
+    | FieldOptional
     | FieldPipe
     | FieldReadonly;
 export type FieldSchema = NonWrappedFieldSchema | WrappedFieldSchema;
@@ -143,7 +146,10 @@ function isWrappedFieldSchema(schema: FieldSchema): schema is WrappedFieldSchema
         return false;
     }
 
-    return schema instanceof $ZodLazy || schema instanceof $ZodPipe || schema instanceof $ZodNullable ||
+    return schema instanceof $ZodLazy ||
+        schema instanceof $ZodPipe ||
+        schema instanceof $ZodNullable ||
+        schema instanceof $ZodOptional ||
         schema instanceof $ZodReadonly;
 }
 
@@ -152,19 +158,37 @@ type UnwrappedChainResult = {
     wrapperElements: readonly WrappedFieldSchema[];
 };
 
+type InnerTypeFieldSchema = FieldNullable | FieldOptional | FieldReadonly;
+
+function isInnerTypeFieldSchema(schema: WrappedFieldSchema): schema is InnerTypeFieldSchema {
+    return schema instanceof $ZodNullable ||
+        schema instanceof $ZodOptional ||
+        schema instanceof $ZodReadonly;
+}
+
+function unwrapWrappedFieldSchema(schema: WrappedFieldSchema): FieldSchema {
+    if (schema instanceof $ZodLazy) {
+        return schema._zod.def.getter();
+    }
+
+    if (schema instanceof $ZodPipe) {
+        return schema._zod.def.in;
+    }
+
+    if (isInnerTypeFieldSchema(schema)) {
+        return schema._zod.def.innerType;
+    }
+
+    throw new TypeError('Unsupported wrapped field schema');
+}
+
 export function unwrapFieldSchemaChain(parent: FieldSchema): UnwrappedChainResult {
     let current: FieldSchema = parent;
     const wrapperElements: WrappedFieldSchema[] = [];
 
     while (isWrappedFieldSchema(current)) {
         wrapperElements.push(current);
-        if (current instanceof $ZodLazy) {
-            current = current._zod.def.getter();
-        } else if (current instanceof $ZodPipe) {
-            current = current._zod.def.in;
-        } else if (current instanceof $ZodNullable || current instanceof $ZodReadonly) {
-            current = current._zod.def.innerType;
-        }
+        current = unwrapWrappedFieldSchema(current);
     }
 
     return {
