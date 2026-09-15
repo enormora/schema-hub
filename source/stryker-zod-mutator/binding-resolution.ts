@@ -198,16 +198,16 @@ function exportSpecifiers(program: Program): readonly Readonly<babel.ExportSpeci
         });
 }
 
-function exportedName(specifier: Readonly<babel.ExportSpecifier>): string {
-    return babel.isIdentifier(specifier.exported) ? specifier.exported.name : specifier.exported.value;
+function exportSpecifierName(specifierName: Readonly<babel.Identifier | babel.StringLiteral>): string {
+    return specifierName.type === 'Identifier' ? specifierName.name : specifierName.value;
 }
 
 function localNameForExport(program: Program, exportName: string): string {
     const specifier = exportSpecifiers(program).find(function (candidate) {
-        return exportedName(candidate) === exportName;
+        return exportSpecifierName(candidate.exported) === exportName;
     });
 
-    return specifier?.local.name ?? exportName;
+    return specifier === undefined ? exportName : exportSpecifierName(specifier.local);
 }
 
 function resolveMember(
