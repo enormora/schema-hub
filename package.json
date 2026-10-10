@@ -9,7 +9,7 @@
         "url": "git+https://github.com/enormora/schema-hub.git"
     },
     "dependencies": {
-        "@babel/parser": "8.0.6",
+        "@babel/parser": "8.0.7",
         "@babel/types": "8.0.6",
         "graphql": "17.0.2",
         "ky": "2.1.0",
