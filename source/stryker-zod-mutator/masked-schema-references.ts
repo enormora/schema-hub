@@ -1,6 +1,6 @@
 import * as babel from '@babel/types';
 import type { Node as BabelNode } from '@babel/types';
-import { findProgram, getMemberName, isExpressionNode, type MutationPath } from './ast.ts';
+import { findProgram, getMemberName, type MutationPath } from './ast.ts';
 import { declaratorInitId } from './declarator-init-id.ts';
 import { getZodCallName, type ZodBindings } from './zod-bindings.ts';
 
@@ -64,7 +64,7 @@ function childNodes(node: BabelNode): readonly BabelNode[] {
 }
 
 type IdentifierUse = {
-    readonly node: BabelNode;
+    readonly node: babel.Identifier;
     readonly parent: BabelNode;
     readonly grandparent: BabelNode | undefined;
 };
@@ -116,17 +116,7 @@ function maskedAsWrapperArgument(
 ): boolean {
     const { node, parent } = use;
 
-    if (!babel.isCallExpression(parent)) {
-        return false;
-    }
-
-    const firstArgument = parent.arguments[0];
-
-    if (!isExpressionNode(firstArgument)) {
-        return false;
-    }
-
-    if (firstArgument !== node) {
+    if (!babel.isCallExpression(parent) || parent.arguments[0] !== node) {
         return false;
     }
 
@@ -136,11 +126,12 @@ function maskedAsWrapperArgument(
 function maskedAsWrapperReceiver(use: IdentifierUse, maskingWrappers: ReadonlySet<string>): boolean {
     const { node, parent, grandparent } = use;
 
-    if (!babel.isMemberExpression(parent) || parent.object !== node) {
-        return false;
-    }
-
-    if (!babel.isCallExpression(grandparent) || grandparent.callee !== parent) {
+    if (
+        !babel.isMemberExpression(parent) ||
+        parent.object !== node ||
+        !babel.isCallExpression(grandparent) ||
+        grandparent.callee !== parent
+    ) {
         return false;
     }
 
