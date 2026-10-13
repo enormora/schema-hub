@@ -27,12 +27,8 @@ type NodeMutator = {
 };
 
 function selectOperators(settings: ZodMutatorSettings): readonly ZodMutationOperator[] {
-    const categoryFilter = settings.includedCategories === undefined
-        ? new Set(Object.values(zodMutationOperatorCategories))
-        : new Set(settings.includedCategories);
-    const operatorFilter = settings.includedOperators === undefined
-        ? new Set(zodMutationOperators)
-        : new Set(settings.includedOperators);
+    const categoryFilter = new Set(settings.includedCategories ?? Object.values(zodMutationOperatorCategories));
+    const operatorFilter = new Set(settings.includedOperators ?? zodMutationOperators);
 
     return zodMutationOperators.filter(function (operator) {
         return categoryFilter.has(zodMutationOperatorCategories[operator]) && operatorFilter.has(operator);
