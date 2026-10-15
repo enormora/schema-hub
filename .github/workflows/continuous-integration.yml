@@ -150,8 +150,8 @@ jobs:
               with:
                   persist-credentials: false
             - uses: ./.github/actions/setup
-            - name: Check packages
-              run: "npx just check-packages"
+            - name: Publish dry run
+              run: "npx just packtory-dry-run"
 
     workflow-security:
         name: Workflow Security Analysis
