@@ -21,8 +21,8 @@
         "@enormora/eslint-config-base": "0.0.69",
         "@enormora/eslint-config-node": "0.0.48",
         "@enormora/eslint-config-typescript": "0.0.77",
-        "@packtory/cli": "0.0.120",
-        "@packtory/github-release-gate": "0.0.81",
+        "@packtory/cli": "0.0.124",
+        "@packtory/github-release-gate": "0.0.85",
         "@sondr3/minitest": "0.1.2",
         "@stryker-mutator/api": "10.0.0",
         "@stryker-mutator/core": "10.0.0",
@@ -40,7 +40,7 @@
         "zod": "4.6.6"
     },
     "engines": {
-        "node": "^24 || ^26"
+        "node": "^24.0.0 || ^26.0.0"
     },
     "peerDependencies": {
         "@stryker-mutator/api": ">=9.6.0 <11",

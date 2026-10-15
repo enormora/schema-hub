@@ -150,8 +150,8 @@ jobs:
               with:
                   persist-credentials: false
             - uses: ./.github/actions/setup
-            - name: Run Packtory dry-run
-              run: "npx just packtory-dry-run"
+            - name: Check packages
+              run: "npx just check-packages"
 
     workflow-security:
         name: Workflow Security Analysis

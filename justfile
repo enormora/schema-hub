@@ -38,3 +38,6 @@ packtory-publish: compile
 
 release-gate: compile
     github-release-gate
+
+check-packages: compile
+    packtory tree @schema-hub/zod-error-formatter
