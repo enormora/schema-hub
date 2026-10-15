@@ -82,7 +82,10 @@ jobs:
             - name: Publish packages
               id: publish-packages
               continue-on-error: true
-              run: npx just packtory-publish
+              run: |
+                  set -o pipefail
+                  mkdir -p target/release
+                  npx just packtory-publish 2>&1 | tee target/release/publish.log
             # The `sigstore` wrapper used by `libnpmpublish` hardcodes
             # `fetchOnConflict: false`, so a retried Rekor POST after a
             # transient blip surfaces as
@@ -93,5 +96,8 @@ jobs:
             - name: Re-publish after a transient sigstore failure
               if: steps.publish-packages.outcome == 'failure'
               run: |
+                  if ! grep -Eiq 'equivalent entry already exists|ECONNRESET|ETIMEDOUT|EAI_AGAIN|status (429|500|502|503|504)' target/release/publish.log; then
+                      exit 1
+                  fi
                   sleep 10
                   npx just packtory-publish
