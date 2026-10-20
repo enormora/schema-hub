@@ -17,7 +17,7 @@ concurrency:
 
 jobs:
     dispatch:
-        runs-on: ubuntu-24.04
+        runs-on: ubuntu-26.04
         name: Dispatch publish workflow
         permissions:
             actions: write # required to dispatch the publish workflow via gh CLI

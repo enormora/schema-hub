@@ -11,7 +11,7 @@ concurrency:
 
 jobs:
     evaluate-gate:
-        runs-on: ubuntu-24.04
+        runs-on: ubuntu-26.04
         name: Evaluate GitHub release gate
         permissions:
             contents: read # required for actions/checkout to read the workflow source
@@ -51,7 +51,7 @@ jobs:
     publish:
         needs: evaluate-gate
         if: needs.evaluate-gate.outputs.should_publish == 'true'
-        runs-on: ubuntu-24.04
+        runs-on: ubuntu-26.04
         name: Publish packages
         permissions:
             contents: read # required for actions/checkout to read the workflow source
