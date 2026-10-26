@@ -24,7 +24,7 @@
         "@packtory/cli": "0.0.124",
         "@packtory/github-release-gate": "0.0.85",
         "@sondr3/minitest": "0.1.2",
-        "@stryker-mutator/api": "10.0.0",
+        "@stryker-mutator/api": "10.1.0",
         "@stryker-mutator/core": "10.0.0",
         "@stryker-mutator/instrumenter": "10.0.0",
         "@types/babel__generator": "7.27.0",
