@@ -18,9 +18,9 @@
     },
     "devDependencies": {
         "@babel/generator": "8.0.10",
-        "@enormora/eslint-config-base": "0.0.72",
-        "@enormora/eslint-config-node": "0.0.51",
-        "@enormora/eslint-config-typescript": "0.0.80",
+        "@enormora/eslint-config-base": "0.0.74",
+        "@enormora/eslint-config-node": "0.0.52",
+        "@enormora/eslint-config-typescript": "0.0.82",
         "@packtory/cli": "0.0.124",
         "@packtory/github-release-gate": "0.0.85",
         "@sondr3/minitest": "0.1.2",
