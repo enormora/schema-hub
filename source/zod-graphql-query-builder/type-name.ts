@@ -34,7 +34,7 @@ function extractLiteralStringValue(schema: FieldSchema): string | null {
 }
 
 function inferTypeNameFromShape(schema: StrictObjectSchema<FieldShape>): string | null {
-    const typenameField = schema._zod.def.shape['__typename'];
+    const typenameField = schema._zod.def.shape.__typename;
     if (typenameField === undefined) {
         return null;
     }
