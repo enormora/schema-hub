@@ -3,9 +3,14 @@
     "compilerOptions": {
         "tsBuildInfoFile": "../target/buildcache/sources.tsbuildinfo",
         "rootDir": "..",
-        "types": ["node"],
         "skipLibCheck": true
     },
-    "include": ["./**/*.ts"],
-    "exclude": ["./**/*.test.ts", "./**/*.type-test.ts", "./test-libraries/**/*.ts"]
+    "include": [
+        "./**/*.ts"
+    ],
+    "exclude": [
+        "./**/*.test.ts",
+        "./**/*.type-test.ts",
+        "./test-libraries/**/*.ts"
+    ]
 }

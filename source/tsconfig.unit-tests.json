@@ -3,9 +3,15 @@
     "compilerOptions": {
         "tsBuildInfoFile": "../target/buildcache/unit-tests.tsbuildinfo",
         "rootDir": "..",
-        "types": ["node"],
         "skipLibCheck": true
     },
-    "references": [{ "path": "./tsconfig.sources.json" }],
-    "include": ["./**/*.test.ts", "./test-libraries/**/*.ts"]
+    "references": [
+        {
+            "path": "./tsconfig.sources.json"
+        }
+    ],
+    "include": [
+        "./**/*.test.ts",
+        "./test-libraries/**/*.ts"
+    ]
 }

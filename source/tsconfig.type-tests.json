@@ -4,9 +4,14 @@
         "tsBuildInfoFile": "../target/buildcache/type-tests.tsbuildinfo",
         "rootDir": "..",
         "noEmit": true,
-        "types": ["node"],
         "skipLibCheck": true
     },
-    "references": [{ "path": "./tsconfig.sources.json" }],
-    "include": ["./**/*.type-test.ts"]
+    "references": [
+        {
+            "path": "./tsconfig.sources.json"
+        }
+    ],
+    "include": [
+        "./**/*.type-test.ts"
+    ]
 }

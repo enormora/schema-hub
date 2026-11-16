@@ -3,10 +3,15 @@
     "compilerOptions": {
         "tsBuildInfoFile": "../target/buildcache/integration-tests.tsbuildinfo",
         "rootDir": "..",
-        "types": ["node"],
         "skipLibCheck": true
     },
-    "references": [{ "path": "../source/tsconfig.sources.json" }],
-    "include": ["./**/*.ts"],
+    "references": [
+        {
+            "path": "../source/tsconfig.sources.json"
+        }
+    ],
+    "include": [
+        "./**/*.ts"
+    ],
     "exclude": []
 }

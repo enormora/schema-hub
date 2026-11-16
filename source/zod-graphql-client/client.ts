@@ -66,7 +66,7 @@ export function extractDataOrThrow<Data>(result: OperationResultForType<Data>): 
 
 async function parseServerResponse(response: Response): Promise<OperationResultForType<unknown>> {
     try {
-        const responseBody = await response.json() as unknown;
+        const responseBody = await response.json();
         return {
             success: true,
             data: responseBody
