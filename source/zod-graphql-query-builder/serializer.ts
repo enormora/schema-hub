@@ -365,7 +365,7 @@ function serializeFragments(
     let referencedVariables = new Set<string>();
     const serializedFragments: string[] = [];
     const pairedOptions = unionSchema._zod.def.options.flatMap(function (fragmentSchema) {
-        const discriminatorNames = Array.from(fragmentSchema._zod.propValues?.['__typename'] ?? []);
+        const discriminatorNames = Array.from(fragmentSchema._zod.propValues?.__typename ?? []);
         return discriminatorNames.map(function (discriminatorName, index) {
             return {
                 discriminatorName: lookupDiscriminatorName(discriminatorName, index),
