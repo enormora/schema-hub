@@ -24,7 +24,7 @@
         "@enormora/tsconfig-node": "0.0.3",
         "@packtory/cli": "0.0.127",
         "@packtory/github-release-gate": "0.0.88",
-        "@sondr3/minitest": "0.1.2",
+        "@sondr3/minitest": "1.0.0",
         "@stryker-mutator/api": "10.1.1",
         "@stryker-mutator/core": "10.1.1",
         "@stryker-mutator/instrumenter": "10.1.1",
