@@ -1,5 +1,4 @@
-import * as babel from '@babel/types';
-import type { Node as BabelNode } from '@babel/types';
+import { isCallExpression, type Node as BabelNode } from '@babel/types';
 import type { CallExpression, MutationPath } from './ast.ts';
 import type { ZodMutationOperator } from './operator.ts';
 import { readZodBindings, type ZodBindings } from './zod-bindings.ts';
@@ -23,7 +22,7 @@ export function createDefinition(
 }
 
 export function callNode(path: MutationPath): CallExpression | null {
-    return babel.isCallExpression(path.node) ? path.node : null;
+    return isCallExpression(path.node) ? path.node : null;
 }
 
 export function createZodMutator(definition: MutationDefinition, env: ResolverEnv): ZodMutator {

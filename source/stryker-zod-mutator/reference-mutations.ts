@@ -1,5 +1,11 @@
-import * as babel from '@babel/types';
-import type { Node as BabelNode } from '@babel/types';
+import {
+    isArrayExpression,
+    isCallExpression,
+    isIdentifier,
+    isObjectProperty,
+    type Identifier,
+    type Node as BabelNode
+} from '@babel/types';
 import type { MutationPath, SchemaExpression } from './ast.ts';
 import { createDefinition, type MutationDefinition } from './mutation-definition.ts';
 import {
@@ -26,45 +32,45 @@ function ancestorNode(path: MutationPath, depth: number): BabelNode | null {
 }
 
 function isZodObjectFactory(node: Readonly<BabelNode> | null, bindings: ZodBindings): boolean {
-    return babel.isCallExpression(node) && isObjectLikeFactory(getZodCallName(bindings, node) ?? '');
+    return isCallExpression(node) && isObjectLikeFactory(getZodCallName(bindings, node) ?? '');
 }
 
 function isZodCall(node: Readonly<BabelNode> | null, bindings: ZodBindings): boolean {
-    return babel.isCallExpression(node) && getZodCallName(bindings, node) !== null;
+    return isCallExpression(node) && getZodCallName(bindings, node) !== null;
 }
 
 function isZodObjectFieldValue(
-    reference: Readonly<babel.Identifier>,
+    reference: Readonly<Identifier>,
     path: MutationPath,
     bindings: ZodBindings
 ): boolean {
     const property = ancestorNode(path, ancestorDepth.property);
-    const holdsReference = babel.isObjectProperty(property) && !property.computed && property.value === reference;
+    const holdsReference = isObjectProperty(property) && !property.computed && property.value === reference;
 
     return holdsReference && isZodObjectFactory(ancestorNode(path, ancestorDepth.objectFactory), bindings);
 }
 
-function isZodCallArgument(reference: Readonly<babel.Identifier>, path: MutationPath, bindings: ZodBindings): boolean {
+function isZodCallArgument(reference: Readonly<Identifier>, path: MutationPath, bindings: ZodBindings): boolean {
     const call = ancestorNode(path, ancestorDepth.property);
 
-    return babel.isCallExpression(call) && call.arguments.includes(reference) && isZodCall(call, bindings);
+    return isCallExpression(call) && call.arguments.includes(reference) && isZodCall(call, bindings);
 }
 
 function isZodOptionsElement(
-    reference: Readonly<babel.Identifier>,
+    reference: Readonly<Identifier>,
     path: MutationPath,
     bindings: ZodBindings
 ): boolean {
     const options = ancestorNode(path, ancestorDepth.property);
-    const isElement = babel.isArrayExpression(options) && options.elements.includes(reference);
+    const isElement = isArrayExpression(options) && options.elements.includes(reference);
     const call = ancestorNode(path, ancestorDepth.optionsCall);
 
-    return isElement && babel.isArrayExpression(options) && isZodCall(call, bindings) &&
-        babel.isCallExpression(call) && call.arguments.includes(options);
+    return isElement && isArrayExpression(options) && isZodCall(call, bindings) &&
+        isCallExpression(call) && call.arguments.includes(options);
 }
 
 function isSchemaReferenceSlot(
-    reference: Readonly<babel.Identifier>,
+    reference: Readonly<Identifier>,
     path: MutationPath,
     bindings: ZodBindings
 ): boolean {
@@ -81,7 +87,7 @@ function widenReferencedSchema(path: MutationPath, bindings: ZodBindings): reado
     const reference = path.node;
 
     if (
-        !babel.isIdentifier(reference) || !isSchemaReferenceSlot(reference, path, bindings) ||
+        !isIdentifier(reference) || !isSchemaReferenceSlot(reference, path, bindings) ||
         !widensToDistinguishableSchema(reference, bindings)
     ) {
         return [];

@@ -1,5 +1,4 @@
-import * as babel from '@babel/types';
-import type { Node as BabelNode } from '@babel/types';
+import { isCallExpression, type Node as BabelNode } from '@babel/types';
 import {
     addWrapperOrMethod,
     removeMethodOrWrapper,
@@ -42,7 +41,7 @@ function lastArgument(call: CallExpression): BabelNode | null {
 }
 
 function enclosingOutputRelation(child: BabelNode, parent: BabelNode, bindings: ZodBindings): OutputRelation {
-    if (!babel.isCallExpression(parent) || lastArgument(parent) !== child) {
+    if (!isCallExpression(parent) || lastArgument(parent) !== child) {
         return 'none';
     }
 

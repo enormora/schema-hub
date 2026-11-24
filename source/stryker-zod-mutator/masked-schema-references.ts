@@ -1,5 +1,18 @@
-import * as babel from '@babel/types';
-import type { Node as BabelNode } from '@babel/types';
+import {
+    isArrayExpression,
+    isCallExpression,
+    isIdentifier,
+    isMemberExpression,
+    isNode,
+    isObjectMethod,
+    isObjectProperty,
+    isProgram,
+    isReferenced,
+    isTSTypeQuery,
+    isVariableDeclaration,
+    type Identifier,
+    type Node as BabelNode
+} from '@babel/types';
 import { findProgram, getMemberName, type MutationPath } from './ast.ts';
 import { declaratorInitId } from './declarator-init-id.ts';
 import { getZodCallName, type ZodBindings } from './zod-bindings.ts';
@@ -15,12 +28,12 @@ function isNonExportedModuleConst(declarationPath: MutationPath | null): boolean
     const declaration = declarationPath?.node;
     const container = declarationPath?.parentPath?.node;
 
-    return babel.isVariableDeclaration(declaration) &&
+    return isVariableDeclaration(declaration) &&
         declaration.kind === 'const' &&
-        babel.isProgram(container);
+        isProgram(container);
 }
 
-function constIdForInit(path: MutationPath): babel.Identifier | null {
+function constIdForInit(path: MutationPath): Identifier | null {
     const declaratorPath = path.parentPath;
     const id = declaratorInitId(declaratorPath, path.node);
 
@@ -30,13 +43,13 @@ function constIdForInit(path: MutationPath): babel.Identifier | null {
 function isUnionCall(unionCallPath: MutationPath, bindings: ZodBindings): boolean {
     const unionCall = unionCallPath.node;
 
-    return babel.isCallExpression(unionCall) && unionFactoryNames.has(getZodCallName(bindings, unionCall) ?? '');
+    return isCallExpression(unionCall) && unionFactoryNames.has(getZodCallName(bindings, unionCall) ?? '');
 }
 
-function constIdForUnionOption(path: MutationPath, bindings: ZodBindings): babel.Identifier | null {
+function constIdForUnionOption(path: MutationPath, bindings: ZodBindings): Identifier | null {
     const optionsPath = path.parentPath;
 
-    if (optionsPath === null || !babel.isArrayExpression(optionsPath.node)) {
+    if (optionsPath === null || !isArrayExpression(optionsPath.node)) {
         return null;
     }
 
@@ -49,22 +62,22 @@ function constIdForUnionOption(path: MutationPath, bindings: ZodBindings): babel
     return constIdForInit(unionCallPath);
 }
 
-function topLevelPathConstId(path: MutationPath, bindings: ZodBindings): babel.Identifier | null {
+function topLevelPathConstId(path: MutationPath, bindings: ZodBindings): Identifier | null {
     return constIdForInit(path) ?? constIdForUnionOption(path, bindings);
 }
 
 function childNodes(node: BabelNode): readonly BabelNode[] {
     return Object.values(node).flatMap(function (value) {
         if (Array.isArray(value)) {
-            return value.filter(babel.isNode);
+            return value.filter(isNode);
         }
 
-        return babel.isNode(value) ? [ value ] : [];
+        return isNode(value) ? [ value ] : [];
     });
 }
 
 type IdentifierUse = {
-    readonly node: babel.Identifier;
+    readonly node: Identifier;
     readonly parent: BabelNode;
     readonly grandparent: BabelNode | undefined;
 };
@@ -75,7 +88,7 @@ function collectIdentifierUses(
     ancestors: readonly BabelNode[]
 ): readonly IdentifierUse[] {
     const [ parent, grandparent ] = ancestors;
-    const here: readonly IdentifierUse[] = parent !== undefined && babel.isIdentifier(node) && node.name === name
+    const here: readonly IdentifierUse[] = parent !== undefined && isIdentifier(node) && node.name === name
         ? [ { node, parent, grandparent } ]
         : [];
     const deeper = [ node, ...ancestors ];
@@ -90,19 +103,19 @@ function collectIdentifierUses(
 function isPropertyOrMemberName(use: IdentifierUse): boolean {
     const { node, parent } = use;
 
-    if (babel.isObjectProperty(parent) || babel.isObjectMethod(parent)) {
+    if (isObjectProperty(parent) || isObjectMethod(parent)) {
         return parent.key === node && !parent.computed;
     }
 
-    return babel.isMemberExpression(parent) && parent.property === node && !parent.computed;
+    return isMemberExpression(parent) && parent.property === node && !parent.computed;
 }
 
 function isTypeOnlyReference(use: IdentifierUse): boolean {
-    return babel.isTSTypeQuery(use.parent);
+    return isTSTypeQuery(use.parent);
 }
 
 function isReference(use: IdentifierUse): boolean {
-    return babel.isReferenced(use.node, use.parent, use.grandparent);
+    return isReferenced(use.node, use.parent, use.grandparent);
 }
 
 function isForeignBinding(use: IdentifierUse, constIdNode: BabelNode): boolean {
@@ -116,7 +129,7 @@ function maskedAsWrapperArgument(
 ): boolean {
     const { node, parent } = use;
 
-    if (!babel.isCallExpression(parent) || parent.arguments[0] !== node) {
+    if (!isCallExpression(parent) || parent.arguments[0] !== node) {
         return false;
     }
 
@@ -127,9 +140,9 @@ function maskedAsWrapperReceiver(use: IdentifierUse, maskingWrappers: ReadonlySe
     const { node, parent, grandparent } = use;
 
     if (
-        !babel.isMemberExpression(parent) ||
+        !isMemberExpression(parent) ||
         parent.object !== node ||
-        !babel.isCallExpression(grandparent) ||
+        !isCallExpression(grandparent) ||
         grandparent.callee !== parent
     ) {
         return false;

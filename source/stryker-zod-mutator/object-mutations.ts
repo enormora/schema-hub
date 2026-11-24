@@ -1,5 +1,11 @@
-import * as babel from '@babel/types';
-import type { Node as BabelNode } from '@babel/types';
+import {
+    cloneNode,
+    isCallExpression,
+    isObjectExpression,
+    isObjectProperty,
+    type CallExpression,
+    type Node as BabelNode
+} from '@babel/types';
 import {
     cloneExpression,
     isExpressionNode,
@@ -54,12 +60,12 @@ function mutateObjectFields(
 
     const shape = call.arguments[0];
 
-    if (!babel.isObjectExpression(shape)) {
+    if (!isObjectExpression(shape)) {
         return [];
     }
 
     return shape.properties.flatMap(function (property, index) {
-        if (!babel.isObjectProperty(property)) {
+        if (!isObjectProperty(property)) {
             return [];
         }
 
@@ -69,7 +75,7 @@ function mutateObjectFields(
             return [];
         }
 
-        const clone = babel.cloneNode<babel.CallExpression>(call, true);
+        const clone = cloneNode<CallExpression>(call, true);
         clone.arguments[0] = mutatedShape;
         return [ clone ];
     });
@@ -80,7 +86,7 @@ function buildFieldWrapper(
     value: SchemaExpression,
     style: ZodApiStyle,
     wrapperName: string
-): babel.CallExpression | null {
+): CallExpression | null {
     return style === 'classic'
         ? memberCall(cloneExpression(value), wrapperName, [])
         : buildZodCall(bindings, style, wrapperName, [ cloneExpression(value) ]);
@@ -89,7 +95,7 @@ function buildFieldWrapper(
 function objectFieldValue(objectExpression: ObjectExpression, index: number): SchemaExpression | null {
     const property = objectExpression.properties[index];
 
-    return babel.isObjectProperty(property) && isExpressionNode(property.value)
+    return isObjectProperty(property) && isExpressionNode(property.value)
         ? property.value
         : null;
 }
@@ -139,7 +145,7 @@ const defaultPolicyByObjectFactory = new Map([
 ]);
 
 function classicObjectFactoryName(bindings: ZodBindings, expression: SchemaExpression): string | null {
-    if (!babel.isCallExpression(expression) || expressionStyle(bindings, expression) !== 'classic') {
+    if (!isCallExpression(expression) || expressionStyle(bindings, expression) !== 'classic') {
         return null;
     }
 
