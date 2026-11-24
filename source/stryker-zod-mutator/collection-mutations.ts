@@ -124,11 +124,10 @@ function swapRecordFactory(path: MutationPath, bindings: ZodBindings): readonly 
     const call = callNode(path);
     const currentName = call === null ? null : getZodCallName(bindings, call);
 
-    if (call === null || currentName === null || ![ 'record', 'partialRecord', 'looseRecord' ].includes(currentName)) {
-        return [];
-    }
-
-    if (hasInfiniteStringKey(bindings, call)) {
+    if (
+        call === null || currentName === null || ![ 'record', 'partialRecord', 'looseRecord' ].includes(currentName) ||
+        hasInfiniteStringKey(bindings, call)
+    ) {
         return [];
     }
 

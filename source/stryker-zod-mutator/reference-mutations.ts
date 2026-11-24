@@ -80,11 +80,10 @@ function widensToDistinguishableSchema(reference: SchemaExpression, bindings: Zo
 function widenReferencedSchema(path: MutationPath, bindings: ZodBindings): readonly BabelNode[] {
     const reference = path.node;
 
-    if (!babel.isIdentifier(reference) || !isSchemaReferenceSlot(reference, path, bindings)) {
-        return [];
-    }
-
-    if (!widensToDistinguishableSchema(reference, bindings)) {
+    if (
+        !babel.isIdentifier(reference) || !isSchemaReferenceSlot(reference, path, bindings) ||
+        !widensToDistinguishableSchema(reference, bindings)
+    ) {
         return [];
     }
 

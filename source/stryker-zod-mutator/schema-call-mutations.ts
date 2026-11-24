@@ -119,11 +119,7 @@ export function addWrapperOrMethod(
     const expression = zodSchemaExpression(path, bindings);
     const style = expression === null ? null : expressionStyle(bindings, expression);
 
-    if (expression === null || style === null) {
-        return [];
-    }
-
-    if (shouldSkipWrapping(path, bindings, expression, name)) {
+    if (expression === null || style === null || shouldSkipWrapping(path, bindings, expression, name)) {
         return [];
     }
 

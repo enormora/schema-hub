@@ -216,11 +216,7 @@ export function getZodCallName(bindings: ZodBindings, call: CallExpression): str
         return getDirectBinding(bindings, call.callee.name)?.importedName ?? null;
     }
 
-    if (isZodNamespaceMember(bindings, call.callee)) {
-        return getMemberName(call.callee);
-    }
-
-    if (isCoerceCall(bindings, call)) {
+    if (isZodNamespaceMember(bindings, call.callee) || isCoerceCall(bindings, call)) {
         return getMemberName(call.callee);
     }
 

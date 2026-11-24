@@ -15,11 +15,10 @@ import {
 } from './binding-resolution.ts';
 
 function addReadonlyToFreezableSchema(path: MutationPath, bindings: ZodBindings): readonly BabelNode[] {
-    if (!isExpressionNode(path.node) || !isSchemaValueChainRoot(path, bindings)) {
-        return [];
-    }
-
-    if (!producesFreezableValue(bindings, path.node) || chainAppliesReadonly(bindings, path.node)) {
+    if (
+        !isExpressionNode(path.node) || !isSchemaValueChainRoot(path, bindings) ||
+        !producesFreezableValue(bindings, path.node) || chainAppliesReadonly(bindings, path.node)
+    ) {
         return [];
     }
 
