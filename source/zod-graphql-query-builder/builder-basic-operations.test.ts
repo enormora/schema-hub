@@ -69,13 +69,8 @@ import { variablePlaceholder } from './values/variable-placeholder.ts';
         checkQuery({
             type: operationType,
             buildSchema(builder) {
-                const schema = z
-                    .strictObject({
-                        foo: z.nullable(builder
-                            .registerFieldOptions(z.string(), {
-                                parameters: { bar: 'baz' }
-                            }))
-                    });
+                const fooSchema = builder.registerFieldOptions(z.string(), { parameters: { bar: 'baz' } });
+                const schema = z.strictObject({ foo: z.nullable(fooSchema) });
 
                 return schema;
             },
@@ -89,15 +84,13 @@ import { variablePlaceholder } from './values/variable-placeholder.ts';
         checkQuery({
             type: operationType,
             buildSchema(builder) {
+                const innerFooSchema = builder.registerFieldOptions(z.string(), {
+                    parameters: { bar: 'inner-overwritten', baz: 'inner-only' }
+                });
                 const schema = z
                     .strictObject({
                         foo: builder.registerFieldOptions(
-                            z.nullable(
-                                builder
-                                    .registerFieldOptions(z.string(), {
-                                        parameters: { bar: 'inner-overwritten', baz: 'inner-only' }
-                                    })
-                            ),
+                            z.nullable(innerFooSchema),
                             {
                                 parameters: {
                                     bar: 'outer-overwritten',
@@ -149,7 +142,8 @@ import { variablePlaceholder } from './values/variable-placeholder.ts';
         checkQuery({
             type: operationType,
             buildSchema() {
-                const schema = z.strictObject({ foo: z.strictObject({ bar: z.strictObject({ baz: z.number() }) }) });
+                const barSchema = z.strictObject({ baz: z.number() });
+                const schema = z.strictObject({ foo: z.strictObject({ bar: barSchema }) });
                 return schema;
             },
             expectedQuery: `${operationType} { foo { bar { baz } } }`
@@ -161,9 +155,10 @@ import { variablePlaceholder } from './values/variable-placeholder.ts';
         checkQuery({
             type: operationType,
             buildSchema() {
+                const barSchema = z.strictObject({ baz: z.number() });
                 const schema = z
                     .strictObject({
-                        foo: z.strictObject({ bar: z.strictObject({ baz: z.number() }) }),
+                        foo: z.strictObject({ bar: barSchema }),
                         qux: z.boolean()
                     });
                 return schema;

@@ -52,10 +52,8 @@ test('recognizes namespace, direct, computed, and coercion call styles', functio
     const namespaceCall = callExpression(memberExpression(identifier('z'), identifier('string')), []);
     const directCall = callExpression(identifier('text'), []);
     const computedCall = callExpression(memberExpression(identifier('z'), stringLiteral('string'), true), []);
-    const coerceCall = callExpression(
-        memberExpression(memberExpression(identifier('z'), identifier('coerce')), identifier('number')),
-        []
-    );
+    const coerceMember = memberExpression(identifier('z'), identifier('coerce'));
+    const coerceCall = callExpression(memberExpression(coerceMember, identifier('number')), []);
 
     assert.strictEqual(getZodCallName(classicBindings, namespaceCall), 'string');
     assert.strictEqual(getZodCallStyle(classicBindings, namespaceCall), 'classic');

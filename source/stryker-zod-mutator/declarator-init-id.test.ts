@@ -13,7 +13,9 @@ test('returns null when there is no declarator path', function () {
 });
 
 test('returns null when the path node is not a variable declarator', function () {
-    assert.strictEqual(declaratorInitId(pathFor(identifier('schema')), identifier('schema')), null);
+    const path = pathFor(identifier('schema'));
+
+    assert.strictEqual(declaratorInitId(path, identifier('schema')), null);
 });
 
 test('returns null when the declarator has no expression initializer', function () {

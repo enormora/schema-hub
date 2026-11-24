@@ -8,10 +8,8 @@ import { checkQuery } from '../test-libraries/check-build-output.ts';
         checkQuery({
             type: operationType,
             buildSchema() {
-                const schema = z
-                    .strictObject({
-                        foo: z.array(z.strictObject({ bar: z.string() }))
-                    });
+                const itemSchema = z.strictObject({ bar: z.string() });
+                const schema = z.strictObject({ foo: z.array(itemSchema) });
                 return schema;
             },
             expectedQuery: `${operationType} { foo { bar } }`
@@ -23,10 +21,8 @@ import { checkQuery } from '../test-libraries/check-build-output.ts';
         checkQuery({
             type: operationType,
             buildSchema() {
-                const schema = z
-                    .strictObject({
-                        foo: z.tuple([ z.strictObject({ bar: z.string() }) ])
-                    });
+                const itemSchema = z.strictObject({ bar: z.string() });
+                const schema = z.strictObject({ foo: z.tuple([ itemSchema ]) });
                 return schema;
             },
             expectedQuery: `${operationType} { foo { bar } }`
@@ -38,10 +34,9 @@ import { checkQuery } from '../test-libraries/check-build-output.ts';
         checkQuery({
             type: operationType,
             buildSchema() {
-                const schema = z
-                    .strictObject({
-                        foo: z.tuple([ z.strictObject({ bar: z.string() }) ], z.strictObject({ x: z.number() }))
-                    });
+                const itemSchema = z.strictObject({ bar: z.string() });
+                const restSchema = z.strictObject({ x: z.number() });
+                const schema = z.strictObject({ foo: z.tuple([ itemSchema ], restSchema) });
                 return schema;
             },
             expectedQuery: `${operationType} { foo { bar } }`
@@ -53,10 +48,9 @@ import { checkQuery } from '../test-libraries/check-build-output.ts';
         checkQuery({
             type: operationType,
             buildSchema() {
-                return z
-                    .strictObject({
-                        foo: z.array(z.strictObject({ bar: z.string() })).check(z.minLength(1))
-                    });
+                const itemSchema = z.strictObject({ bar: z.string() });
+
+                return z.strictObject({ foo: z.array(itemSchema).check(z.minLength(1)) });
             },
             expectedQuery: `${operationType} { foo { bar } }`
         })
@@ -67,10 +61,8 @@ import { checkQuery } from '../test-libraries/check-build-output.ts';
         checkQuery({
             type: operationType,
             buildSchema() {
-                const schema = z
-                    .strictObject({
-                        foo: z.nullable(z.array(z.strictObject({ bar: z.string() })))
-                    });
+                const itemSchema = z.strictObject({ bar: z.string() });
+                const schema = z.strictObject({ foo: z.nullable(z.array(itemSchema)) });
                 return schema;
             },
             expectedQuery: `${operationType} { foo { bar } }`
@@ -82,10 +74,8 @@ import { checkQuery } from '../test-libraries/check-build-output.ts';
         checkQuery({
             type: operationType,
             buildSchema() {
-                const schema = z
-                    .strictObject({
-                        foo: z.nullable(z.array(z.nullable(z.strictObject({ bar: z.string() }))))
-                    });
+                const nullableItemSchema = z.nullable(z.strictObject({ bar: z.string() }));
+                const schema = z.strictObject({ foo: z.nullable(z.array(nullableItemSchema)) });
                 return schema;
             },
             expectedQuery: `${operationType} { foo { bar } }`

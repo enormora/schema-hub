@@ -23,7 +23,8 @@ describe('buildGraphqlQuery / buildGraphqlMutation accept simple root schemas', 
     });
 
     test('deep partial root schema', function () {
-        const schema = z.deepPartial(z.strictObject({ foo: z.strictObject({ bar: z.string() }) }));
+        const fooSchema = z.strictObject({ bar: z.string() });
+        const schema = z.deepPartial(z.strictObject({ foo: fooSchema }));
         expect(buildGraphqlQuery(schema)).type.toBe<string>();
     });
 
@@ -33,7 +34,8 @@ describe('buildGraphqlQuery / buildGraphqlMutation accept simple root schemas', 
     });
 
     test('compiled root schema', function () {
-        const schema = z.compile(z.strictObject({ foo: z.strictObject({ bar: z.string() }) }));
+        const fooSchema = z.strictObject({ bar: z.string() });
+        const schema = z.compile(z.strictObject({ foo: fooSchema }));
         expect(buildGraphqlQuery(schema)).type.toBe<string>();
     });
 });
@@ -71,7 +73,8 @@ describe('buildGraphqlQuery accepts collection and union field schemas', functio
     });
 
     test('field as an array of strict objects', function () {
-        const schema = z.strictObject({ foo: z.array(z.strictObject({ bar: z.string() })) });
+        const itemSchema = z.strictObject({ bar: z.string() });
+        const schema = z.strictObject({ foo: z.array(itemSchema) });
         expect(buildGraphqlQuery(schema)).type.toBe<string>();
     });
 
@@ -86,12 +89,11 @@ describe('buildGraphqlQuery accepts collection and union field schemas', functio
     });
 
     test('field as a discriminated union (fragments)', function () {
-        const schema = z.strictObject({
-            foo: z.discriminatedUnion('__typename', [
-                z.strictObject({ __typename: z.literal('A'), valueA: z.string() }),
-                z.strictObject({ __typename: z.literal('B'), valueB: z.number() })
-            ])
-        });
+        const fragmentsSchema = z.discriminatedUnion('__typename', [
+            z.strictObject({ __typename: z.literal('A'), valueA: z.string() }),
+            z.strictObject({ __typename: z.literal('B'), valueB: z.number() })
+        ]);
+        const schema = z.strictObject({ foo: fragmentsSchema });
         expect(buildGraphqlQuery(schema)).type.toBe<string>();
     });
 });
@@ -113,7 +115,8 @@ describe('buildGraphqlQuery / buildGraphqlMutation reject invalid schemas', func
     });
 
     test('rejects z.record wrapped in z.nullable (recursive constraint still catches it)', function () {
-        const schema = z.strictObject({ foo: z.nullable(z.record(z.string(), z.string())) });
+        const fooSchema = z.nullable(z.record(z.string(), z.string()));
+        const schema = z.strictObject({ foo: fooSchema });
         expect(buildGraphqlQuery).type.not.toBeCallableWith(schema);
     });
 

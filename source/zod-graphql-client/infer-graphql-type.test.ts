@@ -48,23 +48,33 @@ test('inferGraphqlType() returns Boolean! for z.boolean()', function () {
 });
 
 test('inferGraphqlType() returns [String!]! for z.array(z.string())', function () {
-    assert.strictEqual(inferGraphqlType(z.array(z.string())), '[String!]!');
+    const schema = z.array(z.string());
+
+    assert.strictEqual(inferGraphqlType(schema), '[String!]!');
 });
 
 test('inferGraphqlType() returns [String!] for z.array(z.string()).nullable()', function () {
-    assert.strictEqual(inferGraphqlType(z.array(z.string()).nullable()), '[String!]');
+    const schema = z.array(z.string()).nullable();
+
+    assert.strictEqual(inferGraphqlType(schema), '[String!]');
 });
 
 test('inferGraphqlType() returns [String]! for z.array(z.string().nullable())', function () {
-    assert.strictEqual(inferGraphqlType(z.array(z.string().nullable())), '[String]!');
+    const schema = z.array(z.string().nullable());
+
+    assert.strictEqual(inferGraphqlType(schema), '[String]!');
 });
 
 test('inferGraphqlType() returns [String] for z.array(z.string().nullable()).nullable()', function () {
-    assert.strictEqual(inferGraphqlType(z.array(z.string().nullable()).nullable()), '[String]');
+    const schema = z.array(z.string().nullable()).nullable();
+
+    assert.strictEqual(inferGraphqlType(schema), '[String]');
 });
 
 test('inferGraphqlType() returns [[Int!]!]! for nested int arrays', function () {
-    assert.strictEqual(inferGraphqlType(z.array(z.array(z.int()))), '[[Int!]!]!');
+    const schema = z.array(z.array(z.int()));
+
+    assert.strictEqual(inferGraphqlType(schema), '[[Int!]!]!');
 });
 
 test('inferGraphqlType() throws for z.object', function () {
@@ -118,8 +128,10 @@ test('inferGraphqlType() throws for z.any', function () {
 });
 
 test('inferGraphqlType() throws for array elements that are not inferable', function () {
+    const schema = z.array(z.object({ a: z.string() }));
+
     try {
-        inferGraphqlType(z.array(z.object({ a: z.string() })));
+        inferGraphqlType(schema);
         assert.fail('Expected inferGraphqlType() to throw but it did not');
     } catch (error: unknown) {
         assert.strictEqual(error instanceof GraphqlTypeInferenceError, true);

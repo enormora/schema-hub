@@ -21,8 +21,9 @@ test('defineVariables() builds definitions with $-prefixed keys and inferred Gra
 });
 
 test('defineVariables() uses the literal type from an explicit variable() entry', function () {
+    const filterSchema = z.object({ q: z.string() });
     const vars = defineVariables({
-        filter: variable('FilterInput!', z.object({ q: z.string() }))
+        filter: variable('FilterInput!', filterSchema)
     });
     const { definitions } = getVariableMapMetadata(vars);
 
@@ -56,8 +57,9 @@ test('defineVariables() parse() surfaces zod-error-formatter issues when values 
 });
 
 test('defineVariables() parse() validates against the schema in an explicit entry', function () {
+    const filterSchema = z.object({ q: z.string() });
     const vars = defineVariables({
-        filter: variable('FilterInput!', z.object({ q: z.string() }))
+        filter: variable('FilterInput!', filterSchema)
     });
     const { parse } = getVariableMapMetadata(vars);
 
