@@ -47,8 +47,5 @@
         "@stryker-mutator/core": ">=9.6.0 <11",
         "@stryker-mutator/instrumenter": ">=9.6.0 <11",
         "zod": "^4.0.5"
-    },
-    "overrides": {
-        "yargs": "18.2.0"
     }
 }
