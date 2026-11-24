@@ -29,9 +29,9 @@ type ZodImportBindings = {
     readonly directBindings: readonly DirectBinding[];
 };
 type ImportSpecifier =
-    | Readonly<babel.ImportDefaultSpecifier>
-    | Readonly<babel.ImportNamespaceSpecifier>
-    | Readonly<babel.ImportSpecifier>;
+    Readonly<babel.ImportDefaultSpecifier> |
+    Readonly<babel.ImportNamespaceSpecifier> |
+    Readonly<babel.ImportSpecifier>;
 type SourceStatement = Readonly<babel.Statement>;
 
 export type ZodBindings = {

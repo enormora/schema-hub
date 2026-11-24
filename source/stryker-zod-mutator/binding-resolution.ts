@@ -36,9 +36,9 @@ type ResolveState = {
 };
 
 type ResolveTarget =
-    | { readonly kind: 'exportName'; readonly name: string; }
-    | { readonly kind: 'expression'; readonly expression: SchemaExpression; }
-    | { readonly kind: 'localName'; readonly name: string; };
+    { readonly kind: 'exportName'; readonly name: string; } |
+    { readonly kind: 'expression'; readonly expression: SchemaExpression; } |
+    { readonly kind: 'localName'; readonly name: string; };
 
 type Recurse = (target: ResolveTarget, state: ResolveState) => Resolution | null;
 

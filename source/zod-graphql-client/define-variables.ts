@@ -39,9 +39,9 @@ export type AnyVariableMapHandle = {
 export type MaybeVariables = AnyVariableMapHandle | undefined;
 
 export type VariableMapHandle<Variables extends Record<string, VariableEntry>> =
-    & AnyVariableMapHandle
-    & Readonly<Record<string & keyof Variables, GraphqlVariablePlaceholder>>
-    & {
+    AnyVariableMapHandle &
+    Readonly<Record<string & keyof Variables, GraphqlVariablePlaceholder>> &
+    {
         readonly [variableMapMetadataKey]: VariableMapMetadata<Variables>;
     };
 

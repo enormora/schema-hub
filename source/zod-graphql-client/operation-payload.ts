@@ -73,8 +73,8 @@ export type ResolvedOperationInputs = {
 };
 
 export type ResolveOperationInputsResult =
-    | OperationFailureResult
-    | { readonly success: true; readonly data: ResolvedOperationInputs; };
+    OperationFailureResult |
+    { readonly success: true; readonly data: ResolvedOperationInputs; };
 
 export function resolveOperationInputs(
     handle: OperationTarget,

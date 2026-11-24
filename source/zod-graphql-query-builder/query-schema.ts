@@ -121,24 +121,24 @@ interface FieldDiscriminatedUnion extends ZodDiscriminatedUnionGh6015IssueWorkar
 interface FieldUnion
     extends ZodUnionGh6015IssueWorkaround<readonly [PrimitiveSchema, ...(readonly PrimitiveSchema[])]> {}
 export type NonWrappedFieldSchema =
-    | CustomScalarSchema<$ZodType>
-    | FieldArray
-    | FieldDiscriminatedUnion
-    | FieldTuple
-    | FieldUnion
-    | PrimitiveSchema
-    | StrictObjectSchema<FieldShape>;
+    CustomScalarSchema<$ZodType> |
+    FieldArray |
+    FieldDiscriminatedUnion |
+    FieldTuple |
+    FieldUnion |
+    PrimitiveSchema |
+    StrictObjectSchema<FieldShape>;
 interface FieldLazy extends ZodLazyGh4611IssueWorkaround<FieldSchema> {}
 interface FieldNullable extends ZodNullableGh4611IssueWorkaround<FieldSchema> {}
 interface FieldOptional extends ZodOptionalGh4611IssueWorkaround<FieldSchema> {}
 interface FieldReadonly extends ZodReadonlyGh4611IssueWorkaround<FieldSchema> {}
 interface FieldPipe extends ZodPipeGh4611IssueWorkaround<FieldSchema, $ZodTransform> {}
 export type WrappedFieldSchema =
-    | FieldLazy
-    | FieldNullable
-    | FieldOptional
-    | FieldPipe
-    | FieldReadonly;
+    FieldLazy |
+    FieldNullable |
+    FieldOptional |
+    FieldPipe |
+    FieldReadonly;
 export type FieldSchema = NonWrappedFieldSchema | WrappedFieldSchema;
 
 function isWrappedFieldSchema(schema: FieldSchema): schema is WrappedFieldSchema {
@@ -206,16 +206,16 @@ export interface FieldShape {
     [key: string]: FieldSchema;
 }
 export type QuerySchema =
-    | StrictObjectSchema<FieldShape>
-    | ZodReadonlyGh4611IssueWorkaround<StrictObjectSchema<FieldShape>>;
+    StrictObjectSchema<FieldShape> |
+    ZodReadonlyGh4611IssueWorkaround<StrictObjectSchema<FieldShape>>;
 
 type FieldSchemaTupleItems = readonly [FieldSchema, ...FieldSchema[]];
 export type FieldSchemaTuple = ZodTupleGh6015IssueWorkaround<FieldSchemaTupleItems, FieldSchema | null>;
 
 export type ObjectOrListSchema =
-    | FieldArray
-    | FieldSchemaTuple
-    | StrictObjectSchema<FieldShape>;
+    FieldArray |
+    FieldSchemaTuple |
+    StrictObjectSchema<FieldShape>;
 
 export function isFieldArraySchema(schema: FieldSchema): schema is FieldArray {
     return schema instanceof $ZodArray;
@@ -236,9 +236,9 @@ export function isFragmentsSchema(schema: FieldSchema): schema is FragmentsSchem
 }
 
 export type UnionOrListSchema =
-    | FieldArray
-    | FieldSchemaTuple
-    | FragmentsSchema;
+    FieldArray |
+    FieldSchemaTuple |
+    FragmentsSchema;
 
 export function isUnionOrListSchema(schema: FieldSchema): schema is UnionOrListSchema {
     return isFragmentsSchema(schema) || isFieldArraySchema(schema) || isFieldTupleSchema(schema);

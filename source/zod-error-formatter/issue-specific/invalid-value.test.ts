@@ -3,13 +3,10 @@ import { test } from '@sondr3/minitest';
 import { formatInvalidValueIssueMessage } from './invalid-value.ts';
 
 test('formats the issue by using the expected value as is and only the type of the received value', function () {
-    const message = formatInvalidValueIssueMessage({
-        code: 'invalid_value',
-        path: [],
-        message: '',
-        values: [ 1 ],
-        input: { foo: 'bar' }
-    }, { foo: 'bar' });
+    const message = formatInvalidValueIssueMessage(
+        { code: 'invalid_value', path: [], message: '', values: [ 1 ], input: { foo: 'bar' } },
+        { foo: 'bar' }
+    );
     assert.strictEqual(message, 'invalid value: expected 1, but got object');
 });
 
@@ -48,13 +45,10 @@ test('correctly works with bigint as expected value', function () {
 });
 
 test('formats the issue as missing property when the path doesn’t exist in the given object', function () {
-    const message = formatInvalidValueIssueMessage({
-        code: 'invalid_value',
-        path: [ 'foo' ],
-        message: '',
-        values: [ 1 ],
-        input: { foo: 'bar' }
-    }, {});
+    const message = formatInvalidValueIssueMessage(
+        { code: 'invalid_value', path: [ 'foo' ], message: '', values: [ 1 ], input: { foo: 'bar' } },
+        {}
+    );
     assert.strictEqual(message, 'missing property; expected 1');
 });
 
