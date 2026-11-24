@@ -16,7 +16,6 @@ import {
     type ArrayExpression as BabelArrayExpression,
     type CallExpression as BabelCallExpression,
     type Expression as BabelExpression,
-    type Identifier,
     type Node as BabelNode,
     type ObjectExpression as BabelObjectExpression,
     type Program,
@@ -75,10 +74,6 @@ export function fileNameOf(path: MutationPath): string | null {
     return hubFileName(path) ?? (typeof locationFileName === 'string' ? locationFileName : null);
 }
 
-export function namedIdentifier(name: string): Identifier {
-    return identifier(name);
-}
-
 export function callExpression(callee: SchemaExpression, args: readonly SchemaExpression[]): BabelCallExpression {
     return buildCallExpression(callee, Array.from(args));
 }
@@ -88,7 +83,7 @@ export function memberCall(
     methodName: string,
     args: readonly SchemaExpression[]
 ): BabelCallExpression {
-    return callExpression(memberExpression(object, namedIdentifier(methodName)), args);
+    return callExpression(memberExpression(object, identifier(methodName)), args);
 }
 
 export function replaceArrayItem(
