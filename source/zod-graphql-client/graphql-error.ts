@@ -8,12 +8,14 @@ const locationSchema = z
 
 const pathSegmentSchema = z.union([ z.string(), z.number() ]);
 
+const extensionsSchema = z.record(z.string(), z.unknown());
+
 export const graphqlErrorSchema = z
     .object({
         message: z.string(),
         locations: z.optional(z.array(locationSchema)),
         path: z.optional(z.array(pathSegmentSchema)),
-        extensions: z.optional(z.record(z.string(), z.unknown()))
+        extensions: z.optional(extensionsSchema)
     });
 
 export type GraphqlError = Readonly<z.infer<typeof graphqlErrorSchema>>;

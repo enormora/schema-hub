@@ -28,13 +28,17 @@ const persistedQueryNotFoundCode = 'PERSISTED_QUERY_NOT_FOUND';
 const persistedQueryNotSupportedMessage = 'PersistedQueryNotSupported';
 const persistedQueryNotSupportedCode = 'PERSISTED_QUERY_NOT_SUPPORTED';
 
+const persistedQueryErrorExtensionsSchema = z.object({
+    code: z.optional(z.string())
+});
+
+const persistedQueryErrorSchema = z.object({
+    message: z.optional(z.string()),
+    extensions: z.optional(persistedQueryErrorExtensionsSchema)
+});
+
 const persistedQueryErrorDetectionSchema = z.object({
-    errors: z.optional(z.array(z.object({
-        message: z.optional(z.string()),
-        extensions: z.optional(z.object({
-            code: z.optional(z.string())
-        }))
-    })))
+    errors: z.optional(z.array(persistedQueryErrorSchema))
 });
 
 export type PersistedQueryRetryReason = 'not-found' | 'not-supported';
