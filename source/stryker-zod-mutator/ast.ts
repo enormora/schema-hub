@@ -62,8 +62,18 @@ function readProperty(value: unknown, key: string): unknown {
     return Reflect.get(value, key) as unknown;
 }
 
+function readPropertyPath(value: unknown, keys: readonly string[]): unknown {
+    let current = value;
+
+    for (const key of keys) {
+        current = readProperty(current, key);
+    }
+
+    return current;
+}
+
 function hubFileName(path: MutationPath): string | null {
-    const filename = readProperty(readProperty(readProperty(readProperty(path, 'hub'), 'file'), 'opts'), 'filename');
+    const filename = readPropertyPath(path, [ 'hub', 'file', 'opts', 'filename' ]);
 
     return typeof filename === 'string' ? filename : null;
 }
