@@ -1,5 +1,4 @@
-import * as babel from '@babel/types';
-import type { Node as BabelNode } from '@babel/types';
+import { isCallExpression, type Node as BabelNode } from '@babel/types';
 import {
     addWrapperOrMethod,
     removeMethodOrWrapper,
@@ -15,11 +14,10 @@ import {
 } from './binding-resolution.ts';
 
 function addReadonlyToFreezableSchema(path: MutationPath, bindings: ZodBindings): readonly BabelNode[] {
-    if (!isExpressionNode(path.node) || !isSchemaValueChainRoot(path, bindings)) {
-        return [];
-    }
-
-    if (!producesFreezableValue(bindings, path.node) || chainAppliesReadonly(bindings, path.node)) {
+    if (
+        !isExpressionNode(path.node) || !isSchemaValueChainRoot(path, bindings) ||
+        !producesFreezableValue(bindings, path.node) || chainAppliesReadonly(bindings, path.node)
+    ) {
         return [];
     }
 
@@ -43,7 +41,7 @@ function lastArgument(call: CallExpression): BabelNode | null {
 }
 
 function enclosingOutputRelation(child: BabelNode, parent: BabelNode, bindings: ZodBindings): OutputRelation {
-    if (!babel.isCallExpression(parent) || lastArgument(parent) !== child) {
+    if (!isCallExpression(parent) || lastArgument(parent) !== child) {
         return 'none';
     }
 

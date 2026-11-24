@@ -18,11 +18,11 @@ function isPrimitive(value: GraphqlValue): value is GraphqlPrimitiveValue {
 }
 
 export type GraphqlValue =
-    | GraphqlEnumValue
-    | GraphqlObjectValue
-    | GraphqlPrimitiveValue
-    | GraphqlVariablePlaceholder
-    | readonly GraphqlValue[];
+    GraphqlEnumValue |
+    GraphqlObjectValue |
+    GraphqlPrimitiveValue |
+    GraphqlVariablePlaceholder |
+    readonly GraphqlValue[];
 
 export type NormalizedGraphqlValue = {
     readonly serializedValue: string;

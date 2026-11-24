@@ -13,24 +13,18 @@ test('surfaces a non-empty custom message with its path when the path is not emp
 });
 
 test('returns the formatted issue when an invalid_type issue is given', function () {
-    const formattedIssue = formatIssue({
-        code: 'invalid_type',
-        message: '',
-        expected: 'nan',
-        input: 1.1,
-        path: [ 'foo' ]
-    }, { foo: 1.1 });
+    const formattedIssue = formatIssue(
+        { code: 'invalid_type', message: '', expected: 'nan', input: 1.1, path: [ 'foo' ] },
+        { foo: 1.1 }
+    );
     assert.strictEqual(formattedIssue, 'at foo: expected nan, but got number');
 });
 
 test('returns the formatted issue when an invalid_value issue is given', function () {
-    const formattedIssue = formatIssue({
-        code: 'invalid_value',
-        message: '',
-        values: [ 'foo' ],
-        input: 'bar',
-        path: [ 'foo' ]
-    }, { foo: '' });
+    const formattedIssue = formatIssue(
+        { code: 'invalid_value', message: '', values: [ 'foo' ], input: 'bar', path: [ 'foo' ] },
+        { foo: '' }
+    );
     assert.strictEqual(formattedIssue, 'at foo: invalid value: expected "foo", but got string');
 });
 
@@ -94,13 +88,10 @@ test('returns the formatted issue when an invalid_format issue is given', functi
 });
 
 test('returns the formatted issue when an invalid_union issue is given', function () {
-    const formattedIssue = formatIssue({
-        code: 'invalid_union',
-        path: [ 'foo' ],
-        message: '',
-        errors: [],
-        input: ''
-    }, { foo: undefined });
+    const formattedIssue = formatIssue(
+        { code: 'invalid_union', path: [ 'foo' ], message: '', errors: [], input: '' },
+        { foo: undefined }
+    );
     assert.strictEqual(formattedIssue, 'at foo: invalid value doesn’t match expected union');
 });
 
@@ -117,20 +108,23 @@ test('returns a fallback labelled by origin when invalid_key has no inner issues
 });
 
 test('surfaces inner issues for invalid_key instead of the fallback', function () {
-    const formattedIssue = formatIssue({
-        code: 'invalid_key',
-        path: [ 'foo' ],
-        message: '',
-        input: {},
-        origin: 'map',
-        issues: [ {
-            code: 'invalid_type',
+    const formattedIssue = formatIssue(
+        {
+            code: 'invalid_key',
             path: [ 'foo' ],
             message: '',
-            expected: 'string',
-            input: 1
-        } ]
-    }, { foo: 1 });
+            input: {},
+            origin: 'map',
+            issues: [ {
+                code: 'invalid_type',
+                path: [ 'foo' ],
+                message: '',
+                expected: 'string',
+                input: 1
+            } ]
+        },
+        { foo: 1 }
+    );
     assert.strictEqual(formattedIssue, 'at foo: expected string, but got number');
 });
 
@@ -148,21 +142,24 @@ test('returns a fallback labelled by origin when invalid_element has no inner is
 });
 
 test('surfaces inner issues for invalid_element instead of the fallback', function () {
-    const formattedIssue = formatIssue({
-        code: 'invalid_element',
-        origin: 'set',
-        path: [ 'foo', 0 ],
-        message: '',
-        key: 0,
-        input: 1,
-        issues: [ {
-            code: 'invalid_type',
+    const formattedIssue = formatIssue(
+        {
+            code: 'invalid_element',
+            origin: 'set',
             path: [ 'foo', 0 ],
             message: '',
-            expected: 'string',
-            input: 1
-        } ]
-    }, { foo: [ 1 ] });
+            key: 0,
+            input: 1,
+            issues: [ {
+                code: 'invalid_type',
+                path: [ 'foo', 0 ],
+                message: '',
+                expected: 'string',
+                input: 1
+            } ]
+        },
+        { foo: [ 1 ] }
+    );
     assert.strictEqual(formattedIssue, 'at foo[0]: expected string, but got number');
 });
 

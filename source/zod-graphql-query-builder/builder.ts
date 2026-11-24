@@ -58,7 +58,8 @@ export function createQueryBuilder(): QueryBuilder {
         ): Schema {
             if (options.typeName !== undefined && !isValidGraphqlName(options.typeName)) {
                 throw new Error(
-                    `Invalid GraphQL type name: "${options.typeName}". A type name must match /^[A-Z_a-z]\\w*$/.`
+                    String
+                        .raw`Invalid GraphQL type name: "${options.typeName}". A type name must match /^[A-Z_a-z]\w*$/.`
                 );
             }
             fieldOptionsRegistry.set(schema, options);

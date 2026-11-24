@@ -20,10 +20,8 @@ test('throws at registration when typeName is not a valid GraphQL identifier', f
 });
 
 test('a schema with custom scalar validates correctly', function () {
-    const schema = z
-        .strictObject({
-            foo: createCustomScalarSchema(z.object({ bar: z.record(z.string(), z.string()) }))
-        });
+    const scalarSchema = z.object({ bar: z.record(z.string(), z.string()) });
+    const schema = z.strictObject({ foo: createCustomScalarSchema(scalarSchema) });
 
     const result = schema.safeParse({ foo: { bar: 'bar' } });
 

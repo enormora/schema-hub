@@ -9,13 +9,11 @@ import { checkQuery } from '../test-libraries/check-build-output.ts';
         checkQuery({
             type: operationType,
             buildSchema() {
-                const schema = z
-                    .strictObject({
-                        foo: z.discriminatedUnion('__typename', [
-                            z.strictObject({ __typename: z.literal('A'), valueA: z.string() }),
-                            z.strictObject({ __typename: z.literal('B'), valueB: z.string() })
-                        ])
-                    });
+                const fragmentsSchema = z.discriminatedUnion('__typename', [
+                    z.strictObject({ __typename: z.literal('A'), valueA: z.string() }),
+                    z.strictObject({ __typename: z.literal('B'), valueB: z.string() })
+                ]);
+                const schema = z.strictObject({ foo: fragmentsSchema });
                 return schema;
             },
             expectedQuery:
@@ -28,17 +26,12 @@ import { checkQuery } from '../test-libraries/check-build-output.ts';
         checkQuery({
             type: operationType,
             buildSchema(builder) {
-                const schema = z
-                    .strictObject({
-                        foo: z.discriminatedUnion('__typename', [
-                            z
-                                .strictObject({
-                                    __typename: z.literal('A'),
-                                    valueA: builder.registerFieldOptions(z.string(), { parameters: { baz: 'qux' } })
-                                }),
-                            z.strictObject({ __typename: z.literal('B'), valueB: z.string() })
-                        ])
-                    });
+                const valueASchema = builder.registerFieldOptions(z.string(), { parameters: { baz: 'qux' } });
+                const fragmentsSchema = z.discriminatedUnion('__typename', [
+                    z.strictObject({ __typename: z.literal('A'), valueA: valueASchema }),
+                    z.strictObject({ __typename: z.literal('B'), valueB: z.string() })
+                ]);
+                const schema = z.strictObject({ foo: fragmentsSchema });
                 return schema;
             },
             expectedQuery: oneLine`${operationType} { foo { ... on A {
@@ -51,13 +44,11 @@ import { checkQuery } from '../test-libraries/check-build-output.ts';
         checkQuery({
             type: operationType,
             buildSchema() {
-                const schema = z
-                    .strictObject({
-                        foo: z.discriminatedUnion('__typename', [
-                            z.strictObject({ __typename: z.literal([ 'A', 'B' ]), shared: z.string() }),
-                            z.strictObject({ __typename: z.literal('C'), other: z.string() })
-                        ])
-                    });
+                const fragmentsSchema = z.discriminatedUnion('__typename', [
+                    z.strictObject({ __typename: z.literal([ 'A', 'B' ]), shared: z.string() }),
+                    z.strictObject({ __typename: z.literal('C'), other: z.string() })
+                ]);
+                const schema = z.strictObject({ foo: fragmentsSchema });
                 return schema;
             },
             expectedQuery: oneLine`${operationType} { foo { ... on A { __typename, shared },
@@ -70,20 +61,15 @@ import { checkQuery } from '../test-libraries/check-build-output.ts';
         checkQuery({
             type: operationType,
             buildSchema() {
-                const schema = z
-                    .strictObject({
-                        foo: z.discriminatedUnion('__typename', [
-                            z
-                                .strictObject({
-                                    __typename: z.literal('A'),
-                                    valueA: z.discriminatedUnion('__typename', [
-                                        z.strictObject({ __typename: z.literal('C'), valueC: z.string() }),
-                                        z.strictObject({ __typename: z.literal('D'), valueD: z.string() })
-                                    ])
-                                }),
-                            z.strictObject({ __typename: z.literal('B'), valueB: z.string() })
-                        ])
-                    });
+                const valueASchema = z.discriminatedUnion('__typename', [
+                    z.strictObject({ __typename: z.literal('C'), valueC: z.string() }),
+                    z.strictObject({ __typename: z.literal('D'), valueD: z.string() })
+                ]);
+                const fragmentsSchema = z.discriminatedUnion('__typename', [
+                    z.strictObject({ __typename: z.literal('A'), valueA: valueASchema }),
+                    z.strictObject({ __typename: z.literal('B'), valueB: z.string() })
+                ]);
+                const schema = z.strictObject({ foo: fragmentsSchema });
                 return schema;
             },
             expectedQuery: oneLine`${operationType} { foo { ... on A { __typename, valueA {
@@ -97,13 +83,11 @@ import { checkQuery } from '../test-libraries/check-build-output.ts';
         checkQuery({
             type: operationType,
             buildSchema() {
-                const schema = z
-                    .strictObject({
-                        foo: z.array(z.discriminatedUnion('__typename', [
-                            z.strictObject({ __typename: z.literal('A'), valueA: z.string() }),
-                            z.strictObject({ __typename: z.literal('B'), valueB: z.string() })
-                        ]))
-                    });
+                const fragmentsSchema = z.discriminatedUnion('__typename', [
+                    z.strictObject({ __typename: z.literal('A'), valueA: z.string() }),
+                    z.strictObject({ __typename: z.literal('B'), valueB: z.string() })
+                ]);
+                const schema = z.strictObject({ foo: z.array(fragmentsSchema) });
                 return schema;
             },
             expectedQuery:
@@ -116,13 +100,11 @@ import { checkQuery } from '../test-libraries/check-build-output.ts';
         checkQuery({
             type: operationType,
             buildSchema() {
-                const schema = z
-                    .strictObject({
-                        foo: z.tuple([ z.discriminatedUnion('__typename', [
-                            z.strictObject({ __typename: z.literal('A'), valueA: z.string() }),
-                            z.strictObject({ __typename: z.literal('B'), valueB: z.string() })
-                        ]) ])
-                    });
+                const fragmentsSchema = z.discriminatedUnion('__typename', [
+                    z.strictObject({ __typename: z.literal('A'), valueA: z.string() }),
+                    z.strictObject({ __typename: z.literal('B'), valueB: z.string() })
+                ]);
+                const schema = z.strictObject({ foo: z.tuple([ fragmentsSchema ]) });
                 return schema;
             },
             expectedQuery:
@@ -135,14 +117,11 @@ import { checkQuery } from '../test-libraries/check-build-output.ts';
         checkQuery({
             type: operationType,
             buildSchema() {
-                const schema = z
-                    .strictObject({
-                        foo: z.nullable(z
-                            .array(z.discriminatedUnion('__typename', [
-                                z.strictObject({ __typename: z.literal('A'), valueA: z.string() }),
-                                z.strictObject({ __typename: z.literal('B'), valueB: z.string() })
-                            ])))
-                    });
+                const fragmentsSchema = z.discriminatedUnion('__typename', [
+                    z.strictObject({ __typename: z.literal('A'), valueA: z.string() }),
+                    z.strictObject({ __typename: z.literal('B'), valueB: z.string() })
+                ]);
+                const schema = z.strictObject({ foo: z.nullable(z.array(fragmentsSchema)) });
                 return schema;
             },
             expectedQuery:
@@ -155,17 +134,12 @@ import { checkQuery } from '../test-libraries/check-build-output.ts';
         checkQuery({
             type: operationType,
             buildSchema() {
-                const schema = z
-                    .strictObject({
-                        foo: z.nullable(z
-                            .array(
-                                z.nullable(z
-                                    .discriminatedUnion('__typename', [
-                                        z.strictObject({ __typename: z.literal('A'), valueA: z.string() }),
-                                        z.strictObject({ __typename: z.literal('B'), valueB: z.string() })
-                                    ]))
-                            ))
-                    });
+                const fragmentsSchema = z.discriminatedUnion('__typename', [
+                    z.strictObject({ __typename: z.literal('A'), valueA: z.string() }),
+                    z.strictObject({ __typename: z.literal('B'), valueB: z.string() })
+                ]);
+                const nullableFragmentsSchema = z.nullable(fragmentsSchema);
+                const schema = z.strictObject({ foo: z.nullable(z.array(nullableFragmentsSchema)) });
                 return schema;
             },
             expectedQuery:

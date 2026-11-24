@@ -4,7 +4,8 @@ import { z } from 'zod/v4-mini';
 import { safeParse } from '../../source/zod-error-formatter/formatter.ts';
 
 test('formats messages for invalid property checks on inherited properties correctly', function () {
-    const schema = z.instanceof(URL).check(z.property('protocol', z.string().check(z.startsWith('https:'))));
+    const protocolSchema = z.string().check(z.startsWith('https:'));
+    const schema = z.instanceof(URL).check(z.property('protocol', protocolSchema));
     const result = safeParse(schema, new URL('ftp://example.com'));
 
     assert.strictEqual(result.success, false);
@@ -15,7 +16,8 @@ test('formats messages for invalid property checks on inherited properties corre
 
 test('formats messages for invalid properties checks correctly', function () {
     const minimumLength = 4;
-    const schema = z.instanceof(URL).check(...z.properties({ hostname: z.string().check(z.minLength(minimumLength)) }));
+    const hostnameSchema = z.string().check(z.minLength(minimumLength));
+    const schema = z.instanceof(URL).check(...z.properties({ hostname: hostnameSchema }));
     const result = safeParse(schema, new URL('https://a'));
 
     assert.strictEqual(result.success, false);
@@ -39,7 +41,8 @@ test('formats missing plain-object property checks correctly', function () {
 });
 
 test('formats messages for map properties when no map entry matches', function () {
-    const schema = z.instanceof(Map).check(z.property('size', z.number().check(z.gt(0))));
+    const sizeSchema = z.number().check(z.gt(0));
+    const schema = z.instanceof(Map).check(z.property('size', sizeSchema));
     const result = safeParse(schema, new Map());
 
     assert.strictEqual(result.success, false);

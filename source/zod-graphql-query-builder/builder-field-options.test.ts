@@ -8,15 +8,10 @@ import { checkQuery } from '../test-libraries/check-build-output.ts';
         checkQuery({
             type: operationType,
             buildSchema(builder) {
-                const schema = z
-                    .strictObject({
-                        foo: z
-                            .strictObject({
-                                bar: builder.registerFieldOptions(z.strictObject({ baz: z.number() }), {
-                                    parameters: { parameter: 'value' }
-                                })
-                            })
-                    });
+                const barSchema = builder.registerFieldOptions(z.strictObject({ baz: z.number() }), {
+                    parameters: { parameter: 'value' }
+                });
+                const schema = z.strictObject({ foo: z.strictObject({ bar: barSchema }) });
                 return schema;
             },
             expectedQuery: `${operationType} { foo { bar(parameter: "value") { baz } } }`
@@ -28,15 +23,10 @@ import { checkQuery } from '../test-libraries/check-build-output.ts';
         checkQuery({
             type: operationType,
             buildSchema(builder) {
-                const schema = z
-                    .strictObject({
-                        foo: z
-                            .strictObject({
-                                bar: builder.registerFieldOptions(z.strictObject({ baz: z.number() }), {
-                                    aliasFor: 'qux'
-                                })
-                            })
-                    });
+                const barSchema = builder.registerFieldOptions(z.strictObject({ baz: z.number() }), {
+                    aliasFor: 'qux'
+                });
+                const schema = z.strictObject({ foo: z.strictObject({ bar: barSchema }) });
                 return schema;
             },
             expectedQuery: `${operationType} { foo { bar: qux { baz } } }`
@@ -48,16 +38,11 @@ import { checkQuery } from '../test-libraries/check-build-output.ts';
         checkQuery({
             type: operationType,
             buildSchema(builder) {
-                const schema = z
-                    .strictObject({
-                        foo: z
-                            .strictObject({
-                                bar: builder.registerFieldOptions(z.strictObject({ baz: z.number() }), {
-                                    aliasFor: 'qux',
-                                    parameters: { parameter: 'value' }
-                                })
-                            })
-                    });
+                const barSchema = builder.registerFieldOptions(z.strictObject({ baz: z.number() }), {
+                    aliasFor: 'qux',
+                    parameters: { parameter: 'value' }
+                });
+                const schema = z.strictObject({ foo: z.strictObject({ bar: barSchema }) });
                 return schema;
             },
             expectedQuery: `${operationType} { foo { bar: qux(parameter: "value") { baz } } }`

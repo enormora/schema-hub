@@ -14,13 +14,10 @@ test('formats the expected and received value correctly', function () {
 });
 
 test('formats the issue as missing property when the path couldn’t be resolved in the given input data', function () {
-    const message = formatInvalidTypeIssueMessage({
-        code: 'invalid_type',
-        path: [ 'foo', 'bar' ],
-        message: '',
-        expected: 'date',
-        input: 'null'
-    }, { foo: {} });
+    const message = formatInvalidTypeIssueMessage(
+        { code: 'invalid_type', path: [ 'foo', 'bar' ], message: '', expected: 'date', input: 'null' },
+        { foo: {} }
+    );
     assert.strictEqual(message, 'missing property; expected date');
 });
 

@@ -1,5 +1,14 @@
-import * as babel from '@babel/types';
-import type { Node as BabelNode } from '@babel/types';
+import {
+    cloneNode,
+    identifier,
+    isCallExpression,
+    isMemberExpression,
+    isNumericLiteral,
+    isUnaryExpression,
+    memberExpression,
+    type CallExpression as BabelCallExpression,
+    type Node as BabelNode
+} from '@babel/types';
 import {
     getMemberName,
     numericArgumentMutations,
@@ -93,11 +102,11 @@ const collectionCheckConfig: CheckNames = {
 function numericArgumentValue(call: CallExpression): number | null {
     const argument = call.arguments[0];
 
-    if (babel.isNumericLiteral(argument)) {
+    if (isNumericLiteral(argument)) {
         return argument.value;
     }
 
-    if (babel.isUnaryExpression(argument) && argument.operator === '-' && babel.isNumericLiteral(argument.argument)) {
+    if (isUnaryExpression(argument) && argument.operator === '-' && isNumericLiteral(argument.argument)) {
         return -argument.argument.value;
     }
 
@@ -115,11 +124,11 @@ function isVacuousLengthBound(
 }
 
 function meaningfulBoundaryMutants(
-    mutants: readonly babel.CallExpression[],
+    mutants: readonly BabelCallExpression[],
     name: string | null,
     call: CallExpression,
     lengthLowerBoundNames: ReadonlySet<string>
-): readonly babel.CallExpression[] {
+): readonly BabelCallExpression[] {
     if (!isVacuousLengthBound(name, call, lengthLowerBoundNames)) {
         return mutants;
     }
@@ -135,20 +144,20 @@ function removeChecksFromCheckCall(
     names: ReadonlySet<string>,
     lengthLowerBoundNames: ReadonlySet<string>
 ): readonly BabelNode[] {
-    if (!babel.isMemberExpression(call.callee) || getMemberName(call.callee) !== 'check') {
+    if (!isMemberExpression(call.callee) || getMemberName(call.callee) !== 'check') {
         return [];
     }
 
     return call.arguments.flatMap(function (argument, index) {
         if (
-            !babel.isCallExpression(argument) ||
+            !isCallExpression(argument) ||
             !names.has(getZodCallName(bindings, argument) ?? '') ||
             isVacuousLengthBound(getZodCallName(bindings, argument), argument, lengthLowerBoundNames)
         ) {
             return [];
         }
 
-        const clone = babel.cloneNode<babel.CallExpression>(call, true);
+        const clone = cloneNode<BabelCallExpression>(call, true);
         clone.arguments = clone.arguments.filter(function (_check, checkIndex) {
             return checkIndex !== index;
         });
@@ -162,12 +171,12 @@ function mutateCheckCallBoundaries(
     names: ReadonlySet<string>,
     lengthLowerBoundNames: ReadonlySet<string>
 ): readonly BabelNode[] {
-    if (!babel.isMemberExpression(call.callee) || getMemberName(call.callee) !== 'check') {
+    if (!isMemberExpression(call.callee) || getMemberName(call.callee) !== 'check') {
         return [];
     }
 
     return call.arguments.flatMap(function (argument, index) {
-        if (!babel.isCallExpression(argument) || !names.has(getZodCallName(bindings, argument) ?? '')) {
+        if (!isCallExpression(argument) || !names.has(getZodCallName(bindings, argument) ?? '')) {
             return [];
         }
 
@@ -179,7 +188,7 @@ function mutateCheckCallBoundaries(
         );
 
         return mutants.map(function (mutatedCheck) {
-            const clone = babel.cloneNode<babel.CallExpression>(call, true);
+            const clone = cloneNode<BabelCallExpression>(call, true);
             clone.arguments[index] = mutatedCheck;
             return clone;
         });
@@ -193,7 +202,7 @@ function removeSchemaMethodChecks(path: MutationPath, bindings: ZodBindings, con
         return [];
     }
 
-    const methodName = babel.isMemberExpression(call.callee) ? getMemberName(call.callee) : null;
+    const methodName = isMemberExpression(call.callee) ? getMemberName(call.callee) : null;
     const methodRemovals = isVacuousLengthBound(methodName, call, config.lengthLowerBoundNames)
         ? []
         : removeMethod(call, bindings, config.methodNames);
@@ -211,7 +220,7 @@ function mutateSchemaBoundaries(path: MutationPath, bindings: ZodBindings, confi
         return [];
     }
 
-    if (babel.isMemberExpression(call.callee) && config.methodNames.has(getMemberName(call.callee) ?? '')) {
+    if (isMemberExpression(call.callee) && config.methodNames.has(getMemberName(call.callee) ?? '')) {
         return meaningfulBoundaryMutants(
             numericArgumentMutations(call, 0),
             getMemberName(call.callee),
@@ -224,7 +233,7 @@ function mutateSchemaBoundaries(path: MutationPath, bindings: ZodBindings, confi
 }
 
 function memberCallName(call: CallExpression | null): string | null {
-    return call !== null && babel.isMemberExpression(call.callee)
+    return call !== null && isMemberExpression(call.callee)
         ? getMemberName(call.callee)
         : null;
 }
@@ -234,12 +243,12 @@ function swapStrictness(path: MutationPath): readonly BabelNode[] {
     const methodName = memberCallName(call);
     const replacement = strictnessSwaps.get(methodName ?? '');
 
-    if (call === null || replacement === undefined || !babel.isMemberExpression(call.callee)) {
+    if (call === null || replacement === undefined || !isMemberExpression(call.callee)) {
         return [];
     }
 
-    const clone = babel.cloneNode<babel.CallExpression>(call, true);
-    clone.callee = babel.memberExpression(call.callee.object, babel.identifier(replacement));
+    const clone = cloneNode<BabelCallExpression>(call, true);
+    clone.callee = memberExpression(call.callee.object, identifier(replacement));
     return [ clone ];
 }
 

@@ -11,7 +11,7 @@ export function isVariablePlaceholder(value: unknown): value is GraphqlVariableP
     return isRecord(value) && hasProperty(value, 'tag') && value.tag === variablePlaceholderSymbol;
 }
 
-const graphqlVariableIdentifierPattern = /^\$[A-Z_a-z]\w*$/;
+const graphqlVariableIdentifierPattern = /^\$[A-Z_a-z]\w*$/u;
 
 export function isValidVariableIdentifier(value: string): boolean {
     return graphqlVariableIdentifierPattern.test(value);

@@ -1,5 +1,20 @@
-import * as babel from '@babel/types';
-import type { Node as BabelNode, Program } from '@babel/types';
+import {
+    callExpression,
+    identifier,
+    isArrayExpression,
+    isCallExpression,
+    isIdentifier,
+    isImportDeclaration,
+    isMemberExpression,
+    memberExpression,
+    program as buildProgram,
+    type ImportDefaultSpecifier,
+    type ImportNamespaceSpecifier,
+    type ImportSpecifier as BabelImportSpecifier,
+    type Node as BabelNode,
+    type Program,
+    type Statement
+} from '@babel/types';
 import {
     fileNameOf,
     findProgram,
@@ -29,10 +44,10 @@ type ZodImportBindings = {
     readonly directBindings: readonly DirectBinding[];
 };
 type ImportSpecifier =
-    | Readonly<babel.ImportDefaultSpecifier>
-    | Readonly<babel.ImportNamespaceSpecifier>
-    | Readonly<babel.ImportSpecifier>;
-type SourceStatement = Readonly<babel.Statement>;
+    Readonly<BabelImportSpecifier> |
+    Readonly<ImportDefaultSpecifier> |
+    Readonly<ImportNamespaceSpecifier>;
+type SourceStatement = Readonly<Statement>;
 
 export type ZodBindings = {
     readonly namespaces: readonly NamespaceBinding[];
@@ -103,8 +118,8 @@ const schemaFactoryNames = new Set([
     'iso'
 ]);
 
-function getImportedName(specifier: Readonly<babel.ImportSpecifier>): string {
-    return babel.isIdentifier(specifier.imported)
+function getImportedName(specifier: Readonly<BabelImportSpecifier>): string {
+    return isIdentifier(specifier.imported)
         ? specifier.imported.name
         : specifier.imported.value;
 }
@@ -128,11 +143,11 @@ function readZodImportSpecifier(
 }
 
 function readZodImport(statement: SourceStatement): ZodImportBindings {
-    const style = babel.isImportDeclaration(statement)
+    const style = isImportDeclaration(statement)
         ? zodSourceStyles.get(statement.source.value)
         : undefined;
 
-    if (style === undefined || !babel.isImportDeclaration(statement)) {
+    if (style === undefined || !isImportDeclaration(statement)) {
         return { namespaces: [], directBindings: [] };
     }
 
@@ -167,7 +182,7 @@ export function buildZodBindings(program: Program, fileName: string | null, env:
 }
 
 export function readZodBindings(path: MutationPath, env: ResolverEnv): ZodBindings {
-    return buildZodBindings(findProgram(path) ?? babel.program([]), fileNameOf(path), env);
+    return buildZodBindings(findProgram(path) ?? buildProgram([]), fileNameOf(path), env);
 }
 
 export function getDirectBinding(bindings: ZodBindings, localName: string): DirectBinding | null {
@@ -186,7 +201,7 @@ export function getNamespaceStyle(bindings: ZodBindings, localName: string): Zod
 }
 
 export function isZodNamespaceMember(bindings: ZodBindings, expression: BabelNode): boolean {
-    if (!babel.isMemberExpression(expression) || !babel.isIdentifier(expression.object)) {
+    if (!isMemberExpression(expression) || !isIdentifier(expression.object)) {
         return false;
     }
 
@@ -194,13 +209,13 @@ export function isZodNamespaceMember(bindings: ZodBindings, expression: BabelNod
 }
 
 function getCoerceNamespaceName(call: CallExpression): string | null {
-    if (!babel.isMemberExpression(call.callee) || !babel.isMemberExpression(call.callee.object)) {
+    if (!isMemberExpression(call.callee) || !isMemberExpression(call.callee.object)) {
         return null;
     }
 
     const { object } = call.callee;
 
-    return getMemberName(object) === 'coerce' && babel.isIdentifier(object.object)
+    return getMemberName(object) === 'coerce' && isIdentifier(object.object)
         ? object.object.name
         : null;
 }
@@ -212,15 +227,11 @@ export function isCoerceCall(bindings: ZodBindings, call: CallExpression): boole
 }
 
 export function getZodCallName(bindings: ZodBindings, call: CallExpression): string | null {
-    if (babel.isIdentifier(call.callee)) {
+    if (isIdentifier(call.callee)) {
         return getDirectBinding(bindings, call.callee.name)?.importedName ?? null;
     }
 
-    if (isZodNamespaceMember(bindings, call.callee)) {
-        return getMemberName(call.callee);
-    }
-
-    if (isCoerceCall(bindings, call)) {
+    if (isZodNamespaceMember(bindings, call.callee) || isCoerceCall(bindings, call)) {
         return getMemberName(call.callee);
     }
 
@@ -234,11 +245,11 @@ function getCoerceCallStyle(bindings: ZodBindings, call: CallExpression): ZodApi
 }
 
 export function getZodCallStyle(bindings: ZodBindings, call: CallExpression): ZodApiStyle | null {
-    if (babel.isIdentifier(call.callee)) {
+    if (isIdentifier(call.callee)) {
         return getDirectBinding(bindings, call.callee.name)?.style ?? null;
     }
 
-    if (babel.isMemberExpression(call.callee) && babel.isIdentifier(call.callee.object)) {
+    if (isMemberExpression(call.callee) && isIdentifier(call.callee.object)) {
         return getNamespaceStyle(bindings, call.callee.object.name);
     }
 
@@ -246,7 +257,7 @@ export function getZodCallStyle(bindings: ZodBindings, call: CallExpression): Zo
 }
 
 export function isZodSchemaExpression(bindings: ZodBindings, expression: SchemaExpression): boolean {
-    if (!babel.isCallExpression(expression)) {
+    if (!isCallExpression(expression)) {
         return false;
     }
 
@@ -256,7 +267,7 @@ export function isZodSchemaExpression(bindings: ZodBindings, expression: SchemaE
         return schemaFactoryNames.has(callName);
     }
 
-    if (!babel.isMemberExpression(expression.callee)) {
+    if (!isMemberExpression(expression.callee)) {
         return false;
     }
 
@@ -269,7 +280,7 @@ export function expressionStyle(bindings: ZodBindings, expression: SchemaExpress
     let currentExpression: SchemaExpression | null = expression;
 
     for (;;) {
-        if (!babel.isCallExpression(currentExpression)) {
+        if (!isCallExpression(currentExpression)) {
             return null;
         }
 
@@ -279,7 +290,7 @@ export function expressionStyle(bindings: ZodBindings, expression: SchemaExpress
             return directStyle;
         }
 
-        if (!babel.isMemberExpression(currentExpression.callee) || !isExpressionNode(currentExpression.callee.object)) {
+        if (!isMemberExpression(currentExpression.callee) || !isExpressionNode(currentExpression.callee.object)) {
             return null;
         }
 
@@ -302,8 +313,8 @@ export function buildZodCall(
     });
 
     if (namespace !== undefined) {
-        return babel.callExpression(
-            babel.memberExpression(babel.identifier(namespace.name), babel.identifier(name)),
+        return callExpression(
+            memberExpression(identifier(namespace.name), identifier(name)),
             Array.from(args)
         );
     }
@@ -313,7 +324,7 @@ export function buildZodCall(
     });
 
     if (direct !== undefined) {
-        return babel.callExpression(babel.identifier(direct.localName), Array.from(args));
+        return callExpression(identifier(direct.localName), Array.from(args));
     }
 
     return null;
@@ -360,7 +371,7 @@ export const valuePreservingWrapperNames = new Set([
 function isReceiverOfMethodCall(path: MutationPath): boolean {
     const enclosingMember = path.parentPath?.node;
 
-    return babel.isMemberExpression(enclosingMember) && enclosingMember.object === path.node;
+    return isMemberExpression(enclosingMember) && enclosingMember.object === path.node;
 }
 
 function isFirstArgumentOfCallNamed(
@@ -370,7 +381,7 @@ function isFirstArgumentOfCallNamed(
 ): boolean {
     const enclosingCall = path.parentPath?.node;
 
-    if (!babel.isCallExpression(enclosingCall)) {
+    if (!isCallExpression(enclosingCall)) {
         return false;
     }
 
@@ -403,7 +414,7 @@ function isElementOfTemplateLiteralParts(path: MutationPath, bindings: ZodBindin
     const partsArray = path.parentPath?.node;
     const templateCall = grandparentNode(path);
 
-    if (!babel.isArrayExpression(partsArray) || !babel.isCallExpression(templateCall)) {
+    if (!isArrayExpression(partsArray) || !isCallExpression(templateCall)) {
         return false;
     }
 
@@ -414,7 +425,7 @@ function isElementOfTemplateLiteralParts(path: MutationPath, bindings: ZodBindin
 }
 
 export function isStringTemplateLiteralPart(path: MutationPath, bindings: ZodBindings): boolean {
-    return babel.isCallExpression(path.node) &&
+    return isCallExpression(path.node) &&
         getZodCallName(bindings, path.node) === 'string' &&
         isElementOfTemplateLiteralParts(path, bindings);
 }

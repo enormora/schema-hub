@@ -1,5 +1,11 @@
-import * as babel from '@babel/types';
-import type { Node as BabelNode } from '@babel/types';
+import {
+    cloneNode,
+    isCallExpression,
+    isMemberExpression,
+    isSpreadElement,
+    type CallExpression as BabelCallExpression,
+    type Node as BabelNode
+} from '@babel/types';
 import { getMemberName, type CallExpression, type MutationPath } from './ast.ts';
 import { callNode, createDefinition, type MutationDefinition } from './mutation-definition.ts';
 import { removeMethod, removeMethodOrWrapper } from './schema-call-mutations.ts';
@@ -23,11 +29,11 @@ function isRemovableCheckArgument(
     bindings: ZodBindings,
     names: ReadonlySet<string>
 ): boolean {
-    if (babel.isCallExpression(argument)) {
+    if (isCallExpression(argument)) {
         return names.has(getZodCallName(bindings, argument) ?? '');
     }
 
-    if (!babel.isSpreadElement(argument) || !babel.isCallExpression(argument.argument)) {
+    if (!isSpreadElement(argument) || !isCallExpression(argument.argument)) {
         return false;
     }
 
@@ -39,7 +45,7 @@ function removeChecksFromCheckCall(
     bindings: ZodBindings,
     names: ReadonlySet<string>
 ): readonly BabelNode[] {
-    if (!babel.isMemberExpression(call.callee) || getMemberName(call.callee) !== 'check') {
+    if (!isMemberExpression(call.callee) || getMemberName(call.callee) !== 'check') {
         return [];
     }
 
@@ -48,7 +54,7 @@ function removeChecksFromCheckCall(
             return [];
         }
 
-        const clone = babel.cloneNode<babel.CallExpression>(call, true);
+        const clone = cloneNode<BabelCallExpression>(call, true);
         clone.arguments = clone.arguments.filter(function (_check, checkIndex) {
             return checkIndex !== index;
         });
@@ -70,7 +76,7 @@ function removeCustomBehavior(path: MutationPath, bindings: ZodBindings): readon
 }
 
 function coerceTargetName(call: CallExpression | null): string | null {
-    return call !== null && babel.isMemberExpression(call.callee)
+    return call !== null && isMemberExpression(call.callee)
         ? getMemberName(call.callee)
         : null;
 }

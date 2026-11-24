@@ -1,5 +1,12 @@
-import * as babel from '@babel/types';
-import type { Node as BabelNode } from '@babel/types';
+import {
+    arrayExpression,
+    cloneNode,
+    isArrayExpression,
+    isCallExpression,
+    type ArrayExpression as BabelArrayExpression,
+    type CallExpression as BabelCallExpression,
+    type Node as BabelNode
+} from '@babel/types';
 import {
     cloneExpression,
     isExpressionNode,
@@ -49,10 +56,10 @@ function replaceFactory(
     return replacementCall === null ? [] : [ replacementCall ];
 }
 
-function tupleArray(call: CallExpression): babel.ArrayExpression | null {
+function tupleArray(call: CallExpression): BabelArrayExpression | null {
     const argument = call.arguments[0];
 
-    return babel.isArrayExpression(argument) ? argument : null;
+    return isArrayExpression(argument) ? argument : null;
 }
 
 function removeTupleItems(path: MutationPath, bindings: ZodBindings): readonly BabelNode[] {
@@ -73,7 +80,7 @@ function removeTupleItems(path: MutationPath, bindings: ZodBindings): readonly B
             return [];
         }
 
-        const clone = babel.cloneNode<babel.CallExpression>(call, true);
+        const clone = cloneNode<BabelCallExpression>(call, true);
         clone.arguments[0] = replaceArrayItem(items, index);
         return [ clone ];
     });
@@ -93,7 +100,7 @@ function addTupleRest(path: MutationPath, bindings: ZodBindings): readonly Babel
         return [];
     }
 
-    const clone = babel.cloneNode<babel.CallExpression>(call, true);
+    const clone = cloneNode<BabelCallExpression>(call, true);
     clone.arguments.push(cloneExpression(restSchema));
     return [ clone ];
 }
@@ -109,7 +116,7 @@ function removeTupleRest(path: MutationPath, bindings: ZodBindings): readonly Ba
         return removeMethod(call, bindings, new Set([ 'rest' ]));
     }
 
-    const clone = babel.cloneNode<babel.CallExpression>(call, true);
+    const clone = cloneNode<BabelCallExpression>(call, true);
     clone.arguments = clone.arguments.slice(0, 1);
     return [ clone ];
 }
@@ -117,18 +124,17 @@ function removeTupleRest(path: MutationPath, bindings: ZodBindings): readonly Ba
 function hasInfiniteStringKey(bindings: ZodBindings, call: CallExpression): boolean {
     const key = call.arguments[0];
 
-    return isExpressionNode(key) && babel.isCallExpression(key) && getZodCallName(bindings, key) === 'string';
+    return isExpressionNode(key) && isCallExpression(key) && getZodCallName(bindings, key) === 'string';
 }
 
 function swapRecordFactory(path: MutationPath, bindings: ZodBindings): readonly BabelNode[] {
     const call = callNode(path);
     const currentName = call === null ? null : getZodCallName(bindings, call);
 
-    if (call === null || currentName === null || ![ 'record', 'partialRecord', 'looseRecord' ].includes(currentName)) {
-        return [];
-    }
-
-    if (hasInfiniteStringKey(bindings, call)) {
+    if (
+        call === null || currentName === null || ![ 'record', 'partialRecord', 'looseRecord' ].includes(currentName) ||
+        hasInfiniteStringKey(bindings, call)
+    ) {
         return [];
     }
 
@@ -155,7 +161,7 @@ function removeArrayOptions(
 
     const options = call.arguments[argumentIndex];
 
-    if (!babel.isArrayExpression(options)) {
+    if (!isArrayExpression(options)) {
         return [];
     }
 
@@ -164,7 +170,7 @@ function removeArrayOptions(
             return [];
         }
 
-        const clone = babel.cloneNode<babel.CallExpression>(call, true);
+        const clone = cloneNode<BabelCallExpression>(call, true);
         clone.arguments[argumentIndex] = replaceArrayItem(options, index);
         return [ clone ];
     });
@@ -184,7 +190,7 @@ function arrayItemArgument(call: CallExpression): readonly SchemaExpression[] | 
     const item = call.arguments[0];
 
     return item !== undefined && isExpressionNode(item)
-        ? [ babel.arrayExpression([ cloneExpression(item) ]) ]
+        ? [ arrayExpression([ cloneExpression(item) ]) ]
         : null;
 }
 

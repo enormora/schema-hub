@@ -1268,7 +1268,9 @@ test('returns no mutations for paths without a program', function () {
         assert.fail('Expected ZodOptionalAdd to exist');
     }
 
-    assert.deepStrictEqual(Array.from(mutator.mutate({ node: identifier('schema'), parentPath: null })), []);
+    const mutations = Array.from(mutator.mutate({ node: identifier('schema'), parentPath: null }));
+
+    assert.deepStrictEqual(mutations, []);
 });
 
 test('enables every Zod mutation by default', function () {
@@ -1628,7 +1630,9 @@ test('handles a readonly-removal path without a parent', function () {
         assert.fail('Expected ZodReadonlyRemove to exist');
     }
 
-    assert.deepStrictEqual(Array.from(mutator.mutate({ node: identifier('schema'), parentPath: null })), []);
+    const mutations = Array.from(mutator.mutate({ node: identifier('schema'), parentPath: null }));
+
+    assert.deepStrictEqual(mutations, []);
 });
 
 test('detects an enclosing readonly through a classic pipe method call', function () {
@@ -1745,7 +1749,9 @@ test('handles a widen path without a parent', function () {
         assert.fail('Expected ZodReferencedSchemaWiden to exist');
     }
 
-    assert.deepStrictEqual(Array.from(mutator.mutate({ node: identifier('schema'), parentPath: null })), []);
+    const mutations = Array.from(mutator.mutate({ node: identifier('schema'), parentPath: null }));
+
+    assert.deepStrictEqual(mutations, []);
 });
 
 test('does not widen a reference inside a non-Zod call object', function () {

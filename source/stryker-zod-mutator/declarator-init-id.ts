@@ -1,9 +1,8 @@
-import * as babel from '@babel/types';
-import type { Node as BabelNode } from '@babel/types';
+import { isIdentifier, isVariableDeclarator, type Identifier, type Node as BabelNode } from '@babel/types';
 import { isExpressionNode, type MutationPath } from './ast.ts';
 
-export function declaratorInitId(declaratorPath: MutationPath | null, node: BabelNode): babel.Identifier | null {
-    if (declaratorPath === null || !babel.isVariableDeclarator(declaratorPath.node)) {
+export function declaratorInitId(declaratorPath: MutationPath | null, node: BabelNode): Identifier | null {
+    if (declaratorPath === null || !isVariableDeclarator(declaratorPath.node)) {
         return null;
     }
 
@@ -13,5 +12,5 @@ export function declaratorInitId(declaratorPath: MutationPath | null, node: Babe
         return null;
     }
 
-    return init === node && babel.isIdentifier(id) ? id : null;
+    return init === node && isIdentifier(id) ? id : null;
 }

@@ -9,10 +9,11 @@ import { createCustomScalarSchema } from './custom-scalar.ts';
         checkQuery({
             type: operationType,
             buildSchema() {
+                const fooInputSchema = z.strictObject({ bar: z.string() });
                 const schema = z
                     .strictObject({
                         foo: z.pipe(
-                            z.strictObject({ bar: z.string() }),
+                            fooInputSchema,
                             z.transform(function () {
                                 return '';
                             })
@@ -121,7 +122,8 @@ import { createCustomScalarSchema } from './custom-scalar.ts';
         checkQuery({
             type: operationType,
             buildSchema() {
-                const schema = z.strictObject({ foo: z.readonly(z.array(z.string())) });
+                const fooSchema = z.readonly(z.array(z.string()));
+                const schema = z.strictObject({ foo: fooSchema });
                 return schema;
             },
             expectedQuery: `${operationType} { foo }`
@@ -145,7 +147,8 @@ import { createCustomScalarSchema } from './custom-scalar.ts';
         checkQuery({
             type: operationType,
             buildSchema() {
-                const schema = z.readonly(z.strictObject({ foo: z.readonly(z.strictObject({ bar: z.string() })) }));
+                const fooSchema = z.readonly(z.strictObject({ bar: z.string() }));
+                const schema = z.readonly(z.strictObject({ foo: fooSchema }));
                 return schema;
             },
             expectedQuery: `${operationType} { foo { bar } }`
@@ -157,7 +160,9 @@ import { createCustomScalarSchema } from './custom-scalar.ts';
         checkQuery({
             type: operationType,
             buildSchema() {
-                return z.deepPartial(z.strictObject({ foo: z.strictObject({ bar: z.string() }) }));
+                const fooSchema = z.strictObject({ bar: z.string() });
+
+                return z.deepPartial(z.strictObject({ foo: fooSchema }));
             },
             expectedQuery: `${operationType} { foo { bar } }`
         })
@@ -168,7 +173,9 @@ import { createCustomScalarSchema } from './custom-scalar.ts';
         checkQuery({
             type: operationType,
             buildSchema() {
-                return z.exactPartial(z.strictObject({ foo: z.strictObject({ bar: z.string() }) }));
+                const fooSchema = z.strictObject({ bar: z.string() });
+
+                return z.exactPartial(z.strictObject({ foo: fooSchema }));
             },
             expectedQuery: `${operationType} { foo { bar } }`
         })
@@ -179,7 +186,9 @@ import { createCustomScalarSchema } from './custom-scalar.ts';
         checkQuery({
             type: operationType,
             buildSchema() {
-                return z.compile(z.strictObject({ foo: z.strictObject({ bar: z.string() }) }));
+                const fooSchema = z.strictObject({ bar: z.string() });
+
+                return z.compile(z.strictObject({ foo: fooSchema }));
             },
             expectedQuery: `${operationType} { foo { bar } }`
         })
@@ -206,10 +215,8 @@ import { createCustomScalarSchema } from './custom-scalar.ts';
         checkQuery({
             type: operationType,
             buildSchema() {
-                const schema = z
-                    .strictObject({
-                        foo: createCustomScalarSchema(z.object({ bar: z.record(z.string(), z.string()) }))
-                    });
+                const scalarSchema = z.object({ bar: z.record(z.string(), z.string()) });
+                const schema = z.strictObject({ foo: createCustomScalarSchema(scalarSchema) });
                 return schema;
             },
             expectedQuery: `${operationType} { foo }`

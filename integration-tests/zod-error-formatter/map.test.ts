@@ -24,7 +24,8 @@ test('formats messages for invalid values in map schemas correctly', function ()
 });
 
 test('formats messages for invalid objects within map values correctly', function () {
-    const schema = z.object({ foo: z.map(z.literal('a'), z.object({ bar: z.number() })) });
+    const valueSchema = z.object({ bar: z.number() });
+    const schema = z.object({ foo: z.map(z.literal('a'), valueSchema) });
     const result = safeParse(schema, { foo: new Map([ [ 'a', { bar: true } ] ]) });
 
     assert.strictEqual(result.success, false);
@@ -34,7 +35,8 @@ test('formats messages for invalid objects within map values correctly', functio
 });
 
 test('formats messages for missing object properties within map values correctly', function () {
-    const schema = z.object({ foo: z.map(z.literal('a'), z.object({ bar: z.number() })) });
+    const valueSchema = z.object({ bar: z.number() });
+    const schema = z.object({ foo: z.map(z.literal('a'), valueSchema) });
     const result = safeParse(schema, { foo: new Map([ [ 'a', {} ] ]) });
 
     assert.strictEqual(result.success, false);

@@ -1,11 +1,32 @@
-import * as babel from '@babel/types';
-import type { Node as BabelNode } from '@babel/types';
+import {
+    arrayExpression as buildArrayExpression,
+    callExpression as buildCallExpression,
+    cloneNode,
+    identifier,
+    isExpression,
+    isIdentifier,
+    isMemberExpression,
+    isNumericLiteral,
+    isObjectProperty,
+    isProgram,
+    isV8IntrinsicIdentifier,
+    memberExpression,
+    objectExpression as buildObjectExpression,
+    valueToNode,
+    type ArrayExpression as BabelArrayExpression,
+    type CallExpression as BabelCallExpression,
+    type Expression as BabelExpression,
+    type Node as BabelNode,
+    type ObjectExpression as BabelObjectExpression,
+    type Program,
+    type V8IntrinsicIdentifier
+} from '@babel/types';
 
-export type SchemaExpression = Exclude<babel.Expression, babel.V8IntrinsicIdentifier>;
-export type ArrayExpression = Readonly<babel.ArrayExpression>;
-export type CallExpression = Readonly<babel.CallExpression>;
-export type ObjectExpression = Readonly<babel.ObjectExpression>;
-export type PropertyValueExpression = Readonly<babel.Expression>;
+export type SchemaExpression = Exclude<BabelExpression, V8IntrinsicIdentifier>;
+export type ArrayExpression = Readonly<BabelArrayExpression>;
+export type CallExpression = Readonly<BabelCallExpression>;
+export type ObjectExpression = Readonly<BabelObjectExpression>;
+export type PropertyValueExpression = Readonly<BabelExpression>;
 
 export type MutationPath = {
     readonly node: BabelNode;
@@ -13,18 +34,18 @@ export type MutationPath = {
 };
 
 export function isExpressionNode(node: BabelNode | null | undefined): node is SchemaExpression {
-    return node !== null && node !== undefined && babel.isExpression(node) && !babel.isV8IntrinsicIdentifier(node);
+    return node !== null && node !== undefined && isExpression(node) && !isV8IntrinsicIdentifier(node);
 }
 
 export function cloneExpression<Expression extends SchemaExpression>(expression: Expression): Expression {
-    return babel.cloneNode(expression, true);
+    return cloneNode(expression, true);
 }
 
-export function findProgram(path: MutationPath): babel.Program | null {
+export function findProgram(path: MutationPath): Program | null {
     let current: MutationPath | null = path;
 
     while (current !== null) {
-        if (babel.isProgram(current.node)) {
+        if (isProgram(current.node)) {
             return current.node;
         }
         current = current.parentPath;
@@ -41,8 +62,18 @@ function readProperty(value: unknown, key: string): unknown {
     return Reflect.get(value, key) as unknown;
 }
 
+function readPropertyPath(value: unknown, keys: readonly string[]): unknown {
+    let current = value;
+
+    for (const key of keys) {
+        current = readProperty(current, key);
+    }
+
+    return current;
+}
+
 function hubFileName(path: MutationPath): string | null {
-    const filename = readProperty(readProperty(readProperty(readProperty(path, 'hub'), 'file'), 'opts'), 'filename');
+    const filename = readPropertyPath(path, [ 'hub', 'file', 'opts', 'filename' ]);
 
     return typeof filename === 'string' ? filename : null;
 }
@@ -53,27 +84,23 @@ export function fileNameOf(path: MutationPath): string | null {
     return hubFileName(path) ?? (typeof locationFileName === 'string' ? locationFileName : null);
 }
 
-export function namedIdentifier(name: string): babel.Identifier {
-    return babel.identifier(name);
-}
-
-export function callExpression(callee: SchemaExpression, args: readonly SchemaExpression[]): babel.CallExpression {
-    return babel.callExpression(callee, Array.from(args));
+export function callExpression(callee: SchemaExpression, args: readonly SchemaExpression[]): BabelCallExpression {
+    return buildCallExpression(callee, Array.from(args));
 }
 
 export function memberCall(
     object: SchemaExpression,
     methodName: string,
     args: readonly SchemaExpression[]
-): babel.CallExpression {
-    return callExpression(babel.memberExpression(object, namedIdentifier(methodName)), args);
+): BabelCallExpression {
+    return callExpression(memberExpression(object, identifier(methodName)), args);
 }
 
 export function replaceArrayItem(
     arrayExpression: ArrayExpression,
     indexToRemove: number
-): babel.ArrayExpression {
-    return babel.arrayExpression(arrayExpression.elements.filter(function (_element, index) {
+): BabelArrayExpression {
+    return buildArrayExpression(arrayExpression.elements.filter(function (_element, index) {
         return index !== indexToRemove;
     }));
 }
@@ -82,13 +109,13 @@ export function replaceObjectProperty(
     objectExpression: ObjectExpression,
     indexToReplace: number,
     value: PropertyValueExpression
-): babel.ObjectExpression {
-    return babel.objectExpression(objectExpression.properties.map(function (property, index) {
-        if (index !== indexToReplace || !babel.isObjectProperty(property)) {
-            return babel.cloneNode(property, true);
+): BabelObjectExpression {
+    return buildObjectExpression(objectExpression.properties.map(function (property, index) {
+        if (index !== indexToReplace || !isObjectProperty(property)) {
+            return cloneNode(property, true);
         }
 
-        const clone = babel.cloneNode(property, true);
+        const clone = cloneNode(property, true);
         clone.value = value;
         return clone;
     }));
@@ -97,21 +124,21 @@ export function replaceObjectProperty(
 export function removeObjectProperty(
     objectExpression: ObjectExpression,
     indexToRemove: number
-): babel.ObjectExpression {
-    return babel.objectExpression(
+): BabelObjectExpression {
+    return buildObjectExpression(
         objectExpression
             .properties
             .filter(function (_property, index) {
                 return index !== indexToRemove;
             })
             .map(function (property) {
-                return babel.cloneNode(property, true);
+                return cloneNode(property, true);
             })
     );
 }
 
 export function getMemberName(expression: BabelNode): string | null {
-    if (!babel.isMemberExpression(expression) || expression.computed || !babel.isIdentifier(expression.property)) {
+    if (!isMemberExpression(expression) || expression.computed || !isIdentifier(expression.property)) {
         return null;
     }
 
@@ -119,7 +146,7 @@ export function getMemberName(expression: BabelNode): string | null {
 }
 
 export function getCallName(callee: BabelNode): string | null {
-    if (babel.isIdentifier(callee)) {
+    if (isIdentifier(callee)) {
         return callee.name;
     }
 
@@ -129,16 +156,16 @@ export function getCallName(callee: BabelNode): string | null {
 export function numericArgumentMutations(
     call: CallExpression,
     argumentIndex: number
-): readonly babel.CallExpression[] {
+): readonly BabelCallExpression[] {
     const argument = call.arguments[argumentIndex];
 
-    if (!babel.isNumericLiteral(argument)) {
+    if (!isNumericLiteral(argument)) {
         return [];
     }
 
     return [ -1, 1 ].map(function (offset) {
-        const clone = babel.cloneNode<babel.CallExpression>(call, true);
-        clone.arguments[argumentIndex] = babel.valueToNode(argument.value + offset);
+        const clone = cloneNode<BabelCallExpression>(call, true);
+        clone.arguments[argumentIndex] = valueToNode(argument.value + offset);
         return clone;
     });
 }

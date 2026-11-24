@@ -1,5 +1,4 @@
-import * as babel from '@babel/types';
-import type { Node as BabelNode } from '@babel/types';
+import { isCallExpression, isMemberExpression, type Node as BabelNode } from '@babel/types';
 import {
     cloneExpression,
     getCallName,
@@ -30,7 +29,7 @@ export function removeMethod(
     bindings: ZodBindings,
     methodNames: ReadonlySet<string>
 ): readonly BabelNode[] {
-    if (!babel.isMemberExpression(call.callee)) {
+    if (!isMemberExpression(call.callee)) {
         return [];
     }
 
@@ -95,7 +94,7 @@ function buildWrapperMutation(
 }
 
 function wrapperAlreadyApplied(expression: SchemaExpression, name: string): boolean {
-    return babel.isCallExpression(expression) && getCallName(expression.callee) === name;
+    return isCallExpression(expression) && getCallName(expression.callee) === name;
 }
 
 function shouldSkipWrapping(
@@ -119,11 +118,7 @@ export function addWrapperOrMethod(
     const expression = zodSchemaExpression(path, bindings);
     const style = expression === null ? null : expressionStyle(bindings, expression);
 
-    if (expression === null || style === null) {
-        return [];
-    }
-
-    if (shouldSkipWrapping(path, bindings, expression, name)) {
+    if (expression === null || style === null || shouldSkipWrapping(path, bindings, expression, name)) {
         return [];
     }
 
@@ -135,7 +130,7 @@ function replaceNullishMethod(
     bindings: ZodBindings,
     replacementName: string
 ): readonly BabelNode[] {
-    if (!babel.isMemberExpression(call.callee) || getMemberName(call.callee) !== 'nullish') {
+    if (!isMemberExpression(call.callee) || getMemberName(call.callee) !== 'nullish') {
         return [];
     }
 

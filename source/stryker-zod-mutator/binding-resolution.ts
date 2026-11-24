@@ -1,5 +1,33 @@
-import * as babel from '@babel/types';
-import type { Node as BabelNode, Program } from '@babel/types';
+import {
+    isArrayExpression,
+    isArrayPattern,
+    isCallExpression,
+    isExportDefaultDeclaration,
+    isExportNamedDeclaration,
+    isExportSpecifier,
+    isIdentifier,
+    isImportDeclaration,
+    isImportNamespaceSpecifier,
+    isImportSpecifier,
+    isMemberExpression,
+    isObjectExpression,
+    isObjectPattern,
+    isObjectProperty,
+    isStringLiteral,
+    isVariableDeclaration,
+    type ArrayPattern,
+    type ExportSpecifier,
+    type Identifier,
+    type ImportDeclaration,
+    type MemberExpression,
+    type Node as BabelNode,
+    type ObjectExpression,
+    type ObjectPattern,
+    type ObjectProperty,
+    type Program,
+    type StringLiteral,
+    type VariableDeclarator
+} from '@babel/types';
 import { getMemberName, isExpressionNode, type CallExpression, type SchemaExpression } from './ast.ts';
 import {
     buildZodBindings,
@@ -36,9 +64,9 @@ type ResolveState = {
 };
 
 type ResolveTarget =
-    | { readonly kind: 'exportName'; readonly name: string; }
-    | { readonly kind: 'expression'; readonly expression: SchemaExpression; }
-    | { readonly kind: 'localName'; readonly name: string; };
+    { readonly kind: 'exportName'; readonly name: string; } |
+    { readonly kind: 'expression'; readonly expression: SchemaExpression; } |
+    { readonly kind: 'localName'; readonly name: string; };
 
 type Recurse = (target: ResolveTarget, state: ResolveState) => Resolution | null;
 
@@ -46,56 +74,56 @@ function seenKey(bindings: ZodBindings, name: string): string {
     return `${bindings.fileName ?? ''} ${name}`;
 }
 
-function getPropertyName(property: Readonly<babel.ObjectProperty>): string | null {
-    if (babel.isIdentifier(property.key)) {
+function getPropertyName(property: Readonly<ObjectProperty>): string | null {
+    if (isIdentifier(property.key)) {
         return property.key.name;
     }
 
-    return babel.isStringLiteral(property.key) ? property.key.value : null;
+    return isStringLiteral(property.key) ? property.key.value : null;
 }
 
-function objectPropertyValue(object: Readonly<babel.ObjectExpression>, name: string): SchemaExpression | null {
+function objectPropertyValue(object: Readonly<ObjectExpression>, name: string): SchemaExpression | null {
     const match = object.properties.find(function (property) {
-        return babel.isObjectProperty(property) && !property.computed && getPropertyName(property) === name;
+        return isObjectProperty(property) && !property.computed && getPropertyName(property) === name;
     });
 
-    return match !== undefined && babel.isObjectProperty(match) && isExpressionNode(match.value) ? match.value : null;
+    return match !== undefined && isObjectProperty(match) && isExpressionNode(match.value) ? match.value : null;
 }
 
-function propertySourceName(pattern: Readonly<babel.ObjectPattern>, localName: string): string {
+function propertySourceName(pattern: Readonly<ObjectPattern>, localName: string): string {
     const match = pattern.properties.find(function (property) {
-        return babel.isObjectProperty(property) && babel.isIdentifier(property.value) &&
+        return isObjectProperty(property) && isIdentifier(property.value) &&
             property.value.name === localName;
     });
 
-    return match !== undefined && babel.isObjectProperty(match) && !match.computed && babel.isIdentifier(match.key)
+    return match !== undefined && isObjectProperty(match) && !match.computed && isIdentifier(match.key)
         ? match.key.name
         : localName;
 }
 
 function objectPatternValue(
-    pattern: Readonly<babel.ObjectPattern>,
+    pattern: Readonly<ObjectPattern>,
     name: string,
     init: Resolution
 ): SchemaExpression | null {
     const holdsName = pattern.properties.some(function (property) {
-        return babel.isObjectProperty(property) && babel.isIdentifier(property.value) && property.value.name === name;
+        return isObjectProperty(property) && isIdentifier(property.value) && property.value.name === name;
     });
 
-    return holdsName && babel.isObjectExpression(init.expression)
+    return holdsName && isObjectExpression(init.expression)
         ? objectPropertyValue(init.expression, propertySourceName(pattern, name))
         : null;
 }
 
 function arrayPatternValue(
-    pattern: Readonly<babel.ArrayPattern>,
+    pattern: Readonly<ArrayPattern>,
     name: string,
     init: Resolution
 ): SchemaExpression | null {
     const index = pattern.elements.findIndex(function (element) {
-        return babel.isIdentifier(element) && element.name === name;
+        return isIdentifier(element) && element.name === name;
     });
-    const element = index !== -1 && babel.isArrayExpression(init.expression)
+    const element = index !== -1 && isArrayExpression(init.expression)
         ? init.expression.elements[index]
         : undefined;
 
@@ -103,39 +131,39 @@ function arrayPatternValue(
 }
 
 function bindingPatternValue(id: BabelNode, name: string, init: Resolution): SchemaExpression | null {
-    if (babel.isObjectPattern(id)) {
+    if (isObjectPattern(id)) {
         return objectPatternValue(id, name, init);
     }
 
-    return babel.isArrayPattern(id) ? arrayPatternValue(id, name, init) : null;
+    return isArrayPattern(id) ? arrayPatternValue(id, name, init) : null;
 }
 
 function patternBindsName(pattern: BabelNode, name: string): boolean {
-    if (babel.isObjectPattern(pattern)) {
+    if (isObjectPattern(pattern)) {
         return pattern.properties.some(function (property) {
-            return babel.isObjectProperty(property) && babel.isIdentifier(property.value) &&
+            return isObjectProperty(property) && isIdentifier(property.value) &&
                 property.value.name === name;
         });
     }
 
-    return babel.isArrayPattern(pattern) && pattern.elements.some(function (element) {
-        return babel.isIdentifier(element) && element.name === name;
+    return isArrayPattern(pattern) && pattern.elements.some(function (element) {
+        return isIdentifier(element) && element.name === name;
     });
 }
 
-function declaresName(declarator: Readonly<babel.VariableDeclarator>, name: string): boolean {
-    if (babel.isIdentifier(declarator.id)) {
+function declaresName(declarator: Readonly<VariableDeclarator>, name: string): boolean {
+    if (isIdentifier(declarator.id)) {
         return declarator.id.name === name;
     }
 
     return patternBindsName(declarator.id, name);
 }
 
-function localDeclarators(program: Program): readonly Readonly<babel.VariableDeclarator>[] {
+function localDeclarators(program: Program): readonly Readonly<VariableDeclarator>[] {
     return program.body.flatMap(function (statement) {
-        const declaration = babel.isExportNamedDeclaration(statement) ? statement.declaration : statement;
+        const declaration = isExportNamedDeclaration(statement) ? statement.declaration : statement;
 
-        return babel.isVariableDeclaration(declaration) ? declaration.declarations : [];
+        return isVariableDeclaration(declaration) ? declaration.declarations : [];
     });
 }
 
@@ -145,13 +173,13 @@ type ImportBinding = {
 };
 
 type ImportSpecifierEntry = {
-    readonly specifier: Readonly<babel.ImportDeclaration['specifiers'][number]>;
+    readonly specifier: Readonly<ImportDeclaration['specifiers'][number]>;
     readonly source: string;
 };
 
 function importSpecifierEntries(program: Program): readonly ImportSpecifierEntry[] {
     return program.body.flatMap(function (statement) {
-        return babel.isImportDeclaration(statement)
+        return isImportDeclaration(statement)
             ? statement.specifiers.map(function (specifier) {
                 return { specifier, source: statement.source.value };
             })
@@ -159,12 +187,12 @@ function importSpecifierEntries(program: Program): readonly ImportSpecifierEntry
     });
 }
 
-function importedExportName(specifier: Readonly<babel.ImportDeclaration['specifiers'][number]>): string {
-    if (!babel.isImportSpecifier(specifier)) {
+function importedExportName(specifier: Readonly<ImportDeclaration['specifiers'][number]>): string {
+    if (!isImportSpecifier(specifier)) {
         return 'default';
     }
 
-    return babel.isIdentifier(specifier.imported) ? specifier.imported.name : specifier.imported.value;
+    return isIdentifier(specifier.imported) ? specifier.imported.name : specifier.imported.value;
 }
 
 function importBindingFor(program: Program, localName: string): ImportBinding | null {
@@ -172,7 +200,7 @@ function importBindingFor(program: Program, localName: string): ImportBinding | 
         return candidate.specifier.local.name === localName;
     });
 
-    if (entry === undefined || babel.isImportNamespaceSpecifier(entry.specifier)) {
+    if (entry === undefined || isImportNamespaceSpecifier(entry.specifier)) {
         return null;
     }
 
@@ -181,24 +209,24 @@ function importBindingFor(program: Program, localName: string): ImportBinding | 
 
 function defaultExportDeclaration(program: Program): SchemaExpression | null {
     const [ declaration ] = program.body.flatMap(function (statement) {
-        return babel.isExportDefaultDeclaration(statement) ? [ statement.declaration ] : [];
+        return isExportDefaultDeclaration(statement) ? [ statement.declaration ] : [];
     });
 
     return isExpressionNode(declaration) ? declaration : null;
 }
 
-function exportSpecifiers(program: Program): readonly Readonly<babel.ExportSpecifier>[] {
+function exportSpecifiers(program: Program): readonly Readonly<ExportSpecifier>[] {
     return program
         .body
         .flatMap(function (statement) {
-            return babel.isExportNamedDeclaration(statement) && statement.source === null ? statement.specifiers : [];
+            return isExportNamedDeclaration(statement) && statement.source === null ? statement.specifiers : [];
         })
         .flatMap(function (specifier) {
-            return babel.isExportSpecifier(specifier) ? [ specifier ] : [];
+            return isExportSpecifier(specifier) ? [ specifier ] : [];
         });
 }
 
-function exportSpecifierName(specifierName: Readonly<babel.Identifier | babel.StringLiteral>): string {
+function exportSpecifierName(specifierName: Readonly<Identifier | StringLiteral>): string {
     return specifierName.type === 'Identifier' ? specifierName.name : specifierName.value;
 }
 
@@ -211,7 +239,7 @@ function localNameForExport(program: Program, exportName: string): string {
 }
 
 function resolveMember(
-    member: Readonly<babel.MemberExpression>,
+    member: Readonly<MemberExpression>,
     state: ResolveState,
     recurse: Recurse
 ): Resolution | null {
@@ -223,7 +251,7 @@ function resolveMember(
 
     const object = recurse({ kind: 'expression', expression: member.object }, state);
 
-    if (object === null || !babel.isObjectExpression(object.expression)) {
+    if (object === null || !isObjectExpression(object.expression)) {
         return null;
     }
 
@@ -239,11 +267,11 @@ function resolveExpressionTarget(
     state: ResolveState,
     recurse: Recurse
 ): Resolution | null {
-    if (babel.isIdentifier(expression)) {
+    if (isIdentifier(expression)) {
         return recurse({ kind: 'localName', name: expression.name }, state);
     }
 
-    if (babel.isMemberExpression(expression)) {
+    if (isMemberExpression(expression)) {
         return resolveMember(expression, state, recurse);
     }
 
@@ -251,7 +279,7 @@ function resolveExpressionTarget(
 }
 
 function declaratorValue(
-    declarator: Readonly<babel.VariableDeclarator>,
+    declarator: Readonly<VariableDeclarator>,
     name: string,
     state: ResolveState,
     recurse: Recurse
@@ -262,7 +290,7 @@ function declaratorValue(
 
     const init = recurse({ kind: 'expression', expression: declarator.init }, state);
 
-    if (init === null || babel.isIdentifier(declarator.id) && declarator.id.name === name) {
+    if (init === null || isIdentifier(declarator.id) && declarator.id.name === name) {
         return init;
     }
 
@@ -364,20 +392,20 @@ function underlyingSchemaExpression(bindings: ZodBindings, call: CallExpression)
         return firstExpressionArgument(call);
     }
 
-    return babel.isMemberExpression(call.callee) && isExpressionNode(call.callee.object)
+    return isMemberExpression(call.callee) && isExpressionNode(call.callee.object)
         ? call.callee.object
         : null;
 }
 
 function stepFromNode(node: SchemaExpression, bindings: ZodBindings): Resolution | null {
-    if (babel.isIdentifier(node)) {
+    if (isIdentifier(node)) {
         return resolveSchemaReference(bindings, node.name);
     }
 
-    if (babel.isMemberExpression(node) && !babel.isCallExpression(node)) {
+    if (isMemberExpression(node) && !isCallExpression(node)) {
         const resolved = resolveExpressionReference(bindings, node);
 
-        return resolved === null || babel.isMemberExpression(resolved.expression) ? null : resolved;
+        return resolved === null || isMemberExpression(resolved.expression) ? null : resolved;
     }
 
     return { expression: node, bindings };
@@ -386,7 +414,7 @@ function stepFromNode(node: SchemaExpression, bindings: ZodBindings): Resolution
 function nextResolution(step: Resolution): Resolution | null {
     const node: SchemaExpression = step.expression;
 
-    if (!babel.isCallExpression(node)) {
+    if (!isCallExpression(node)) {
         return stepFromNode(node, step.bindings);
     }
 
@@ -402,7 +430,7 @@ function* schemaChain(expression: SchemaExpression, bindings: ZodBindings): Gene
     while (resolution !== null && !seen.has(resolution.expression)) {
         seen.add(resolution.expression);
 
-        if (babel.isCallExpression(resolution.expression)) {
+        if (isCallExpression(resolution.expression)) {
             yield { node: resolution.expression, bindings: resolution.bindings };
         }
 
