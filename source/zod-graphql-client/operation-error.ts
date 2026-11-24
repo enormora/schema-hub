@@ -34,7 +34,6 @@ type UnknownError = BaseError & {
 export type OperationErrorDetails = GraphqlResponseError | NetworkError | ServerError | UnknownError | ValidationError;
 
 function causeOf(details: OperationErrorDetails): unknown {
-    // eslint-disable-next-line unicorn/prefer-includes-over-repeated-comparisons -- literal comparisons narrow the discriminated union so `cause` is accessible
     if (details.type === 'network' || details.type === 'server' || details.type === 'unknown') {
         return details.cause;
     }
